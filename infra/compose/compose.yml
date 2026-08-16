@@ -1,0 +1,209 @@
+name: sensemu-local
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: sensemu
+      POSTGRES_USER: sensemu
+      POSTGRES_PASSWORD: sensemu
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sensemu -d sensemu"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  object-storage:
+    image: minio/minio:latest
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: sensemu
+      MINIO_ROOT_PASSWORD: sensemu-local-only
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - object-storage-data:/data
+
+  object-storage-init:
+    image: minio/mc:latest
+    depends_on:
+      - object-storage
+    restart: "no"
+    volumes:
+      - ./minio-cors.xml:/config/minio-cors.xml:ro
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >-
+        until mc alias set local http://object-storage:9000 sensemu sensemu-local-only;
+        do sleep 1; done;
+        mc mb --ignore-existing local/sensemu-dev;
+        mc cors set local/sensemu-dev /config/minio-cors.xml;
+        mc anonymous set none local/sensemu-dev
+
+  api:
+    profiles: ["app"]
+    build:
+      context: ../../apps/api
+    environment:
+      SENSEMU_DATABASE_URL: postgresql+psycopg://sensemu:sensemu@postgres:5432/sensemu
+      SENSEMU_REDIS_URL: redis://redis:6379/0
+      SENSEMU_CELERY_BROKER_URL: redis://redis:6379/1
+      SENSEMU_OBJECT_STORAGE_ENDPOINT: http://object-storage:9000
+      SENSEMU_OBJECT_STORAGE_ACCESS_KEY: sensemu
+      SENSEMU_OBJECT_STORAGE_SECRET_KEY: sensemu-local-only
+      SENSEMU_OBJECT_STORAGE_BUCKET: sensemu-dev
+      SENSEMU_WORKER_TOKEN: sensemu-worker-local-only
+      SENSEMU_GATEWAY_TOKEN: sensemu-gateway-local-only
+      SENSEMU_PAYMENT_ADAPTER_TOKEN: sensemu-payment-adapter-local-only
+      SENSEMU_AUTH_MODE: development
+      SENSEMU_INFERENCE_GATEWAY_PUBLIC_URL: http://localhost:8080
+      SENSEMU_TRAINING_EXECUTION_LEASE_TIMEOUT_SECONDS: 120
+      SENSEMU_TRAINING_EXECUTION_MAX_ATTEMPTS: 3
+      SENSEMU_INFERENCE_RESERVATION_TIMEOUT_SECONDS: 180
+      SENSEMU_WEB_ORIGIN: http://localhost:3000
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      object-storage-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/ready', timeout=2)"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  worker:
+    profiles: ["app"]
+    build:
+      context: ../../apps/worker
+    environment:
+      SENSEMU_API_URL: http://api:8000
+      SENSEMU_CELERY_BROKER_URL: redis://redis:6379/1
+      SENSEMU_CELERY_RESULT_BACKEND: redis://redis:6379/2
+      SENSEMU_OBJECT_STORAGE_ENDPOINT: http://object-storage:9000
+      SENSEMU_OBJECT_STORAGE_ACCESS_KEY: sensemu
+      SENSEMU_OBJECT_STORAGE_SECRET_KEY: sensemu-local-only
+      SENSEMU_OBJECT_STORAGE_BUCKET: sensemu-dev
+      SENSEMU_WORKER_TOKEN: sensemu-worker-local-only
+      SENSEMU_ULTRALYTICS_DOCKER_IMAGE: ultralytics/ultralytics:latest-cpu
+      SENSEMU_DOCKER_GPUS: none
+      SENSEMU_LEASE_HEARTBEAT_INTERVAL_SECONDS: 15
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      redis:
+        condition: service_healthy
+      api:
+        condition: service_started
+      object-storage-init:
+        condition: service_completed_successfully
+
+  worker-scheduler:
+    profiles: ["app"]
+    build:
+      context: ../../apps/worker
+    command: ["celery", "--app", "sensemu_worker.main:app", "beat", "--loglevel", "INFO"]
+    environment:
+      SENSEMU_API_URL: http://api:8000
+      SENSEMU_CELERY_BROKER_URL: redis://redis:6379/1
+      SENSEMU_CELERY_RESULT_BACKEND: redis://redis:6379/2
+      SENSEMU_WORKER_TOKEN: sensemu-worker-local-only
+    depends_on:
+      redis:
+        condition: service_healthy
+      api:
+        condition: service_started
+
+  inference-gateway:
+    profiles: ["app"]
+    build:
+      context: ../../apps/inference-gateway
+    environment:
+      SENSEMU_GATEWAY_CONTROL_PLANE_URL: http://api:8000
+      SENSEMU_GATEWAY_CONTROL_PLANE_TOKEN: sensemu-gateway-local-only
+      SENSEMU_GATEWAY_WEB_ORIGIN: http://localhost:3000
+      SENSEMU_GATEWAY_RUNTIME_URL: http://inference-runtime:8090
+      SENSEMU_GATEWAY_RUNTIME_TOKEN: sensemu-runtime-local-only
+      SENSEMU_GATEWAY_CONTROL_PLANE_TIMEOUT_SECONDS: 5
+      SENSEMU_GATEWAY_RUNTIME_TIMEOUT_SECONDS: 60
+      SENSEMU_GATEWAY_METERING_TIMEOUT_SECONDS: 5
+      SENSEMU_GATEWAY_HEALTH_TIMEOUT_SECONDS: 2
+    ports:
+      - "8080:8080"
+    depends_on:
+      api:
+        condition: service_started
+      inference-runtime:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health/ready', timeout=2)"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  inference-runtime:
+    profiles: ["app"]
+    build:
+      context: ../../apps/inference-runtime
+    environment:
+      SENSEMU_RUNTIME_TOKEN: sensemu-runtime-local-only
+      SENSEMU_RUNTIME_OBJECT_STORAGE_ENDPOINT: http://object-storage:9000
+      SENSEMU_RUNTIME_OBJECT_STORAGE_ACCESS_KEY: sensemu
+      SENSEMU_RUNTIME_OBJECT_STORAGE_SECRET_KEY: sensemu-local-only
+      SENSEMU_RUNTIME_OBJECT_STORAGE_BUCKET: sensemu-dev
+      SENSEMU_RUNTIME_CACHE_PATH: /var/cache/sensemu
+      SENSEMU_RUNTIME_MAX_CACHED_MODELS: 2
+      SENSEMU_RUNTIME_MAX_CONCURRENT_REQUESTS: 1
+      SENSEMU_RUNTIME_QUEUE_TIMEOUT_SECONDS: 2
+      SENSEMU_RUNTIME_DEVICE: cpu
+    read_only: true
+    tmpfs:
+      - /tmp:size=256m,mode=1777
+    volumes:
+      - inference-runtime-cache:/var/cache/sensemu
+    depends_on:
+      object-storage-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8090/health/ready', timeout=2)"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  identity:
+    profiles: ["identity"]
+    image: quay.io/keycloak/keycloak:26.3
+    command: ["start-dev"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: sensemu-local-only
+    ports:
+      - "8081:8080"
+
+volumes:
+  postgres-data:
+  redis-data:
+  object-storage-data:
+  inference-runtime-cache:

@@ -1,0 +1,31 @@
+FROM python:3.10
+
+ARG ULTRALYTICS_VERSION=8.4.120
+ARG TORCH_VERSION=2.13.0+cpu
+ARG TORCHVISION_VERSION=0.28.0+cpu
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    HOME=/tmp \
+    YOLO_CONFIG_DIR=/tmp/ultralytics
+
+RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir \
+        --index-url https://download.pytorch.org/whl/cpu \
+        --extra-index-url https://pypi.org/simple \
+        "torch==${TORCH_VERSION}" \
+        "torchvision==${TORCHVISION_VERSION}" \
+    && pip install --no-cache-dir "ultralytics==${ULTRALYTICS_VERSION}" \
+    && useradd --create-home --uid 10001 runtime
+
+RUN apt-get update \
+    && apt-get install --no-install-recommends -y libgl1 libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p /tmp/ultralytics /tmp/sensemu-workspace \
+    && chown -R runtime:runtime /tmp/ultralytics /tmp/sensemu-workspace
+
+USER runtime
+WORKDIR /tmp/sensemu-workspace
+
+CMD ["yolo", "checks"]

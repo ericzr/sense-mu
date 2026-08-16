@@ -1,0 +1,32 @@
+# macOS
+.DS_Store
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# JavaScript
+node_modules/
+.next/
+dist/
+build/
+.vinext/
+.wrangler/
+*.tsbuildinfo
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.venv/
+*.egg-info/
+
+# IDE
+.idea/
+.vscode/
+
+# Runtime data
+.local-data/
+coverage/

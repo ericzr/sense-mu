@@ -1,0 +1,26 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "sensemu-inference-runtime"
+version = "0.1.0"
+description = "Restricted Ultralytics inference runtime for SenseMu"
+requires-python = ">=3.12"
+dependencies = [
+  "boto3>=1.40,<2",
+  "fastapi>=0.116,<1",
+  "pydantic-settings>=2.10,<3",
+  "uvicorn[standard]>=0.35,<1"
+]
+
+[project.optional-dependencies]
+runtime = ["ultralytics>=8.3,<9"]
+dev = ["httpx>=0.28,<1", "pytest>=8.4,<9", "ruff>=0.12,<1"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/sensemu_runtime"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"

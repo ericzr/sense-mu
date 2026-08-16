@@ -1,0 +1,24 @@
+FROM sensemu-ultralytics:local-cpu
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    HOME=/tmp \
+    YOLO_CONFIG_DIR=/tmp/ultralytics
+
+WORKDIR /app
+COPY pyproject.toml ./
+COPY src ./src
+
+USER root
+RUN pip install --no-cache-dir \
+        'boto3>=1.40,<2' \
+        'fastapi>=0.116,<1' \
+        'pydantic-settings>=2.10,<3' \
+        'uvicorn[standard]>=0.35,<1' \
+    && mkdir -p /var/cache/sensemu /tmp/ultralytics \
+    && chown -R runtime:runtime /var/cache/sensemu /tmp/ultralytics
+
+USER runtime
+ENV PYTHONPATH=/app/src
+EXPOSE 8090
+CMD ["uvicorn", "sensemu_runtime.main:app", "--host", "0.0.0.0", "--port", "8090"]

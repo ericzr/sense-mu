@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.sensemu.dev/capability-manifest/v1.json",
+  "title": "SenseMu Capability Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "capability_id",
+    "display_name",
+    "task",
+    "input",
+    "output",
+    "runtime"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "capability_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{2,63}$"
+    },
+    "display_name": { "type": "string", "minLength": 1, "maxLength": 120 },
+    "task": {
+      "enum": [
+        "object-detection",
+        "classification",
+        "segmentation",
+        "pose",
+        "ocr",
+        "custom"
+      ]
+    },
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["media_types", "max_payload_bytes"],
+      "properties": {
+        "media_types": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "enum": ["image/jpeg", "image/png", "video/mp4"] }
+        },
+        "max_payload_bytes": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contract"],
+      "properties": {
+        "contract": {
+          "enum": ["detections.v1", "classification.v1", "mask.v1", "custom.v1"]
+        }
+      }
+    },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "artifact_uri"],
+      "properties": {
+        "kind": { "enum": ["onnx", "tensorrt", "pytorch", "remote-http"] },
+        "artifact_uri": { "type": "string", "minLength": 1 },
+        "accelerator": { "enum": ["cpu", "cuda", "mps", "remote"] }
+      }
+    },
+    "pricing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "currency", "unit_amount"],
+      "properties": {
+        "mode": { "enum": ["free", "per-call", "per-second", "dedicated"] },
+        "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
+        "unit_amount": { "type": "number", "minimum": 0 }
+      }
+    }
+  }
+}
+

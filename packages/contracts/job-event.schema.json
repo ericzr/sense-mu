@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.sensemu.dev/job-event/v1.json",
+  "title": "SenseMu Job Event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "event_id", "event_type", "occurred_at", "job_id", "workspace_id", "payload"],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "event_id": { "type": "string", "format": "uuid" },
+    "event_type": {
+      "enum": [
+        "job.queued",
+        "job.preparing",
+        "job.started",
+        "job.progressed",
+        "job.cancel_requested",
+        "job.succeeded",
+        "job.failed",
+        "job.cancelled"
+      ]
+    },
+    "occurred_at": { "type": "string", "format": "date-time" },
+    "job_id": { "type": "string", "format": "uuid" },
+    "workspace_id": { "type": "string", "format": "uuid" },
+    "correlation_id": { "type": "string", "format": "uuid" },
+    "payload": { "type": "object" }
+  }
+}
