@@ -6,6 +6,7 @@ SenseMu 是一个面向视觉 AI 的端到端工作平台：在同一个可追�
 
 - 产品功能与边界：[`docs/PRODUCT_FUNCTIONS.md`](docs/PRODUCT_FUNCTIONS.md)
 - 后端接口与鉴权：[`docs/API_GUIDE.md`](docs/API_GUIDE.md)
+- 架构与代码审计：[`docs/CODE_AUDIT_2026-08-16.md`](docs/CODE_AUDIT_2026-08-16.md)
 - 当前状态与优先级：[`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md)
 
 当前仓库是第一版工程骨架，保持五个运行时边界：
@@ -101,7 +102,7 @@ make db-migrate
 
 ## 当前边界
 
-当前已落地二十四个连续的真实竖切：
+当前已经落地一组连续、可追溯的真实竖切：
 
 - `Asset → DatasetVersion`：租户隔离的数据库查询、预签名直传合同、SHA-256 与文件大小校验、去重资产登记、训练/验证/测试划分、YOLO 标注格式与类别校验，以及包含全部训练输入的不可变 manifest。
 - `DatasetVersion → Run → ModelVersion`：只接受已冻结数据版本，通过 Ultralytics 引擎适配器校验配置，使用幂等键避免重复任务，持久化 `Run` 和追加式 `RunEvent`，并写入不可变 `job-spec.json`。Worker 使用带心跳、超时回收和最大尝试次数的执行租约防止重复或永久卡死，由 Docker 运行 Ultralytics，回传真实进度、错误和产物；API 在产物已上传后原子登记不可变 `ModelVersion`。

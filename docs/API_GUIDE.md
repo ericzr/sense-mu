@@ -41,6 +41,8 @@ make web-dev
 
 角色规则：`GET/HEAD/OPTIONS` 至少 viewer，普通写操作至少 member，发布、购买、密钥轮换和供应方资料通常至少 admin。owner 另外负责管理员角色。
 
+浏览器跨域访问只允许配置的 `SENSEMU_WEB_ORIGIN`，预检支持当前接口实际使用的 `GET / POST / PUT / PATCH / DELETE / OPTIONS`。新增方法或请求头时必须同步更新 CORS 配置和回归测试。
+
 ### 2.2 内部接口
 
 内部接口不向浏览器开放：
@@ -249,4 +251,3 @@ Core API 当前遵循 FastAPI 默认格式：
 - 异步回写是否验证当前执行租约或尝试令牌？
 - 是否避免返回对象存储地址、原始输入和内部错误堆栈？
 - OpenAPI、前端类型、测试和本文是否同步更新？
-

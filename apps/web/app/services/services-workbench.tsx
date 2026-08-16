@@ -725,7 +725,7 @@ export function ServicesWorkbench() {
         </div>
       ) : null}
 
-      <nav className="services-view-tabs" aria-label="发布与调用" role="tablist">
+      <div className="services-view-tabs" aria-label="发布与调用" role="tablist">
         <Link className={view === "live" ? "is-active" : ""} href={`/services?project=${project.id}&view=live`} role="tab" aria-selected={view === "live"}>
           <ScanSearch size={14} />实时分析
         </Link>
@@ -738,7 +738,7 @@ export function ServicesWorkbench() {
         <Link className={view === "events" ? "is-active" : ""} href={`/services?project=${project.id}&view=events`} role="tab" aria-selected={view === "events"}>
           <Webhook size={14} />事件
         </Link>
-      </nav>
+      </div>
 
       <section className="services-overview-grid" hidden={view !== "publish"}>
         <article className="panel services-readiness-card" id="release-check">

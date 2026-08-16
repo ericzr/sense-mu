@@ -481,7 +481,7 @@ def create_yolo_import_upload_intent(
     _require_task_class_map(task)
     if not payload.filename.lower().endswith(".zip"):
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="YOLO 标注任务包必须使用 .zip 扩展名",
         )
     key = (
@@ -550,7 +550,7 @@ def import_yolo_task_package(
     expected_prefix = f"workspaces/{workspace_id}/datasets/{dataset_id}/annotation-task-imports/{task.id}/uploads/"
     if not payload.object_key.startswith(expected_prefix):
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="object_key does not belong to this annotation task",
         )
     if not storage.verify_object(payload.object_key, payload.byte_size, payload.checksum_sha256):

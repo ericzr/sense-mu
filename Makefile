@@ -1,4 +1,4 @@
-.PHONY: web-dev web-build web-test web-typecheck api-dev api-test api-lint db-migrate local-db local-api local-worker seed-demo worker-dev gateway-dev runtime-dev training-image-local python-check infra-up infra-down check
+.PHONY: web-dev web-build web-test web-typecheck web-lint api-dev api-test api-lint db-migrate local-db local-api local-worker seed-demo worker-dev gateway-dev runtime-dev training-image-local python-check infra-up infra-down check
 
 LOCAL_DATABASE_URL := sqlite+pysqlite:///$(CURDIR)/.local-data/sensemu.db
 LOCAL_OBJECT_STORAGE_PATH := $(CURDIR)/.local-data/objects
@@ -14,6 +14,9 @@ web-test:
 
 web-typecheck:
 	cd apps/web && npm run typecheck
+
+web-lint:
+	cd apps/web && npm run lint
 
 api-dev:
 	.venv/bin/uvicorn sensemu_api.main:app --reload --port 8000
@@ -78,4 +81,4 @@ infra-up:
 infra-down:
 	docker compose -f infra/compose/compose.yml down
 
-check: web-test web-typecheck api-test api-lint python-check
+check: web-test web-typecheck web-lint api-test api-lint python-check

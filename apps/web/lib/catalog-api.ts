@@ -816,6 +816,39 @@ export type MarketplaceBilling = {
 
 type RequestOptions = RequestInit & { workspaceId?: string };
 
+const API_REQUEST_TIMEOUT_MS = 20_000;
+const ARTIFACT_REQUEST_TIMEOUT_MS = 60_000;
+const INFERENCE_REQUEST_TIMEOUT_MS = 75_000;
+
+function isRequestTimeout(error: unknown): boolean {
+  return error instanceof Error && error.name === "TimeoutError";
+}
+
+async function fetchWithTimeout(
+  input: string | URL,
+  init: RequestInit = {},
+  timeoutMs = API_REQUEST_TIMEOUT_MS,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutError = new DOMException("Request timed out", "TimeoutError");
+  const timeoutId = window.setTimeout(() => controller.abort(timeoutError), timeoutMs);
+  const sourceSignal = init.signal;
+  const forwardAbort = () => controller.abort(sourceSignal?.reason);
+
+  if (sourceSignal?.aborted) {
+    forwardAbort();
+  } else {
+    sourceSignal?.addEventListener("abort", forwardAbort, { once: true });
+  }
+
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } finally {
+    window.clearTimeout(timeoutId);
+    sourceSignal?.removeEventListener("abort", forwardAbort);
+  }
+}
+
 function apiBaseUrl(): string {
   const configured = process.env.NEXT_PUBLIC_SENSEMU_API_URL;
   if (configured) return configured.replace(/\/$/, "");
@@ -833,8 +866,9 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 
   let response: Response;
   try {
-    response = await fetch(`${apiBaseUrl()}${path}`, { ...options, headers });
-  } catch {
+    response = await fetchWithTimeout(`${apiBaseUrl()}${path}`, { ...options, headers });
+  } catch (error) {
+    if (isRequestTimeout(error)) throw new Error("SenseMu API 请求超时，请稍后重试");
     throw new Error("无法连接 SenseMu API，请确认本地服务已启动");
   }
   if (!response.ok) {
@@ -854,8 +888,9 @@ async function requestBlob(path: string, options: RequestOptions = {}): Promise<
 
   let response: Response;
   try {
-    response = await fetch(`${apiBaseUrl()}${path}`, { ...options, headers });
-  } catch {
+    response = await fetchWithTimeout(`${apiBaseUrl()}${path}`, { ...options, headers });
+  } catch (error) {
+    if (isRequestTimeout(error)) throw new Error("SenseMu API 请求超时，请稍后重试");
     throw new Error("无法连接 SenseMu API，请确认本地服务已启动");
   }
   if (!response.ok) {
@@ -992,7 +1027,7 @@ export const catalogApi = {
   ) => {
     let response: Response;
     try {
-      response = await fetch(
+      response = await fetchWithTimeout(
         `${apiBaseUrl()}/api/v1/datasets/${datasetId}/assets/${assetId}/content`,
         {
           headers: { "X-Workspace-ID": workspaceId },
@@ -1001,6 +1036,7 @@ export const catalogApi = {
       );
     } catch (error) {
       if (signal?.aborted) throw error;
+      if (isRequestTimeout(error)) throw new Error("素材预览加载超时");
       throw new Error("素材预览加载失败");
     }
     if (!response.ok) throw new Error(`素材预览加载失败 (${response.status})`);
@@ -1211,11 +1247,13 @@ export const catalogApi = {
   ) => {
     let response: Response;
     try {
-      response = await fetch(
+      response = await fetchWithTimeout(
         `${apiBaseUrl()}/api/v1/datasets/${datasetId}/annotation-tasks/${taskId}/yolo-package`,
         { headers: { "X-Workspace-ID": workspaceId } },
+        ARTIFACT_REQUEST_TIMEOUT_MS,
       );
-    } catch {
+    } catch (error) {
+      if (isRequestTimeout(error)) throw new Error("任务包导出超时，请稍后重试");
       throw new Error("无法连接 SenseMu API，请确认本地服务已启动");
     }
     if (!response.ok) {
@@ -1385,10 +1423,13 @@ export const catalogApi = {
   downloadBatchInferenceOutput: async (workspaceId: string, runId: string) => {
     let response: Response;
     try {
-      response = await fetch(`${apiBaseUrl()}/api/v1/batch-inference-runs/${runId}/output`, {
-        headers: { "X-Workspace-ID": workspaceId },
-      });
-    } catch {
+      response = await fetchWithTimeout(
+        `${apiBaseUrl()}/api/v1/batch-inference-runs/${runId}/output`,
+        { headers: { "X-Workspace-ID": workspaceId } },
+        ARTIFACT_REQUEST_TIMEOUT_MS,
+      );
+    } catch (error) {
+      if (isRequestTimeout(error)) throw new Error("结果下载超时，请稍后重试");
       throw new Error("无法连接 SenseMu API，请确认本地服务已启动");
     }
     if (!response.ok) {
@@ -1546,8 +1587,9 @@ export const catalogApi = {
     }
     let response: Response;
     try {
-      response = await fetch(healthUrl, { cache: "no-store" });
-    } catch {
+      response = await fetchWithTimeout(healthUrl, { cache: "no-store" }, 5_000);
+    } catch (error) {
+      if (isRequestTimeout(error)) throw new Error("推理网关状态检查超时");
       throw new Error("无法连接推理网关");
     }
     const payload = (await response.json().catch(() => null)) as InferenceHealth | null;
@@ -1563,14 +1605,19 @@ export const catalogApi = {
     const prewarmUrl = deployment.endpoint_url.replace(/:predict$/, ":prewarm");
     let response: Response;
     try {
-      response = await fetch(prewarmUrl, {
-        method: "POST",
-        headers: {
-          "X-API-Key": apiKey,
-          "X-Request-ID": `webwarm-${crypto.randomUUID()}`,
+      response = await fetchWithTimeout(
+        prewarmUrl,
+        {
+          method: "POST",
+          headers: {
+            "X-API-Key": apiKey,
+            "X-Request-ID": `webwarm-${crypto.randomUUID()}`,
+          },
         },
-      });
-    } catch {
+        INFERENCE_REQUEST_TIMEOUT_MS,
+      );
+    } catch (error) {
+      if (isRequestTimeout(error)) throw new Error("模型预热超时，请稍后重试");
       throw new Error("无法连接推理网关，请确认网关和运行时已启动");
     }
     if (!response.ok) {
@@ -1594,19 +1641,24 @@ export const catalogApi = {
   ): Promise<InferenceResponse> => {
     let response: Response;
     try {
-      response = await fetch(deployment.endpoint_url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-API-Key": apiKey,
-          "X-Request-ID": `webtest-${crypto.randomUUID()}`,
+      response = await fetchWithTimeout(
+        deployment.endpoint_url,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-API-Key": apiKey,
+            "X-Request-ID": `webtest-${crypto.randomUUID()}`,
+          },
+          body: JSON.stringify({
+            inputs: [imageDataUrl],
+            parameters: { confidence },
+          }),
         },
-        body: JSON.stringify({
-          inputs: [imageDataUrl],
-          parameters: { confidence },
-        }),
-      });
-    } catch {
+        INFERENCE_REQUEST_TIMEOUT_MS,
+      );
+    } catch (error) {
+      if (isRequestTimeout(error)) throw new Error("推理请求超时，请稍后重试");
       throw new Error("无法连接推理网关，请确认网关和运行时已启动");
     }
     if (!response.ok) {

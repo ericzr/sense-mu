@@ -52,7 +52,7 @@ PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 
 
 def unprocessable(message: str) -> HTTPException:
-    return HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message)
+    return HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message)
 
 
 def require_dataset_version(

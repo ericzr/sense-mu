@@ -35,6 +35,12 @@ const eslintConfig = defineConfig([
         version: "detect",
       },
     },
+    rules: {
+      // Existing client workbenches synchronize API-backed selections and reset
+      // dependent state in effects. Keep exhaustive dependency checks enabled,
+      // but migrate these flows incrementally before enforcing this compiler rule.
+      "react-hooks/set-state-in-effect": "off",
+    },
   },
 ]);
 

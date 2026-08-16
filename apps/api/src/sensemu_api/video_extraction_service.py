@@ -351,7 +351,7 @@ def complete_job(
         key = _key_for_uri(frame.object_uri)
         if not key.startswith(prefix):
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail="抽帧产物地址不属于当前任务",
             )
         if frame.checksum_sha256 in seen_checksums:

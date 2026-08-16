@@ -253,7 +253,7 @@ def complete_batch_inference_run(
         key = uri.removeprefix("local://") if uri.startswith("local://") else uri.split("/", 3)[-1]
         if not key.startswith(prefix):
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail="批量推理产物地址不属于当前任务",
             )
     deployment_id = UUID(str(run.recipe["deployment_id"]))

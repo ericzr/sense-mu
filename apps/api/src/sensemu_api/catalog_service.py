@@ -355,7 +355,7 @@ def register_asset(
     expected_prefix = f"workspaces/{workspace_id}/datasets/{dataset_id}/uploads/"
     if not payload.object_key.startswith(expected_prefix):
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="object_key does not belong to this workspace and dataset",
         )
     if not storage.verify_object(
@@ -497,7 +497,7 @@ def create_annotation_upload_intent(
     require_dataset_item(session, workspace_id, dataset_id, asset_id)
     if not payload.filename.lower().endswith(".txt"):
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="YOLO 标注文件必须使用 .txt 扩展名",
         )
     key = (
@@ -670,7 +670,7 @@ def register_annotation(
     )
     if not payload.object_key.startswith(expected_prefix):
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="object_key does not belong to this dataset item",
         )
     if not storage.verify_object(
