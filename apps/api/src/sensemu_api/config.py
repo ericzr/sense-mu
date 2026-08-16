@@ -1,6 +1,15 @@
 from functools import lru_cache
+from typing import Literal
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+Environment = Literal["development", "test", "staging", "production"]
+
+
+def _unsafe_production_secret(value: str) -> bool:
+    normalized = value.strip().lower()
+    return len(value.strip()) < 32 or "local-only" in normalized
 
 
 class Settings(BaseSettings):
@@ -10,7 +19,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    environment: str = "development"
+    environment: Environment = "development"
     api_host: str = "0.0.0.0"
     api_port: int = 8000
     database_url: str = "postgresql+psycopg://sensemu:sensemu@localhost:5432/sensemu"
@@ -29,7 +38,7 @@ class Settings(BaseSettings):
     payment_adapter_token: str = "sensemu-payment-adapter-local-only"
     platform_review_token: str = "sensemu-platform-review-local-only"
     webhook_signing_secret: str = "sensemu-webhook-signing-local-only"
-    auth_mode: str = "development"
+    auth_mode: Literal["development", "oidc"] = "development"
     oidc_issuer_url: str = ""
     oidc_audience: str = ""
     oidc_jwks_url: str = ""
@@ -45,6 +54,46 @@ class Settings(BaseSettings):
     inference_reservation_timeout_seconds: int = 180
     operational_training_queue_alert_seconds: int = 600
     operational_webhook_delivery_alert_seconds: int = 300
+
+    @model_validator(mode="after")
+    def validate_deployment_configuration(self) -> "Settings":
+        if self.environment in {"development", "test"}:
+            return self
+
+        if self.auth_mode != "oidc":
+            raise ValueError("staging/production 必须使用 OIDC 身份验证")
+        missing_oidc = [
+            name
+            for name, value in {
+                "oidc_issuer_url": self.oidc_issuer_url,
+                "oidc_audience": self.oidc_audience,
+                "oidc_jwks_url": self.oidc_jwks_url,
+            }.items()
+            if not value.strip()
+        ]
+        if missing_oidc:
+            raise ValueError(f"OIDC 配置不完整: {', '.join(missing_oidc)}")
+
+        unsafe_secrets = [
+            name
+            for name, value in {
+                "object_storage_secret_key": self.object_storage_secret_key,
+                "worker_token": self.worker_token,
+                "gateway_token": self.gateway_token,
+                "payment_adapter_token": self.payment_adapter_token,
+                "platform_review_token": self.platform_review_token,
+                "webhook_signing_secret": self.webhook_signing_secret,
+            }.items()
+            if _unsafe_production_secret(value)
+        ]
+        if unsafe_secrets:
+            raise ValueError(
+                "staging/production 必须显式配置安全凭据: "
+                + ", ".join(unsafe_secrets)
+            )
+        if self.object_storage_endpoint.strip().lower() == "local://":
+            raise ValueError("staging/production 禁止使用本地对象存储")
+        return self
 
 
 @lru_cache

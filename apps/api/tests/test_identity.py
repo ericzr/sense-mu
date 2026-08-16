@@ -4,8 +4,10 @@ from types import SimpleNamespace
 from uuid import UUID, uuid4
 
 import jwt
+import pytest
 from cryptography.hazmat.primitives.asymmetric import rsa
 from fastapi.testclient import TestClient
+from pydantic import ValidationError
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
@@ -212,9 +214,7 @@ def test_production_rejects_development_identity_mode(monkeypatch) -> None:
     monkeypatch.setenv("SENSEMU_AUTH_MODE", "development")
     get_settings.cache_clear()
     try:
-        client, _ = _client()
-        response = client.get("/api/v1/identity/me")
-        assert response.status_code == 503
-        assert response.json()["detail"] == "非开发环境禁止使用本地身份模式"
+        with pytest.raises(ValidationError, match="必须使用 OIDC"):
+            _client()
     finally:
         get_settings.cache_clear()

@@ -1,6 +1,9 @@
 import os
 
 from celery import Celery
+from celery.signals import worker_init
+
+from sensemu_worker.config import WorkerSettings
 
 broker_url = os.getenv("SENSEMU_CELERY_BROKER_URL", "redis://localhost:6379/1")
 result_backend = os.getenv("SENSEMU_CELERY_RESULT_BACKEND", "redis://localhost:6379/2")
@@ -46,6 +49,11 @@ app.conf.update(
         },
     },
 )
+
+
+@worker_init.connect
+def validate_worker_configuration(**_: object) -> None:
+    WorkerSettings.from_environment()
 
 
 @app.task(name="sensemu.system.ping")

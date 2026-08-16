@@ -57,6 +57,16 @@ make web-dev
 
 所有生产凭据必须由部署平台注入并轮换，不能使用 `.env.example` 中的本地默认值。
 
+四个后端进程会在启动或首次创建配置时执行失败关闭校验：
+
+- Core API 使用 `SENSEMU_ENVIRONMENT`；Worker 同样继承该变量。
+- 推理网关使用 `SENSEMU_GATEWAY_ENVIRONMENT`，推理运行时使用 `SENSEMU_RUNTIME_ENVIRONMENT`。
+- `staging/production` 禁止 `*-local-only`、少于 32 字符的内部凭据和 `local://` 对象存储。
+- Core API 在 `staging/production` 必须使用 `SENSEMU_AUTH_MODE=oidc`，并完整配置 issuer、audience 和 JWKS URL。
+- Worker 在 `staging/production` 禁止 `SENSEMU_DOCKER_ALLOW_CROSS_ARCHITECTURE=true`。
+
+部署清单必须显式设置对应环境变量；如果遗漏环境标识，进程会按开发模式运行，因此发布流水线还应把环境标识设为必填项。
+
 ### 2.3 错误格式
 
 Core API 当前遵循 FastAPI 默认格式：

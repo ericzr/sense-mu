@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class WorkerSettings:
+    environment: str
     api_url: str
     worker_token: str
     object_storage_endpoint: str
@@ -20,6 +21,37 @@ class WorkerSettings:
     docker_execution_timeout_seconds: int
     docker_allow_cross_architecture: bool
 
+    def __post_init__(self) -> None:
+        normalized_environment = self.environment.strip().lower()
+        object.__setattr__(self, "environment", normalized_environment)
+        if normalized_environment not in {
+            "development",
+            "test",
+            "staging",
+            "production",
+        }:
+            raise ValueError("SENSEMU_ENVIRONMENT 必须是 development/test/staging/production")
+        if normalized_environment in {"development", "test"}:
+            return
+        unsafe_secrets = [
+            name
+            for name, value in {
+                "worker_token": self.worker_token,
+                "runtime_token": self.runtime_token,
+                "object_storage_secret_key": self.object_storage_secret_key,
+            }.items()
+            if len(value.strip()) < 32 or "local-only" in value.strip().lower()
+        ]
+        if unsafe_secrets:
+            raise ValueError(
+                "staging/production 必须显式配置安全凭据: "
+                + ", ".join(unsafe_secrets)
+            )
+        if self.object_storage_endpoint.strip().lower() == "local://":
+            raise ValueError("staging/production 禁止使用本地对象存储")
+        if self.docker_allow_cross_architecture:
+            raise ValueError("staging/production 禁止跨架构转译训练")
+
     @staticmethod
     def _env_bool(name: str, default: bool = False) -> bool:
         value = os.getenv(name)
@@ -30,6 +62,7 @@ class WorkerSettings:
     @classmethod
     def from_environment(cls) -> "WorkerSettings":
         return cls(
+            environment=os.getenv("SENSEMU_ENVIRONMENT", "development"),
             api_url=os.getenv("SENSEMU_API_URL", "http://localhost:8000").rstrip("/"),
             worker_token=os.getenv(
                 "SENSEMU_WORKER_TOKEN",

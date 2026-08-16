@@ -1,6 +1,13 @@
 from functools import lru_cache
+from typing import Literal
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+def _unsafe_production_secret(value: str) -> bool:
+    normalized = value.strip().lower()
+    return len(value.strip()) < 32 or "local-only" in normalized
 
 
 class RuntimeSettings(BaseSettings):
@@ -10,6 +17,7 @@ class RuntimeSettings(BaseSettings):
         extra="ignore",
     )
 
+    environment: Literal["development", "test", "staging", "production"] = "development"
     host: str = "0.0.0.0"
     port: int = 8090
     token: str = "sensemu-runtime-local-only"
@@ -26,6 +34,27 @@ class RuntimeSettings(BaseSettings):
     max_concurrent_requests: int = 1
     queue_timeout_seconds: float = 2.0
     device: str = "cpu"
+
+    @model_validator(mode="after")
+    def validate_deployment_configuration(self) -> "RuntimeSettings":
+        if self.environment in {"development", "test"}:
+            return self
+        unsafe_secrets = [
+            name
+            for name, value in {
+                "token": self.token,
+                "object_storage_secret_key": self.object_storage_secret_key,
+            }.items()
+            if _unsafe_production_secret(value)
+        ]
+        if unsafe_secrets:
+            raise ValueError(
+                "staging/production 必须显式配置安全凭据: "
+                + ", ".join(unsafe_secrets)
+            )
+        if self.object_storage_endpoint.strip().lower() == "local://":
+            raise ValueError("staging/production 禁止使用本地对象存储")
+        return self
 
 
 @lru_cache

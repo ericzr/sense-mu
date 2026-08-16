@@ -63,6 +63,7 @@ services:
     build:
       context: ../../apps/api
     environment:
+      SENSEMU_ENVIRONMENT: development
       SENSEMU_DATABASE_URL: postgresql+psycopg://sensemu:sensemu@postgres:5432/sensemu
       SENSEMU_REDIS_URL: redis://redis:6379/0
       SENSEMU_CELERY_BROKER_URL: redis://redis:6379/1
@@ -73,6 +74,8 @@ services:
       SENSEMU_WORKER_TOKEN: sensemu-worker-local-only
       SENSEMU_GATEWAY_TOKEN: sensemu-gateway-local-only
       SENSEMU_PAYMENT_ADAPTER_TOKEN: sensemu-payment-adapter-local-only
+      SENSEMU_PLATFORM_REVIEW_TOKEN: sensemu-platform-review-local-only
+      SENSEMU_WEBHOOK_SIGNING_SECRET: sensemu-webhook-signing-local-only
       SENSEMU_AUTH_MODE: development
       SENSEMU_INFERENCE_GATEWAY_PUBLIC_URL: http://localhost:8080
       SENSEMU_TRAINING_EXECUTION_LEASE_TIMEOUT_SECONDS: 120
@@ -99,6 +102,7 @@ services:
     build:
       context: ../../apps/worker
     environment:
+      SENSEMU_ENVIRONMENT: development
       SENSEMU_API_URL: http://api:8000
       SENSEMU_CELERY_BROKER_URL: redis://redis:6379/1
       SENSEMU_CELERY_RESULT_BACKEND: redis://redis:6379/2
@@ -126,6 +130,7 @@ services:
       context: ../../apps/worker
     command: ["celery", "--app", "sensemu_worker.main:app", "beat", "--loglevel", "INFO"]
     environment:
+      SENSEMU_ENVIRONMENT: development
       SENSEMU_API_URL: http://api:8000
       SENSEMU_CELERY_BROKER_URL: redis://redis:6379/1
       SENSEMU_CELERY_RESULT_BACKEND: redis://redis:6379/2
@@ -141,6 +146,7 @@ services:
     build:
       context: ../../apps/inference-gateway
     environment:
+      SENSEMU_GATEWAY_ENVIRONMENT: development
       SENSEMU_GATEWAY_CONTROL_PLANE_URL: http://api:8000
       SENSEMU_GATEWAY_CONTROL_PLANE_TOKEN: sensemu-gateway-local-only
       SENSEMU_GATEWAY_WEB_ORIGIN: http://localhost:3000
@@ -168,6 +174,7 @@ services:
     build:
       context: ../../apps/inference-runtime
     environment:
+      SENSEMU_RUNTIME_ENVIRONMENT: development
       SENSEMU_RUNTIME_TOKEN: sensemu-runtime-local-only
       SENSEMU_RUNTIME_OBJECT_STORAGE_ENDPOINT: http://object-storage:9000
       SENSEMU_RUNTIME_OBJECT_STORAGE_ACCESS_KEY: sensemu
