@@ -305,6 +305,69 @@ def test_sidebar_project_archive_honors_active_work_and_published_services() -> 
     assert project["id"] not in {item["id"] for item in listed.json()}
 
 
+def test_sidebar_project_archive_honors_annotation_and_video_extraction_work() -> None:
+    workspace, project, headers = create_sidebar_lifecycle_project("archive-production-work")
+    dataset_response = client.post(
+        f"/api/v1/projects/{project['id']}/datasets",
+        headers=headers,
+        json={"name": "archive_production_source"},
+    )
+    assert dataset_response.status_code == 201
+    dataset = dataset_response.json()
+
+    with TestingSession() as session:
+        owner = session.query(models.UserAccount).first()
+        assert owner is not None
+        session.add(models.AnnotationTask(
+            dataset_id=UUID(dataset["id"]),
+            name="archive_annotation",
+            method="manual",
+            asset_scope="all",
+            status="annotating",
+            assigned_to_user_id=owner.id,
+            class_map={},
+        ))
+        session.commit()
+
+    blocked_annotation = client.post(
+        f"/api/v1/projects/{project['id']}:archive",
+        headers=headers,
+    )
+    assert blocked_annotation.status_code == 409
+    assert "标注任务" in blocked_annotation.json()["detail"]
+
+    with TestingSession() as session:
+        task = session.query(models.AnnotationTask).filter_by(
+            dataset_id=UUID(dataset["id"]),
+        ).one()
+        task.status = "done"
+        asset = models.Asset(
+            workspace_id=UUID(workspace["id"]),
+            uri="s3://sensemu-test/archive/source.mp4",
+            media_type="video/mp4",
+            checksum_sha256=uuid4().hex + uuid4().hex,
+            byte_size=512,
+        )
+        session.add(asset)
+        session.flush()
+        session.add(models.VideoExtractionJob(
+            dataset_id=UUID(dataset["id"]),
+            source_asset_id=asset.id,
+            idempotency_key=f"archive-extraction-{uuid4().hex}",
+            frame_interval_ms=1000,
+            deduplicate=True,
+            status="queued",
+        ))
+        session.commit()
+
+    blocked_extraction = client.post(
+        f"/api/v1/projects/{project['id']}:archive",
+        headers=headers,
+    )
+    assert blocked_extraction.status_code == 409
+    assert "视频抽帧任务" in blocked_extraction.json()["detail"]
+
+
 def test_sidebar_dataset_delete_only_allows_unlinked_drafts() -> None:
     workspace, project, headers = create_sidebar_lifecycle_project("dataset-delete")
 

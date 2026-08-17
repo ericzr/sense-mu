@@ -170,6 +170,35 @@ def archive_project(session: Session, workspace_id: UUID, project_id: UUID) -> P
     if active_run is not None:
         raise conflict("项目仍有运行中的训练或处理任务，完成或取消后才能归档")
 
+    pending_annotation = session.scalar(
+        select(AnnotationTask.id)
+        .join(Dataset, Dataset.id == AnnotationTask.dataset_id)
+        .where(
+            Dataset.project_id == project_id,
+            AnnotationTask.status != "done",
+        )
+        .limit(1)
+    )
+    if pending_annotation is not None:
+        raise conflict("项目仍有未完成的标注任务，完成检查后才能归档")
+
+    active_video_extraction = session.scalar(
+        select(VideoExtractionJob.id)
+        .join(Dataset, Dataset.id == VideoExtractionJob.dataset_id)
+        .where(
+            Dataset.project_id == project_id,
+            VideoExtractionJob.status.in_({
+                "queued",
+                "preparing",
+                "running",
+                "cancel_requested",
+            }),
+        )
+        .limit(1)
+    )
+    if active_video_extraction is not None:
+        raise conflict("项目仍有进行中的视频抽帧任务，完成或取消后才能归档")
+
     published_deployment = session.scalar(
         select(Deployment.id)
         .join(ModelVersion, Deployment.model_version_id == ModelVersion.id)

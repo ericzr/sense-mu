@@ -136,7 +136,7 @@ Core API 当前遵循 FastAPI 默认格式：
 | POST / GET | `/api/v1/projects` | 创建或列出项目 |
 | POST | `/api/v1/projects/{project_id}:pause` | 暂停新任务创建 |
 | POST | `/api/v1/projects/{project_id}:resume` | 恢复项目 |
-| POST | `/api/v1/projects/{project_id}:archive` | 归档项目 |
+| POST | `/api/v1/projects/{project_id}:archive` | 归档项目；存在运行中的训练/处理、未完成标注任务、进行中的视频抽帧或已发布在线服务时返回 `409` |
 | POST / GET | `/api/v1/projects/{project_id}/datasets` | 创建或列出数据集 |
 | PATCH | `/api/v1/datasets/{dataset_id}/classes` | 保存类别表 |
 | DELETE | `/api/v1/datasets/{dataset_id}` | 删除没有受保护依赖的数据集 |

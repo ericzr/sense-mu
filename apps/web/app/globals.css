@@ -455,6 +455,38 @@ a {
   font-size: 8px;
 }
 
+.workbench-resource-alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 6px 6px;
+  padding: 6px 8px;
+  border: 1px solid rgb(184 117 50 / 0.18);
+  border-radius: 8px;
+  color: #9a6b3e;
+  background: rgb(243 205 160 / 0.2);
+  font-size: 9px;
+}
+
+.workbench-resource-alert button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border-radius: 6px;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+}
+
+.workbench-resource-alert button:hover,
+.workbench-resource-alert button:focus-visible {
+  background: rgb(184 117 50 / 0.12);
+}
+
 .navigation-label {
   overflow: hidden;
   padding: 0 10px 6px;
@@ -707,6 +739,7 @@ html[data-sidebar-collapsed="true"] .app-shell .brand-logo-mark {
 .app-shell.is-sidebar-collapsed .navigation-item > span,
 .app-shell.is-sidebar-collapsed .workbench-home-link > span,
 .app-shell.is-sidebar-collapsed .workbench-navigation,
+.app-shell.is-sidebar-collapsed .workbench-resource-alert,
 .app-shell.is-sidebar-collapsed .navigation-badge,
 .app-shell.is-sidebar-collapsed .usage-summary,
 .app-shell.is-sidebar-collapsed .profile-copy,
@@ -715,6 +748,7 @@ html[data-sidebar-collapsed="true"] .app-shell .navigation-label,
 html[data-sidebar-collapsed="true"] .app-shell .navigation-item > span,
 html[data-sidebar-collapsed="true"] .app-shell .workbench-home-link > span,
 html[data-sidebar-collapsed="true"] .app-shell .workbench-navigation,
+html[data-sidebar-collapsed="true"] .app-shell .workbench-resource-alert,
 html[data-sidebar-collapsed="true"] .app-shell .navigation-badge,
 html[data-sidebar-collapsed="true"] .app-shell .usage-summary,
 html[data-sidebar-collapsed="true"] .app-shell .profile-copy,
@@ -7899,6 +7933,7 @@ html[data-sidebar-collapsed="true"] .app-shell .profile-row {
   .app-shell.is-sidebar-collapsed .navigation-item > span,
   .app-shell.is-sidebar-collapsed .workbench-home-link > span,
   .app-shell.is-sidebar-collapsed .workbench-navigation,
+  .app-shell.is-sidebar-collapsed .workbench-resource-alert,
   .app-shell.is-sidebar-collapsed .navigation-badge,
   .app-shell.is-sidebar-collapsed .usage-summary,
   .app-shell.is-sidebar-collapsed .profile-copy,
@@ -7907,6 +7942,7 @@ html[data-sidebar-collapsed="true"] .app-shell .profile-row {
   html[data-sidebar-collapsed="true"] .app-shell .navigation-item > span,
   html[data-sidebar-collapsed="true"] .app-shell .workbench-home-link > span,
   html[data-sidebar-collapsed="true"] .app-shell .workbench-navigation,
+  html[data-sidebar-collapsed="true"] .app-shell .workbench-resource-alert,
   html[data-sidebar-collapsed="true"] .app-shell .navigation-badge,
   html[data-sidebar-collapsed="true"] .app-shell .usage-summary,
   html[data-sidebar-collapsed="true"] .app-shell .profile-copy,
@@ -7916,6 +7952,11 @@ html[data-sidebar-collapsed="true"] .app-shell .profile-row {
 
   .app-shell.is-sidebar-collapsed .workbench-navigation,
   html[data-sidebar-collapsed="true"] .app-shell .workbench-navigation {
+    display: flex;
+  }
+
+  .app-shell.is-sidebar-collapsed .workbench-resource-alert,
+  html[data-sidebar-collapsed="true"] .app-shell .workbench-resource-alert {
     display: flex;
   }
 
