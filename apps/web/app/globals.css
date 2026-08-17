@@ -5926,6 +5926,7 @@ html[data-sidebar-collapsed="true"] .app-shell .profile-row {
   width: min(100%, 1500px);
   margin: 0 auto;
   padding: 28px clamp(24px, 3.2vw, 50px) 64px;
+  container-type: inline-size;
 }
 
 .services-header {
@@ -6915,6 +6916,55 @@ html[data-sidebar-collapsed="true"] .app-shell .profile-row {
   margin: 4px 0 0;
   color: #858780;
   font-size: 9px;
+}
+
+/* The content column can become narrow while the desktop sidebar remains visible. */
+@container (max-width: 680px) {
+  .inference-tester {
+    padding: 16px;
+  }
+
+  .inference-tester-heading {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .inference-health {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .live-analysis-options {
+    gap: 10px;
+    margin-top: 14px;
+    padding: 10px;
+  }
+
+  .live-analysis-option-group {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
+
+  .live-analysis-option-group > div,
+  .inference-test-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .inference-test-form {
+    margin-top: 16px;
+  }
+
+  .inference-test-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container (max-width: 450px) {
+  .inference-test-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .inference-health {
