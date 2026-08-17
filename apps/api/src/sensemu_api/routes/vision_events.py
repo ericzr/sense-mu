@@ -75,6 +75,8 @@ def emit_vision_event(
     _gateway_auth: GatewayAuth,
 ) -> VisionEventResponse:
     event = vision_event_service.emit(session, workflow_id, payload)
+    # Persist the delivery before the worker can claim it from the queue.
+    session.commit()
     if not event.reused and event.delivery_status == "pending":
         background_tasks.add_task(dispatcher.submit, event.delivery_id)
     return event
@@ -116,6 +118,7 @@ def recover_webhook_deliveries(
     _worker_auth: WorkerAuth,
 ) -> WebhookDeliveryRecoveryResponse:
     recovered = vision_event_service.recover_deliveries(session)
+    session.commit()
     for delivery_id in recovered.queued_delivery_ids:
         background_tasks.add_task(dispatcher.submit, delivery_id)
     return recovered

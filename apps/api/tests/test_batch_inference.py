@@ -1,3 +1,4 @@
+import asyncio
 from collections.abc import Iterator
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
@@ -7,9 +8,11 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from sensemu_api.batch_inference_schemas import BatchInferenceRunCreate, BatchInferenceRunResponse
 from sensemu_api.db import Base, models
 from sensemu_api.db.session import get_session
 from sensemu_api.main import create_app
+from sensemu_api.routes import batch_inference as batch_inference_routes
 from sensemu_api.storage import get_storage
 from sensemu_api.training_dispatch import get_training_dispatcher
 
@@ -267,3 +270,70 @@ def test_batch_inference_is_frozen_traceable_and_downloadable() -> None:
     assert downloaded.status_code == 200
     assert downloaded.headers["content-type"].startswith("application/x-ndjson")
     assert downloaded.content == storage.byte_objects[output_key]
+
+
+def test_batch_inference_commits_before_background_dispatch(monkeypatch) -> None:
+    events: list[str] = []
+    project_id = uuid4()
+    run_id = uuid4()
+    now = datetime.now(UTC)
+    run = BatchInferenceRunResponse(
+        id=run_id,
+        project_id=project_id,
+        dataset_version_id=uuid4(),
+        run_type="inference.batch",
+        status="queued",
+        engine="ultralytics",
+        executor="runtime",
+        recipe={},
+        progress=0,
+        artifact_prefix=None,
+        spec_uri=None,
+        error_code=None,
+        error_message=None,
+        execution_attempt=0,
+        claimed_at=None,
+        heartbeat_at=None,
+        started_at=None,
+        finished_at=None,
+        created_at=now,
+        updated_at=now,
+        result=None,
+    )
+
+    def fake_create(*_args, **_kwargs):
+        events.append("create")
+        return run, False
+
+    monkeypatch.setattr(
+        batch_inference_routes.batch_inference_service,
+        "create_batch_inference_run",
+        fake_create,
+    )
+
+    class SessionStub:
+        def commit(self) -> None:
+            events.append("commit")
+
+    class DispatcherStub:
+        def submit_batch_inference(self, _workspace_id: UUID, _run_id: UUID) -> None:
+            events.append("dispatch")
+
+    background_tasks = batch_inference_routes.BackgroundTasks()
+    response = batch_inference_routes.create_batch_inference_run(
+        project_id,
+        BatchInferenceRunCreate(
+            deployment_id=uuid4(),
+            dataset_version_id=uuid4(),
+        ),
+        "batch-commit-order",
+        uuid4(),
+        SessionStub(),
+        object(),
+        background_tasks,
+        DispatcherStub(),
+    )
+
+    assert response.status == "queued"
+    asyncio.run(background_tasks())
+    assert events == ["create", "commit", "dispatch"]

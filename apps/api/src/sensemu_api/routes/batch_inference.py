@@ -48,6 +48,10 @@ def create_batch_inference_run(
         idempotency_key,
         payload,
     )
+    # The worker is dispatched as a background task. Commit the immutable run
+    # and job spec before the task can claim it, matching training and
+    # acceptance-run creation semantics.
+    session.commit()
     if run.status == "queued":
         background_tasks.add_task(dispatcher.submit_batch_inference, workspace_id, run.id)
     return run.model_copy(update={"reused": reused})

@@ -268,6 +268,7 @@ def recover_stale_worker_executions(
         lease_timeout_seconds=settings.training_execution_lease_timeout_seconds,
         max_attempts=settings.training_execution_max_attempts,
     )
+    session.commit()
     for item in recovered:
         if item["action"] == "requeued":
             background_tasks.add_task(

@@ -407,6 +407,9 @@ def create_video_extraction_job(
         idempotency_key,
         payload,
     )
+    # The extractor can claim the job as soon as the background task starts;
+    # make the job row and immutable spec durable first.
+    session.commit()
     if job.status == "queued":
         background_tasks.add_task(dispatcher.submit, workspace_id, job.id)
     return job
@@ -519,6 +522,7 @@ def recover_stale_video_extraction_executions(
         lease_timeout_seconds=settings.video_extraction_execution_lease_timeout_seconds,
         max_attempts=settings.video_extraction_execution_max_attempts,
     )
+    session.commit()
     for item in recovered:
         if item["action"] == "requeued":
             background_tasks.add_task(dispatcher.submit, item["workspace_id"], item["job_id"])
