@@ -439,6 +439,7 @@ export function AnnotationEditor() {
           <button className="secondary-button" type="button" disabled={busy} onClick={() => void saveAnnotations()}><Save size={14} />保存</button>
           {task.status === "annotating" ? <button className="primary-button" type="button" disabled={busy} onClick={() => void submitForReview()}><Send size={14} />提交检查</button> : task.status === "review" ? <button className="primary-button" type="button" disabled={busy} onClick={() => void completeReview()}><Check size={14} />完成检查</button> : <button className="secondary-button" type="button" disabled><Check size={14} />已完成</button>}
         </div>
+        <p className="annotation-editor-notice" role="status" aria-live="polite">{notice}</p>
       </header>
       <div className="annotation-editor-workspace">
         <aside className="annotation-tool-rail" aria-label="标注工具"><EditorTool active={activeTool === "select"} label="选择" onClick={() => setActiveTool("select")}><MousePointer2 size={18} /></EditorTool><EditorTool active={activeTool === "box"} label="矩形框" onClick={() => setActiveTool("box")}><Square size={18} /></EditorTool><EditorTool active={activeTool === "polygon"} label="多边形" onClick={() => setNotice("多边形工具将在专业标注工具接入后开放")}><Pentagon size={18} /></EditorTool><span className="tool-rail-divider" /><EditorTool active={false} label="智能预标注" onClick={() => setNotice("智能预标注尚未接入真实模型")}><Sparkles size={18} /></EditorTool></aside>

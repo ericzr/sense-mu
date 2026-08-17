@@ -14337,6 +14337,14 @@ html[data-sidebar-collapsed="true"] .app-shell .profile-row {
   margin-left: 5px;
 }
 
+.annotation-editor-notice {
+  display: none;
+  margin: 0;
+  color: #747670;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 .editor-primary-actions {
   gap: 7px;
 }
@@ -14767,6 +14775,11 @@ html[data-sidebar-collapsed="true"] .app-shell .profile-row {
 
   .editor-history-actions {
     display: none;
+  }
+
+  .annotation-editor-notice {
+    display: block;
+    grid-column: 1 / -1;
   }
 
   .annotation-task-row {
