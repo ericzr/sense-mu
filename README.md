@@ -100,6 +100,8 @@ make db-migrate
 
 完整本地检查：`make check`。数据库主链模型与 Alembic 迁移位于 `apps/api/src/sensemu_api/db` 和 `apps/api/migrations`。
 
+Core API 的可提交 OpenAPI 快照位于 `apps/api/openapi.json`。后端路由或 Pydantic schema 变更后运行 `make api-openapi`，再在 `apps/web` 运行 `npm run api:types` 更新生成的 TypeScript 类型；`make api-openapi-check` 与 CI 会拒绝未同步的接口契约。
+
 ## 当前边界
 
 当前已经落地一组连续、可追溯的真实竖切：

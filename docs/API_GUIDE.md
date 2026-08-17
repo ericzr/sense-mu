@@ -9,7 +9,8 @@
 - Swagger UI：`http://localhost:8000/docs`
 - ReDoc：`http://localhost:8000/redoc`
 - OpenAPI JSON：`http://localhost:8000/openapi.json`
-- 前端类型与调用封装：`apps/web/lib/catalog-api.ts`
+- 仓库快照：`apps/api/openapi.json`，由 `make api-openapi` 从 FastAPI 应用生成，`make api-openapi-check` 用于 CI 漂移检查
+- 前端生成类型：`apps/web/lib/generated/core-api.ts`；请求封装仍位于 `apps/web/lib/catalog-api.ts`
 
 ## 1. 本地服务地址
 

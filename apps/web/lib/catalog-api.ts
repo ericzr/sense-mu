@@ -1,11 +1,10 @@
 import { getPreviewMockResult, isHostedPreview } from "./preview-mock-api";
 import { clearAccessToken, getAccessToken } from "./auth-session";
+import type { components as CoreApiComponents } from "./generated/core-api";
 
-export type Workspace = {
-  id: string;
-  slug: string;
-  name: string;
-  created_at: string;
+type CoreApiSchema = CoreApiComponents["schemas"];
+
+export type Workspace = Omit<CoreApiSchema["WorkspaceResponse"], "role"> & {
   role: "owner" | "admin" | "member" | "viewer";
 };
 
@@ -225,16 +224,7 @@ export type Project = {
   created_at: string;
 };
 
-export type Dataset = {
-  id: string;
-  project_id: string;
-  name: string;
-  description: string | null;
-  class_map: Record<string, string>;
-  created_at: string;
-  asset_count: number;
-  version_count: number;
-};
+export type Dataset = CoreApiSchema["DatasetResponse"];
 
 export type Asset = {
   id: string;
@@ -250,21 +240,7 @@ export type Asset = {
   created_at: string;
 };
 
-export type AnnotationTask = {
-  id: string;
-  dataset_id: string;
-  name: string;
-  method: "manual" | "smart";
-  asset_scope: "unlabeled" | "all" | "video_extraction";
-  status: "annotating" | "review" | "done";
-  assigned_to_user_id: string;
-  source_video_extraction_job_id: string | null;
-  class_map: Record<string, string>;
-  asset_count: number;
-  completed_count: number;
-  created_at: string;
-  updated_at: string;
-};
+export type AnnotationTask = CoreApiSchema["AnnotationTaskResponse"];
 
 export type VideoExtractionJob = {
   id: string;

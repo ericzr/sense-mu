@@ -38,9 +38,13 @@ jobs:
           python -m venv .venv
           .venv/bin/python -m pip install --upgrade pip
           .venv/bin/python -m pip install -e apps/api
+      - name: Verify Core API OpenAPI contract
+        working-directory: .
+        run: make api-openapi-check
       - run: npx playwright install --with-deps chromium
       - run: npm run typecheck
       - run: npm run lint
+      - run: npm run api:types:check
       - run: npm test
       - run: npm run test:e2e
       - run: npm run test:e2e:local

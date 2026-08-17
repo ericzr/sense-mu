@@ -1,4 +1,4 @@
-.PHONY: web-dev web-build web-test web-typecheck web-lint api-dev api-test api-lint db-migrate local-db local-api local-worker seed-demo worker-dev gateway-dev runtime-dev training-image-local python-check infra-up infra-down check
+.PHONY: web-dev web-build web-test web-typecheck web-lint api-dev api-test api-lint api-openapi api-openapi-check db-migrate local-db local-api local-worker seed-demo worker-dev gateway-dev runtime-dev training-image-local python-check infra-up infra-down check
 
 LOCAL_DATABASE_URL := sqlite+pysqlite:///$(CURDIR)/.local-data/sensemu.db
 LOCAL_OBJECT_STORAGE_PATH := $(CURDIR)/.local-data/objects
@@ -25,7 +25,13 @@ api-test:
 	PYTHONPATH='apps/inference-runtime/src' .venv/bin/python -m pytest apps/api/tests apps/worker/tests apps/inference-gateway/tests apps/inference-runtime/tests -q
 
 api-lint:
-	.venv/bin/ruff check apps/api/src apps/api/tests apps/api/migrations apps/worker/src apps/worker/tests apps/inference-gateway/src apps/inference-gateway/tests apps/inference-runtime/src apps/inference-runtime/tests
+	.venv/bin/ruff check apps/api/src apps/api/tests apps/api/migrations apps/api/scripts apps/worker/src apps/worker/tests apps/inference-gateway/src apps/inference-gateway/tests apps/inference-runtime/src apps/inference-runtime/tests
+
+api-openapi:
+	PYTHONPATH='apps/inference-runtime/src:apps/api/src' .venv/bin/python apps/api/scripts/export_openapi.py --output apps/api/openapi.json
+
+api-openapi-check:
+	PYTHONPATH='apps/inference-runtime/src:apps/api/src' .venv/bin/python apps/api/scripts/export_openapi.py --output apps/api/openapi.json --check
 
 db-migrate:
 	cd apps/api && ../../.venv/bin/alembic upgrade head
@@ -73,7 +79,7 @@ training-image-local:
 		-f infra/training-runtime/Dockerfile.cpu infra/training-runtime
 
 python-check:
-	.venv/bin/python -m compileall -q apps/api/src apps/worker/src apps/inference-gateway/src apps/inference-runtime/src
+	.venv/bin/python -m compileall -q apps/api/src apps/api/scripts apps/worker/src apps/inference-gateway/src apps/inference-runtime/src
 
 infra-up:
 	docker compose -f infra/compose/compose.yml up -d

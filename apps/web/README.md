@@ -23,6 +23,8 @@ npm run dev
 - `npm run test:e2e:local`：以隔离的 Core API、SQLite 和本地对象存储执行真实写入浏览器验收
 - `npm run typecheck`：检查 TypeScript 与 Cloudflare Worker 类型
 - `npm run lint`：执行 ESLint
+- `npm run api:types`：从 `../api/openapi.json` 生成 Core API TypeScript 类型
+- `npm run api:types:check`：重新生成并确认类型文件未漂移
 
 `test:e2e` 默认使用本机 Chrome；CI 使用 Playwright Chromium，并需在任务中先执行 `npx playwright install --with-deps chromium`。该套件覆盖数据与标注、训练报告、实时分析边界和市场筛选，同时确认托管演示站不会持久化写操作。`test:e2e:local` 会自行创建临时 SQLite 数据库和对象存储目录，通过 `scripts/start-e2e-api.sh` 迁移并启动 Core API，结束时清理临时数据；运行前需在仓库根目录准备 Python 虚拟环境并安装 `apps/api`：
 
