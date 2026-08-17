@@ -4,6 +4,8 @@ SenseMu 产品端，基于 React 19、TypeScript、Tailwind CSS 4 和 vinext。
 
 ## 开发
 
+Web 固定使用 Node.js 24.x。仓库根目录包含 `.nvmrc`，进入仓库后先执行 `nvm use`；安装、开发、构建和质量检查都会在错误 Node 主版本时提前退出。
+
 ```bash
 npm install
 cp .env.example .env.local
