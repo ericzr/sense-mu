@@ -10,7 +10,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-默认地址是 `http://localhost:3000`。`SENSEMU_API_URL` 指向核心 FastAPI 服务。托管演示站通过 `SENSEMU_PREVIEW_MODE=true` 使用与 API 同形的只读演示数据；页面会显示“演示数据”标识，新增和修改不会保存，也不代表真实训练结果。正式环境必须配置真实 API，并保持演示模式关闭。
+默认地址是 `http://localhost:3000`。`SENSEMU_API_URL` 指向核心 FastAPI 服务。托管演示站通过 `SENSEMU_PREVIEW_MODE=true` 使用与 API 同形的只读演示数据；页面会显示“演示数据”标识，新增和修改不会保存，也不代表真实训练结果。正式环境必须配置真实 API，并保持演示模式关闭。生产 Web 还必须使用 `NEXT_PUBLIC_SENSEMU_AUTH_MODE=oidc`，按 `docs/API_GUIDE.md` 配置 OIDC 授权码 + PKCE/BFF 契约；刷新令牌和 client secret 只放在 BFF，不进入浏览器存储。API 返回 401 时工作台会显示会话失效提示，403/5xx 也会分别提示权限或服务状态。
 
 ## 命令
 

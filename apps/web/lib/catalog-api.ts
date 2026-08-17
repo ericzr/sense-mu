@@ -1,4 +1,5 @@
 import { getPreviewMockResult, isHostedPreview } from "./preview-mock-api";
+import { clearAccessToken, getAccessToken } from "./auth-session";
 
 export type Workspace = {
   id: string;
@@ -818,6 +819,29 @@ export type MarketplaceBilling = {
 
 type RequestOptions = RequestInit & { workspaceId?: string };
 
+export type CatalogApiErrorCode =
+  | "session_expired"
+  | "permission_denied"
+  | "service_unavailable"
+  | "request_failed";
+
+export class CatalogApiError extends Error {
+  readonly status: number;
+  readonly code: CatalogApiErrorCode;
+  readonly detail: string | null;
+
+  constructor(
+    message: string,
+    options: { status: number; code: CatalogApiErrorCode; detail?: string | null },
+  ) {
+    super(message);
+    this.name = "CatalogApiError";
+    this.status = options.status;
+    this.code = options.code;
+    this.detail = options.detail ?? null;
+  }
+}
+
 const API_REQUEST_TIMEOUT_MS = 20_000;
 const ARTIFACT_REQUEST_TIMEOUT_MS = 60_000;
 const INFERENCE_REQUEST_TIMEOUT_MS = 75_000;
@@ -860,6 +884,55 @@ function apiBaseUrl(): string {
   throw new Error("SenseMu API 尚未配置");
 }
 
+function notifySessionExpired(): void {
+  clearAccessToken();
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("sensemu:session-expired"));
+  }
+}
+
+function apiErrorForResponse(status: number, detail: string | null): CatalogApiError {
+  if (status === 401) {
+    notifySessionExpired();
+    return new CatalogApiError("登录状态已失效，请重新登录后重试", {
+      status,
+      code: "session_expired",
+      detail,
+    });
+  }
+  if (status === 403) {
+    return new CatalogApiError("当前账号没有执行该操作的权限", {
+      status,
+      code: "permission_denied",
+      detail,
+    });
+  }
+  if (status >= 500) {
+    return new CatalogApiError(detail ?? "身份或服务暂时不可用，请稍后重试", {
+      status,
+      code: "service_unavailable",
+      detail,
+    });
+  }
+  return new CatalogApiError(detail ?? `请求失败 (${status})`, {
+    status,
+    code: "request_failed",
+    detail,
+  });
+}
+
+function serviceUnavailableError(message: string): CatalogApiError {
+  return new CatalogApiError(message, {
+    status: 0,
+    code: "service_unavailable",
+  });
+}
+
+function addAccessToken(headers: Headers): void {
+  const accessToken = getAccessToken();
+  if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);
+}
+
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const previewResult = getPreviewMockResult(path, options);
   if (previewResult.handled) return previewResult.value as T;
@@ -868,17 +941,20 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   headers.set("Accept", "application/json");
   if (options.body) headers.set("Content-Type", "application/json");
   if (options.workspaceId) headers.set("X-Workspace-ID", options.workspaceId);
+  addAccessToken(headers);
 
   let response: Response;
   try {
     response = await fetchWithTimeout(`${apiBaseUrl()}${path}`, { ...options, headers });
   } catch (error) {
-    if (isRequestTimeout(error)) throw new Error("SenseMu API 请求超时，请稍后重试");
-    throw new Error("无法连接 SenseMu API，请确认本地服务已启动");
+    if (isRequestTimeout(error)) {
+      throw serviceUnavailableError("SenseMu API 请求超时，请稍后重试");
+    }
+    throw serviceUnavailableError("无法连接 SenseMu API，请确认服务地址与网络连接");
   }
   if (!response.ok) {
     const payload = (await response.json().catch(() => null)) as { detail?: string } | null;
-    throw new Error(payload?.detail ?? `请求失败 (${response.status})`);
+    throw apiErrorForResponse(response.status, payload?.detail ?? null);
   }
   if (response.status === 204) return undefined as T;
   const contentType = response.headers.get("content-type") ?? "";
@@ -896,17 +972,20 @@ async function requestBlob(path: string, options: RequestOptions = {}): Promise<
   const headers = new Headers(options.headers);
   headers.set("Accept", "image/png");
   if (options.workspaceId) headers.set("X-Workspace-ID", options.workspaceId);
+  addAccessToken(headers);
 
   let response: Response;
   try {
     response = await fetchWithTimeout(`${apiBaseUrl()}${path}`, { ...options, headers });
   } catch (error) {
-    if (isRequestTimeout(error)) throw new Error("SenseMu API 请求超时，请稍后重试");
-    throw new Error("无法连接 SenseMu API，请确认本地服务已启动");
+    if (isRequestTimeout(error)) {
+      throw serviceUnavailableError("SenseMu API 请求超时，请稍后重试");
+    }
+    throw serviceUnavailableError("无法连接 SenseMu API，请确认服务地址与网络连接");
   }
   if (!response.ok) {
     const payload = (await response.json().catch(() => null)) as { detail?: string } | null;
-    throw new Error(payload?.detail ?? `请求失败 (${response.status})`);
+    throw apiErrorForResponse(response.status, payload?.detail ?? null);
   }
   const contentType = response.headers.get("content-type") ?? "";
   if (!contentType.startsWith("image/png")) {
@@ -1047,7 +1126,11 @@ export const catalogApi = {
       response = await fetchWithTimeout(
         `${apiBaseUrl()}/api/v1/datasets/${datasetId}/assets/${assetId}/content`,
         {
-          headers: { "X-Workspace-ID": workspaceId },
+          headers: (() => {
+            const headers = new Headers({ "X-Workspace-ID": workspaceId });
+            addAccessToken(headers);
+            return headers;
+          })(),
           signal,
         },
       );
@@ -1056,7 +1139,10 @@ export const catalogApi = {
       if (isRequestTimeout(error)) throw new Error("素材预览加载超时");
       throw new Error("素材预览加载失败");
     }
-    if (!response.ok) throw new Error(`素材预览加载失败 (${response.status})`);
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as { detail?: string } | null;
+      throw apiErrorForResponse(response.status, payload?.detail ?? null);
+    }
     return response.blob();
   },
   listVersions: (workspaceId: string, datasetId: string) =>
@@ -1266,7 +1352,13 @@ export const catalogApi = {
     try {
       response = await fetchWithTimeout(
         `${apiBaseUrl()}/api/v1/datasets/${datasetId}/annotation-tasks/${taskId}/yolo-package`,
-        { headers: { "X-Workspace-ID": workspaceId } },
+        {
+          headers: (() => {
+            const headers = new Headers({ "X-Workspace-ID": workspaceId });
+            addAccessToken(headers);
+            return headers;
+          })(),
+        },
         ARTIFACT_REQUEST_TIMEOUT_MS,
       );
     } catch (error) {
@@ -1275,7 +1367,7 @@ export const catalogApi = {
     }
     if (!response.ok) {
       const payload = (await response.json().catch(() => null)) as { detail?: string } | null;
-      throw new Error(payload?.detail ?? `任务包导出失败 (${response.status})`);
+      throw apiErrorForResponse(response.status, payload?.detail ?? null);
     }
     const objectUrl = URL.createObjectURL(await response.blob());
     const link = document.createElement("a");
@@ -1442,7 +1534,13 @@ export const catalogApi = {
     try {
       response = await fetchWithTimeout(
         `${apiBaseUrl()}/api/v1/batch-inference-runs/${runId}/output`,
-        { headers: { "X-Workspace-ID": workspaceId } },
+        {
+          headers: (() => {
+            const headers = new Headers({ "X-Workspace-ID": workspaceId });
+            addAccessToken(headers);
+            return headers;
+          })(),
+        },
         ARTIFACT_REQUEST_TIMEOUT_MS,
       );
     } catch (error) {
@@ -1451,7 +1549,7 @@ export const catalogApi = {
     }
     if (!response.ok) {
       const payload = (await response.json().catch(() => null)) as { detail?: string } | null;
-      throw new Error(payload?.detail ?? `结果下载失败 (${response.status})`);
+      throw apiErrorForResponse(response.status, payload?.detail ?? null);
     }
     const objectUrl = URL.createObjectURL(await response.blob());
     const link = document.createElement("a");

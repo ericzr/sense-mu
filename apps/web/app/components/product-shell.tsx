@@ -14,8 +14,10 @@ import {
   PanelLeft,
   Plus,
   Power,
+  RefreshCw,
   Rocket,
   Search,
+  ShieldAlert,
   Store,
   Trash2,
   UserRound,
@@ -26,11 +28,13 @@ import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   catalogApi,
+  CatalogApiError,
   type CurrentIdentity,
   type Dataset,
   type Deployment,
   type Project,
 } from "../../lib/catalog-api";
+import { getWebAuthConfig } from "../../lib/auth-config";
 import { isHostedPreview } from "../../lib/preview-mock-api";
 import {
   type CSSProperties,
@@ -575,6 +579,9 @@ export function ProductShell({
   const [sidebarDragging, setSidebarDragging] = useState(false);
   const [mobileNavigationOpen, setMobileNavigationOpen] = useState(false);
   const [identity, setIdentity] = useState<CurrentIdentity | null>(null);
+  const [identityStatus, setIdentityStatus] = useState<
+    "loading" | "authenticated" | "unauthenticated" | "unavailable"
+  >("loading");
   const [previewMode, setPreviewMode] = useState(false);
   const [workbenchResources, setWorkbenchResources] = useState<WorkbenchResources>(emptyWorkbenchResources);
   const [workbenchWorkspaceId, setWorkbenchWorkspaceId] = useState<string | null>(null);
@@ -593,6 +600,7 @@ export function ProductShell({
   } | null>(null);
   const resolvedSidebarWidth = sidebarWidth ?? SIDEBAR_DEFAULT_WIDTH;
   const sidebarCollapsed = resolvedSidebarWidth < SIDEBAR_MIN_EXPANDED_WIDTH;
+  const webAuthConfig = getWebAuthConfig();
 
   function updateSidebarWidth(width: number) {
     sidebarWidthRef.current = width;
@@ -639,9 +647,31 @@ export function ProductShell({
     setPreviewMode(isHostedPreview());
   }, []);
 
-  useEffect(() => {
-    void catalogApi.getCurrentIdentity().then(setIdentity).catch(() => setIdentity(null));
+  const refreshIdentity = useCallback(async () => {
+    setIdentityStatus("loading");
+    try {
+      const currentIdentity = await catalogApi.getCurrentIdentity();
+      setIdentity(currentIdentity);
+      setIdentityStatus("authenticated");
+    } catch (reason) {
+      setIdentity(null);
+      setIdentityStatus(
+        reason instanceof CatalogApiError && reason.code === "service_unavailable"
+          ? "unavailable"
+          : "unauthenticated",
+      );
+    }
   }, []);
+
+  useEffect(() => {
+    void refreshIdentity();
+    function handleSessionExpired() {
+      setIdentity(null);
+      setIdentityStatus("unauthenticated");
+    }
+    window.addEventListener("sensemu:session-expired", handleSessionExpired);
+    return () => window.removeEventListener("sensemu:session-expired", handleSessionExpired);
+  }, [refreshIdentity]);
 
   const refreshWorkbenchResources = useCallback(async () => {
     try {
@@ -912,6 +942,29 @@ export function ProductShell({
           onMobileNavigationOpen={() => setMobileNavigationOpen(true)}
           previewMode={previewMode}
         />
+        {identityStatus === "unauthenticated" || identityStatus === "unavailable" ? (
+          <section
+            className={`auth-status-banner${identityStatus === "unavailable" ? " is-unavailable" : ""}`}
+            role="status"
+            aria-live="polite"
+          >
+            <span className="auth-status-icon" aria-hidden="true"><ShieldAlert size={16} /></span>
+            <span className="auth-status-copy">
+              <strong>{identityStatus === "unavailable" ? "身份服务暂不可用" : "需要登录"}</strong>
+              <small>
+                {identityStatus === "unavailable"
+                  ? "请稍后重试；如果问题持续，请检查 Core API 的 OIDC 配置。"
+                  : webAuthConfig.configured
+                    ? "当前会话已失效，请重新登录后继续操作。"
+                    : "当前 API 已启用 OIDC，但 Web 登录尚未配置完成。"}
+              </small>
+            </span>
+            <button className="auth-status-retry" type="button" onClick={() => void refreshIdentity()}>
+              <RefreshCw size={14} aria-hidden="true" />
+              <span>重新检查</span>
+            </button>
+          </section>
+        ) : null}
         {children}
       </div>
       {pendingResourceAction && resourceActionCopy ? (

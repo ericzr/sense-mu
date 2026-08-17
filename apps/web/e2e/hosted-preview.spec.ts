@@ -8,6 +8,7 @@ test.describe("托管演示站", () => {
     await page.goto(`/studio/data?project=${ppeProject}&dataset=${ppeDataset}&view=annotation`);
 
     await expect(page.getByText("演示数据", { exact: true })).toBeVisible();
+    await expect(page.getByText("需要登录", { exact: true })).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "工地安全穿戴数据" })).toBeVisible();
     await expect(page.getByText("安全穿戴样本复核", { exact: true })).toBeVisible();
 

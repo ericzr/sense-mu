@@ -43,6 +43,20 @@ make web-dev
 
 浏览器跨域访问只允许配置的 `SENSEMU_WEB_ORIGIN`，预检支持当前接口实际使用的 `GET / POST / PUT / PATCH / DELETE / OPTIONS`。新增方法或请求头时必须同步更新 CORS 配置和回归测试。
 
+Web 端的正式身份接入必须由 OIDC 授权码 + PKCE 和服务端 BFF（或等价的受信令牌交换层）完成。浏览器只携带短期 access token；refresh token、client secret 和 token 交换逻辑不得进入 Web bundle，也不得放入 `localStorage` 或 `sessionStorage`。当前 Web 客户端已经统一注入内存中的短期 token，并将 `401` 标记为会话失效、`403` 标记为权限不足、`5xx` 标记为服务不可用；在没有真实身份提供方配置时，工作台会显示明确的配置提示，不会伪造登录成功。
+
+Web 配置契约（`apps/web/.env.example`）：
+
+| 变量 | 作用 |
+|---|---|
+| `NEXT_PUBLIC_SENSEMU_AUTH_MODE` | `development` 或 `oidc`；生产必须是 `oidc` |
+| `NEXT_PUBLIC_SENSEMU_OIDC_AUTHORIZATION_ENDPOINT` | OIDC 授权端点，只允许 HTTPS（本地可用 localhost） |
+| `NEXT_PUBLIC_SENSEMU_OIDC_CLIENT_ID` | Web 公共客户端 ID，不是 client secret |
+| `NEXT_PUBLIC_SENSEMU_OIDC_REDIRECT_URI` | 授权回调地址，必须预先在身份提供方登记 |
+| `NEXT_PUBLIC_SENSEMU_OIDC_SCOPE` | 默认 `openid profile email` |
+
+以上变量仅描述浏览器侧的公开授权参数。正式上线还必须配置 BFF 的服务端 issuer、audience、JWKS、token exchange 和安全会话 cookie；在这些配置完成前，不能把 Sites 的 `oai-authenticated-user-*` 访客头直接转换成 Core API 的 Bearer JWT。
+
 ### 2.2 内部接口
 
 内部接口不向浏览器开放：
