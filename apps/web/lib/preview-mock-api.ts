@@ -290,6 +290,26 @@ export const previewRuns: TrainingRun[] = [
     reused: false,
   },
   {
+    id: "demo-run-ppe-v1",
+    project_id: "demo-project-ppe",
+    dataset_version_id: "demo-version-ppe-v1",
+    run_type: "training",
+    status: "succeeded",
+    engine: "ultralytics",
+    executor: "docker",
+    recipe: { model: "yolo11n.pt", task: "detect", epochs: 40, image_size: 640, batch_size: 16 },
+    progress: 100,
+    artifact_prefix: "s3://sensemu-demo/runs/ppe-v1",
+    spec_uri: "s3://sensemu-demo/runs/ppe-v1/spec.json",
+    error_code: null,
+    error_message: null,
+    started_at: "2026-08-08T05:20:00Z",
+    finished_at: "2026-08-08T06:50:00Z",
+    created_at: "2026-08-08T05:18:00Z",
+    updated_at: "2026-08-08T06:50:00Z",
+    reused: false,
+  },
+  {
     id: "demo-run-defect-v2",
     project_id: "demo-project-defect",
     dataset_version_id: "demo-version-defect-v2",
@@ -312,6 +332,17 @@ export const previewRuns: TrainingRun[] = [
 ];
 
 export const previewModels: ModelVersion[] = [
+  {
+    id: "demo-model-ppe-v1",
+    model_id: "demo-model-ppe",
+    model_name: "PPE 安全穿戴模型",
+    run_id: "demo-run-ppe-v1",
+    version_number: 1,
+    status: "ready",
+    artifact_uri: "s3://sensemu-demo/models/ppe/v1/model.pt",
+    metrics: { precision: 0.86, recall: 0.81, map50: 0.871, map50_95: 0.621 },
+    created_at: "2026-08-08T06:50:00Z",
+  },
   {
     id: "demo-model-ppe-v2",
     model_id: "demo-model-ppe",
