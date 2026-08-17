@@ -94,7 +94,7 @@ export const previewDatasets: Dataset[] = [
     description: "固定监控视角下的安全帽与反光衣样本。",
     class_map: { "0": "人员", "1": "安全帽", "2": "反光衣" },
     created_at: "2026-08-06T03:20:00Z",
-    asset_count: 1248,
+    asset_count: 12,
     version_count: 3,
   },
   {
@@ -104,7 +104,7 @@ export const previewDatasets: Dataset[] = [
     description: "产线相机采集的金属表面缺陷样本。",
     class_map: { "0": "划痕", "1": "凹坑", "2": "脏污" },
     created_at: "2026-08-02T06:30:00Z",
-    asset_count: 594,
+    asset_count: 8,
     version_count: 2,
   },
 ];
@@ -144,7 +144,7 @@ const previewVersions: Record<string, DatasetVersion[]> = {
       version_number: 3,
       status: "frozen",
       manifest_uri: "s3://sensemu-demo/ppe/versions/v3/manifest.json",
-      asset_count: 1248,
+      asset_count: 12,
       class_map: { "0": "人员", "1": "安全帽", "2": "反光衣" },
       frozen_at: "2026-08-16T08:30:00Z",
       created_at: "2026-08-16T08:30:00Z",
@@ -154,10 +154,20 @@ const previewVersions: Record<string, DatasetVersion[]> = {
       version_number: 2,
       status: "frozen",
       manifest_uri: "s3://sensemu-demo/ppe/versions/v2/manifest.json",
-      asset_count: 980,
+      asset_count: 10,
       class_map: { "0": "人员", "1": "安全帽", "2": "反光衣" },
       frozen_at: "2026-08-12T07:20:00Z",
       created_at: "2026-08-12T07:20:00Z",
+    },
+    {
+      id: "demo-version-ppe-v1",
+      version_number: 1,
+      status: "frozen",
+      manifest_uri: "s3://sensemu-demo/ppe/versions/v1/manifest.json",
+      asset_count: 8,
+      class_map: { "0": "人员", "1": "安全帽", "2": "反光衣" },
+      frozen_at: "2026-08-08T06:10:00Z",
+      created_at: "2026-08-08T06:10:00Z",
     },
   ],
   "demo-dataset-defect": [
@@ -166,10 +176,20 @@ const previewVersions: Record<string, DatasetVersion[]> = {
       version_number: 2,
       status: "frozen",
       manifest_uri: "s3://sensemu-demo/defect/versions/v2/manifest.json",
-      asset_count: 594,
+      asset_count: 8,
       class_map: { "0": "划痕", "1": "凹坑", "2": "脏污" },
       frozen_at: "2026-08-13T05:30:00Z",
       created_at: "2026-08-13T05:30:00Z",
+    },
+    {
+      id: "demo-version-defect-v1",
+      version_number: 1,
+      status: "frozen",
+      manifest_uri: "s3://sensemu-demo/defect/versions/v1/manifest.json",
+      asset_count: 6,
+      class_map: { "0": "划痕", "1": "凹坑", "2": "脏污" },
+      frozen_at: "2026-08-06T04:20:00Z",
+      created_at: "2026-08-06T04:20:00Z",
     },
   ],
 };
@@ -186,8 +206,8 @@ const annotationTasks: Record<string, AnnotationTask[]> = {
       assigned_to_user_id: "demo-user",
       source_video_extraction_job_id: null,
       class_map: { "0": "人员", "1": "安全帽", "2": "反光衣" },
-      asset_count: 120,
-      completed_count: 96,
+      asset_count: 4,
+      completed_count: 2,
       created_at: "2026-08-15T03:10:00Z",
       updated_at: previewNow,
     },
@@ -201,8 +221,8 @@ const annotationTasks: Record<string, AnnotationTask[]> = {
       assigned_to_user_id: "demo-user",
       source_video_extraction_job_id: null,
       class_map: { "0": "人员", "1": "安全帽", "2": "反光衣" },
-      asset_count: 860,
-      completed_count: 860,
+      asset_count: 8,
+      completed_count: 8,
       created_at: "2026-08-07T04:00:00Z",
       updated_at: "2026-08-12T06:20:00Z",
     },
@@ -461,8 +481,8 @@ const previewBatchRuns: BatchInferenceRun[] = [
       summary: {
         source_split: "test",
         parameters: { confidence: 0.45, iou: 0.7, max_detections: 100, image_size: 640 },
-        processed_asset_count: 126,
-        prediction_count: 402,
+        processed_asset_count: 2,
+        prediction_count: 7,
         runtime: { engine: "onnxruntime", device: "cpu", duration_seconds: 18.6 },
         format: "ndjson",
       },
@@ -485,7 +505,7 @@ const previewProvider: ProviderDashboard = {
     { id: "mock-alg-ppe", title: "工地安全穿戴检测", category: "目标检测", status: "published", price_per_1000_cents: 1680, monthly_quota_units: 20000, active_customer_grants: 6, successful_units: 12840, published_at: "2026-08-16T12:00:00Z", review_note: null, reviewed_at: "2026-08-16T11:50:00Z" },
   ],
   data_listings: [
-    { id: "mock-data-ppe", title: "工地安全穿戴数据集", dataset_name: "工地安全穿戴数据", dataset_version_number: 3, asset_count: 1248, license_code: "CUSTOM-COMMERCIAL", status: "published", published_at: "2026-08-16T12:10:00Z" },
+    { id: "mock-data-ppe", title: "工地安全穿戴数据集", dataset_name: "工地安全穿戴商业数据", dataset_version_number: 2, asset_count: 18420, license_code: "CUSTOM-COMMERCIAL", status: "published", published_at: "2026-08-16T12:10:00Z" },
   ],
   sales: [
     { id: "demo-sale-1", order_number: "SM20260816001", listing_title: "工地安全穿戴检测", buyer_name: "华东制造演示客户", authorization_amount_yuan: 168, payment_status: "paid", payment_intent_status: "succeeded", payment_provider: "demo", paid_amount_yuan: 168, refunded_amount_yuan: 0, created_at: "2026-08-16T14:00:00Z" },
@@ -559,7 +579,9 @@ function assetsForDataset(datasetId: string): Asset[] {
 
 function qualityReport(versionId: string): DatasetVersionQualityReport {
   const defect = versionId.includes("defect");
-  const assetCount = defect ? 594 : 1248;
+  let assetCount = defect ? 8 : 12;
+  if (versionId.endsWith("-v1")) assetCount = defect ? 6 : 8;
+  if (versionId.endsWith("ppe-v2")) assetCount = 10;
   const classes = defect ? ["划痕", "凹坑", "脏污"] : ["人员", "安全帽", "反光衣"];
   return {
     dataset_version_id: versionId,

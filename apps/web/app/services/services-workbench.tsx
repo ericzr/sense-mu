@@ -670,18 +670,23 @@ export function ServicesWorkbench() {
   const runtimeCapacity = inferenceHealth?.runtime.capacity;
   const runtimeCache = inferenceHealth?.runtime.cache;
   const runtimeReady = inferenceHealth?.status === "ready";
+  const runtimeNotConfigured = inferenceHealth?.runtime.status === "not_configured";
   const runtimeLabel = healthBusy
     ? "正在检查运行状态"
-    : runtimeReady
-      ? inferenceHealth.runtime.accepting_requests === false
-        ? "运行时繁忙"
-        : "运行时就绪"
-      : "运行时不可用";
+    : runtimeNotConfigured
+      ? "等待服务器接入"
+      : runtimeReady
+        ? inferenceHealth.runtime.accepting_requests === false
+          ? "运行时繁忙"
+          : "运行时就绪"
+        : "运行时不可用";
   const runtimeDetail = healthError
     ? healthError
-    : runtimeCapacity && runtimeCache
-      ? `可用容量 ${runtimeCapacity.available_slots}/${runtimeCapacity.max_concurrent_requests} · 已缓存 ${runtimeCache.loaded_models}/${runtimeCache.max_cached_models} 个模型`
-      : "等待网关返回端到端状态";
+    : runtimeNotConfigured
+      ? "当前为公开演示环境，未连接推理服务器"
+      : runtimeCapacity && runtimeCache
+        ? `可用容量 ${runtimeCapacity.available_slots}/${runtimeCapacity.max_concurrent_requests} · 已缓存 ${runtimeCache.loaded_models}/${runtimeCache.max_cached_models} 个模型`
+        : "等待网关返回端到端状态";
 
   if (loading) {
     return (

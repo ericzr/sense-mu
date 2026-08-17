@@ -1596,6 +1596,13 @@ export const catalogApi = {
       workspaceId,
     }),
   getInferenceHealth: async (deployment: Deployment): Promise<InferenceHealth> => {
+    if (isHostedPreview()) {
+      return {
+        status: "not_ready",
+        control_plane: { status: "ready" },
+        runtime: { configured: false, status: "not_configured" },
+      };
+    }
     let healthUrl: string;
     try {
       healthUrl = `${new URL(deployment.endpoint_url).origin}/health/ready`;
