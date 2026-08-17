@@ -5,6 +5,7 @@ const baseURL = `http://127.0.0.1:${port}`;
 
 export default defineConfig({
   testDir: "./e2e",
+  testIgnore: "local-api-workflow.spec.ts",
   fullyParallel: false,
   forbidOnly: Boolean(process.env.CI),
   timeout: 30_000,

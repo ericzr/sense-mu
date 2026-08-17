@@ -40,6 +40,9 @@ def create_deployment(
     deployment, api_key = deployment_service.create_deployment(
         session, storage, workspace_id, project_id, payload
     )
+    # The returned credential must not reach a client before its deployment is
+    # durable and the gateway can resolve it.
+    session.commit()
     response = deployment_service.to_response(session, deployment)
     return DeploymentSecretResponse(**response.model_dump(), api_key=api_key)
 
@@ -97,6 +100,7 @@ def disable_deployment(
     deployment = deployment_service.set_deployment_enabled(
         session, workspace_id, deployment_id, enabled=False
     )
+    session.commit()
     return deployment_service.to_response(session, deployment)
 
 
@@ -112,6 +116,7 @@ def enable_deployment(
     deployment = deployment_service.set_deployment_enabled(
         session, workspace_id, deployment_id, enabled=True
     )
+    session.commit()
     return deployment_service.to_response(session, deployment)
 
 
@@ -127,6 +132,7 @@ def rotate_deployment_key(
     deployment, api_key = deployment_service.rotate_api_key(
         session, workspace_id, deployment_id
     )
+    session.commit()
     response = deployment_service.to_response(session, deployment)
     return DeploymentSecretResponse(**response.model_dump(), api_key=api_key)
 
