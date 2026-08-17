@@ -10,7 +10,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-默认地址是 `http://localhost:3000`。`SENSEMU_API_URL` 指向核心 FastAPI 服务；未配置或服务暂时不可用时，首页使用与 API 同形的本地数据，保证设计与前端开发不被阻断。
+默认地址是 `http://localhost:3000`。`SENSEMU_API_URL` 指向核心 FastAPI 服务。托管演示站通过 `SENSEMU_PREVIEW_MODE=true` 使用与 API 同形的只读演示数据；页面会显示“演示数据”标识，新增和修改不会保存，也不代表真实训练结果。正式环境必须配置真实 API，并保持演示模式关闭。
 
 ## 命令
 

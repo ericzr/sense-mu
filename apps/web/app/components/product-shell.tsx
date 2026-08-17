@@ -31,6 +31,7 @@ import {
   type Deployment,
   type Project,
 } from "../../lib/catalog-api";
+import { isHostedPreview } from "../../lib/preview-mock-api";
 import {
   type CSSProperties,
   type KeyboardEvent as ReactKeyboardEvent,
@@ -509,11 +510,13 @@ function Topbar({
   onSidebarToggle,
   mobileNavigationOpen,
   onMobileNavigationOpen,
+  previewMode,
 }: {
   sidebarCollapsed: boolean;
   onSidebarToggle: () => void;
   mobileNavigationOpen: boolean;
   onMobileNavigationOpen: () => void;
+  previewMode: boolean;
 }) {
   return (
     <header className="topbar">
@@ -546,6 +549,7 @@ function Topbar({
       </label>
 
       <div className="topbar-actions">
+        {previewMode ? <span className="preview-mode-badge">演示数据</span> : null}
         <button className="icon-button" type="button" aria-label="通知">
           <Bell size={17} />
           <span className="notification-dot" />
@@ -571,6 +575,7 @@ export function ProductShell({
   const [sidebarDragging, setSidebarDragging] = useState(false);
   const [mobileNavigationOpen, setMobileNavigationOpen] = useState(false);
   const [identity, setIdentity] = useState<CurrentIdentity | null>(null);
+  const [previewMode, setPreviewMode] = useState(false);
   const [workbenchResources, setWorkbenchResources] = useState<WorkbenchResources>(emptyWorkbenchResources);
   const [workbenchWorkspaceId, setWorkbenchWorkspaceId] = useState<string | null>(null);
   const [expandedWorkbenchGroups, setExpandedWorkbenchGroups] = useState<Record<WorkbenchGroupKey, boolean>>(
@@ -628,6 +633,10 @@ export function ProductShell({
       updateSidebarWidth(restoredWidth);
     }, 0);
     return () => window.clearTimeout(restorePreference);
+  }, []);
+
+  useEffect(() => {
+    setPreviewMode(isHostedPreview());
   }, []);
 
   useEffect(() => {
@@ -901,6 +910,7 @@ export function ProductShell({
           onSidebarToggle={toggleSidebar}
           mobileNavigationOpen={mobileNavigationOpen}
           onMobileNavigationOpen={() => setMobileNavigationOpen(true)}
+          previewMode={previewMode}
         />
         {children}
       </div>

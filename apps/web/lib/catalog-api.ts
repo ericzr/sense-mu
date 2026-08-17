@@ -1,3 +1,5 @@
+import { getPreviewMockResult, isHostedPreview } from "./preview-mock-api";
+
 export type Workspace = {
   id: string;
   slug: string;
@@ -859,6 +861,9 @@ function apiBaseUrl(): string {
 }
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  const previewResult = getPreviewMockResult(path, options);
+  if (previewResult.handled) return previewResult.value as T;
+
   const headers = new Headers(options.headers);
   headers.set("Accept", "application/json");
   if (options.body) headers.set("Content-Type", "application/json");
@@ -882,6 +887,12 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 }
 
 async function requestBlob(path: string, options: RequestOptions = {}): Promise<Blob> {
+  if (isHostedPreview()) {
+    const response = await fetch("/catalog-vision-samples.png");
+    if (!response.ok) throw new Error("演示图片加载失败");
+    return response.blob();
+  }
+
   const headers = new Headers(options.headers);
   headers.set("Accept", "image/png");
   if (options.workspaceId) headers.set("X-Workspace-ID", options.workspaceId);
@@ -1025,6 +1036,12 @@ export const catalogApi = {
     assetId: string,
     signal?: AbortSignal,
   ) => {
+    if (isHostedPreview()) {
+      const response = await fetch("/catalog-vision-samples.png", { signal });
+      if (!response.ok) throw new Error("演示素材加载失败");
+      return response.blob();
+    }
+
     let response: Response;
     try {
       response = await fetchWithTimeout(
