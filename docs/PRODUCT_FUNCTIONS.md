@@ -37,7 +37,7 @@
 1. 创建项目和数据集。
 2. 保存类别表，类别表是该数据集唯一的类别来源。
 3. 上传图片，或上传视频文件并创建异步抽帧任务。
-4. 创建标注任务：人工标注，或通过 YOLO 任务包交给成熟标注工具处理后导回。
+4. 创建标注任务：人工标注，或通过带清单的 YOLO / COCO 任务包交给成熟标注工具处理后导回。
 5. 审核标注任务。目标检测只要求矩形框和类别，不要求自然语言描述。
 6. 所有任务完成且数据检查通过后，冻结不可变数据版本。
 
@@ -139,4 +139,3 @@
 - 四页面架构：`docs/adr/0029-four-surface-user-information-architecture.md`
 - 对象式侧栏：`docs/adr/0031-object-oriented-workbench-navigation.md`
 - 实时分析接入边界：`docs/adr/0036-live-analysis-adapter-boundary.md`
-

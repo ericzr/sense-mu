@@ -406,7 +406,7 @@ export function AnnotationEditor() {
       const refreshedAssets = await catalogApi.listAnnotationTaskAssets(workspace.id, datasetId, task.id);
       setTask(imported.task);
       setAssets(refreshedAssets);
-      setNotice(`已导入 ${imported.imported_asset_count} 张图片的 YOLO 标注`);
+      setNotice(`已导入 ${imported.imported_asset_count} 张图片的外部标注`);
     } catch (reason) {
       setNotice(reason instanceof Error ? reason.message : "任务包导入失败");
     } finally {
@@ -434,8 +434,8 @@ export function AnnotationEditor() {
         <div className="editor-history-actions"><button type="button" aria-label="撤销" title="撤销" disabled={!history.length} onClick={undo}><Undo2 size={15} /></button><button type="button" aria-label="重做" title="重做" disabled={!future.length} onClick={redo}><Redo2 size={15} /></button><span>{notice}</span></div>
         <div className="editor-primary-actions">
           <input ref={importInputRef} className="sr-only" type="file" accept=".zip,application/zip" onChange={(event) => void importTaskPackage(event)} />
-          <button className="editor-package-button" type="button" disabled={busy} title="导出 YOLO 标注任务包" onClick={() => void downloadTaskPackage()}><Download size={14} />导出</button>
-          <button className="editor-package-button" type="button" disabled={busy} title="导入外部完成的 YOLO 标注任务包" onClick={() => importInputRef.current?.click()}><Upload size={14} />导入</button>
+          <button className="editor-package-button" type="button" disabled={busy} title="导出兼容 YOLO 与 COCO 的标注任务包" onClick={() => void downloadTaskPackage()}><Download size={14} />导出</button>
+          <button className="editor-package-button" type="button" disabled={busy} title="导入外部完成的 YOLO 或 COCO 标注任务包" onClick={() => importInputRef.current?.click()}><Upload size={14} />导入</button>
           <button className="secondary-button" type="button" disabled={busy} onClick={() => void saveAnnotations()}><Save size={14} />保存</button>
           {task.status === "annotating" ? <button className="primary-button" type="button" disabled={busy} onClick={() => void submitForReview()}><Send size={14} />提交检查</button> : task.status === "review" ? <button className="primary-button" type="button" disabled={busy} onClick={() => void completeReview()}><Check size={14} />完成检查</button> : <button className="secondary-button" type="button" disabled><Check size={14} />已完成</button>}
         </div>

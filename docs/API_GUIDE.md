@@ -152,9 +152,9 @@ Core API 当前遵循 FastAPI 默认格式：
 | POST / GET | `/api/v1/datasets/{dataset_id}/annotation-tasks` | 创建或列出标注任务 |
 | GET / PATCH | `/api/v1/datasets/{dataset_id}/annotation-tasks/{task_id}` | 读取任务或更新状态 |
 | GET | `/api/v1/datasets/{dataset_id}/annotation-tasks/{task_id}/assets` | 获取固定任务素材快照 |
-| GET | `/api/v1/datasets/{dataset_id}/annotation-tasks/{task_id}/yolo-package` | 导出带清单的 YOLO ZIP |
-| POST | `/api/v1/datasets/{dataset_id}/annotation-tasks/{task_id}/yolo-import-uploads` | 创建任务包上传意图 |
-| POST | `/api/v1/datasets/{dataset_id}/annotation-tasks/{task_id}/yolo-import` | 校验并导入任务包 |
+| GET | `/api/v1/datasets/{dataset_id}/annotation-tasks/{task_id}/yolo-package` | 导出带清单的标注 ZIP；始终包含 YOLO，图片尺寸完整时同时包含标准 COCO |
+| POST | `/api/v1/datasets/{dataset_id}/annotation-tasks/{task_id}/yolo-import-uploads` | 创建标注任务包上传意图 |
+| POST | `/api/v1/datasets/{dataset_id}/annotation-tasks/{task_id}/yolo-import` | 校验并导入 YOLO 或 COCO 结果；旧路径名保持兼容 |
 | POST / GET | `/api/v1/datasets/{dataset_id}/items/{asset_id}/annotation` | 登记或读取单图 YOLO 标注 |
 
 任务状态不能仅由前端文案决定。完成检查前，服务端会复核任务素材是否全部有合法标注。

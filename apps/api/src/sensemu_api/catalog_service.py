@@ -526,19 +526,19 @@ def parse_yolo_detection_annotation(
     body: bytes,
     allowed_class_ids: set[int] | None = None,
 ) -> set[int]:
-    return set(_parse_yolo_detection_annotation_classes(body, allowed_class_ids))
+    return {row[0] for row in parse_yolo_detection_boxes(body, allowed_class_ids)}
 
 
-def _parse_yolo_detection_annotation_classes(
+def parse_yolo_detection_boxes(
     body: bytes,
     allowed_class_ids: set[int] | None = None,
-) -> list[int]:
+) -> list[tuple[int, float, float, float, float]]:
     try:
         text = body.decode("utf-8-sig")
     except UnicodeDecodeError as error:
         raise conflict("YOLO 标注必须是 UTF-8 文本") from error
 
-    class_ids: list[int] = []
+    rows: list[tuple[int, float, float, float, float]] = []
     for line_number, raw_line in enumerate(text.splitlines(), start=1):
         line = raw_line.strip()
         if not line:
@@ -562,8 +562,15 @@ def _parse_yolo_detection_annotation_classes(
             raise conflict(f"YOLO 标注第 {line_number} 行的宽高必须大于 0 且不超过 1")
         if allowed_class_ids is not None and class_id not in allowed_class_ids:
             raise conflict(f"YOLO 标注第 {line_number} 行引用了未定义类别 {class_id}")
-        class_ids.append(class_id)
-    return class_ids
+        rows.append((class_id, x_center, y_center, width, height))
+    return rows
+
+
+def _parse_yolo_detection_annotation_classes(
+    body: bytes,
+    allowed_class_ids: set[int] | None = None,
+) -> list[int]:
+    return [row[0] for row in parse_yolo_detection_boxes(body, allowed_class_ids)]
 
 
 def build_dataset_quality_report(

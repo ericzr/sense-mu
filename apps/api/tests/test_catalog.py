@@ -1959,12 +1959,19 @@ def test_annotation_task_yolo_package_export_and_validated_import() -> None:
     assert exported.headers["content-type"] == "application/zip"
     with ZipFile(BytesIO(exported.content)) as archive:
         manifest = json.loads(archive.read("sensemu-task.json"))
+        assert manifest["schema_version"] == "1.1"
+        assert manifest["annotation_formats"] == ["yolo-detection", "coco-detection"]
         assert manifest["task"]["id"] == task["id"]
         assert manifest["class_map"] == task["class_map"]
         image_path = manifest["assets"][0]["image_path"]
         label_path = manifest["assets"][0]["label_path"]
+        coco_path = manifest["coco"]["annotation_path"]
         assert archive.read(image_path) == image_body
         assert archive.read(label_path) == b""
+        assert json.loads(archive.read(coco_path))["categories"] == [
+            {"id": 1, "name": "person"},
+            {"id": 2, "name": "helmet"},
+        ]
         assert b"0: \"person\"" in archive.read("data.yaml")
 
     def import_package(package: bytes, suffix: str):
@@ -2020,3 +2027,52 @@ def test_annotation_task_yolo_package_export_and_validated_import() -> None:
     )
     assert annotation.status_code == 200
     assert annotation.content == label_body
+
+    legacy_manifest = dict(manifest)
+    legacy_manifest["schema_version"] = "1.0"
+    legacy_manifest["format"] = "yolo-detection"
+    legacy_manifest.pop("annotation_formats")
+    legacy_manifest.pop("coco")
+    legacy_package = _replace_zip_entry(
+        completed_package,
+        "sensemu-task.json",
+        json.dumps(legacy_manifest, separators=(",", ":")).encode(),
+    )
+    imported_legacy = import_package(legacy_package, "legacy-complete")
+    assert imported_legacy.status_code == 200
+    assert imported_legacy.json()["imported_asset_count"] == 1
+
+    with ZipFile(BytesIO(exported.content)) as archive:
+        coco_payload = json.loads(archive.read(coco_path))
+    coco_payload["annotations"] = [
+        {
+            "id": 1,
+            "image_id": manifest["assets"][0]["coco_image_id"],
+            "category_id": 2,
+            "bbox": [256, 256, 128, 128],
+            "area": 16_384,
+            "iscrowd": 0,
+        }
+    ]
+    coco_package = _replace_zip_entry(
+        exported.content,
+        coco_path,
+        json.dumps(coco_payload, separators=(",", ":")).encode(),
+    )
+    imported_coco = import_package(coco_package, "coco-complete")
+    assert imported_coco.status_code == 200
+    assert imported_coco.json()["imported_asset_count"] == 1
+    coco_annotation = client.get(
+        f"/api/v1/datasets/{dataset['id']}/items/{asset['id']}/annotation",
+        headers=headers,
+    )
+    assert coco_annotation.content == b"1 0.5 0.5 0.2 0.2\n"
+
+    conflicting_package = _replace_zip_entry(
+        completed_package,
+        coco_path,
+        json.dumps(coco_payload, separators=(",", ":")).encode(),
+    )
+    conflicting_import = import_package(conflicting_package, "dual-format")
+    assert conflicting_import.status_code == 409
+    assert "只能修改 YOLO 或 COCO" in conflicting_import.json()["detail"]

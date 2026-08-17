@@ -1,7 +1,9 @@
 import json
 from hashlib import sha256
 from io import BytesIO
+from math import isfinite
 from pathlib import PurePosixPath
+from typing import Any
 from uuid import UUID
 from zipfile import ZIP_DEFLATED, BadZipFile, ZipFile
 
@@ -32,7 +34,8 @@ from sensemu_api.db.models import (
 )
 from sensemu_api.storage import Storage
 
-TASK_PACKAGE_SCHEMA_VERSION = "1.0"
+TASK_PACKAGE_SCHEMA_VERSION = "1.1"
+LEGACY_TASK_PACKAGE_SCHEMA_VERSION = "1.0"
 TASK_PACKAGE_MAX_BYTES = 512 * 1024 * 1024
 TASK_PACKAGE_MAX_ENTRIES = 20_000
 
@@ -375,7 +378,7 @@ def _package_manifest(
 ) -> tuple[dict[str, object], dict[str, tuple[Asset, DatasetItem]]]:
     assets: list[dict[str, object]] = []
     rows_by_asset_id: dict[str, tuple[Asset, DatasetItem]] = {}
-    for asset, item in rows:
+    for coco_image_id, (asset, item) in enumerate(rows, start=1):
         asset_id = str(asset.id)
         image_path = f"images/{asset_id}.{_image_extension(asset.media_type)}"
         label_path = f"labels/{asset_id}.txt"
@@ -389,13 +392,14 @@ def _package_manifest(
                 "media_type": asset.media_type,
                 "width": asset.width,
                 "height": asset.height,
+                "coco_image_id": coco_image_id,
             }
         )
         rows_by_asset_id[asset_id] = (asset, item)
     return (
         {
             "schema_version": TASK_PACKAGE_SCHEMA_VERSION,
-            "format": "yolo-detection",
+            "format": "sensemu-annotation-task",
             "task": {
                 "id": str(task.id),
                 "dataset_id": str(task.dataset_id),
@@ -416,6 +420,96 @@ def _data_yaml(class_map: dict[str, str]) -> str:
     return f"path: .\ntrain: images\nval: images\nnames:\n{names}\n"
 
 
+def _read_export_bodies(
+    storage: Storage,
+    rows: list[tuple[Asset, DatasetItem]],
+) -> list[tuple[Asset, DatasetItem, bytes, bytes]]:
+    export_rows: list[tuple[Asset, DatasetItem, bytes, bytes]] = []
+    for asset, item in rows:
+        try:
+            image_body = storage.get_bytes(asset.uri)
+        except (OSError, ValueError) as error:
+            raise catalog_service.conflict(f"无法读取素材 {asset.id}") from error
+        if sha256(image_body).hexdigest() != asset.checksum_sha256:
+            raise catalog_service.conflict(f"素材 {asset.id} 的内容与登记哈希不一致")
+        label_body = b""
+        if item.annotation_uri:
+            try:
+                label_body = storage.get_bytes(item.annotation_uri)
+            except (OSError, ValueError) as error:
+                raise catalog_service.conflict(
+                    f"无法读取素材 {asset.id} 的已有标注"
+                ) from error
+        export_rows.append((asset, item, image_body, label_body))
+    return export_rows
+
+
+def _coco_annotations_body(
+    rows: list[tuple[Asset, DatasetItem, bytes, bytes]],
+    class_map: dict[str, str],
+) -> bytes | None:
+    if any(
+        asset.width is None
+        or asset.width <= 0
+        or asset.height is None
+        or asset.height <= 0
+        for asset, _item, _image_body, _label_body in rows
+    ):
+        return None
+
+    images: list[dict[str, Any]] = []
+    annotations: list[dict[str, Any]] = []
+    annotation_id = 1
+    allowed_class_ids = {int(class_id) for class_id in class_map}
+    for image_id, (asset, _item, _image_body, label_body) in enumerate(rows, start=1):
+        assert asset.width is not None and asset.height is not None
+        images.append(
+            {
+                "id": image_id,
+                "file_name": f"images/{asset.id}.{_image_extension(asset.media_type)}",
+                "width": asset.width,
+                "height": asset.height,
+            }
+        )
+        for class_id, x_center, y_center, width, height in catalog_service.parse_yolo_detection_boxes(
+            label_body,
+            allowed_class_ids,
+        ):
+            box_width = width * asset.width
+            box_height = height * asset.height
+            annotations.append(
+                {
+                    "id": annotation_id,
+                    "image_id": image_id,
+                    "category_id": class_id + 1,
+                    "bbox": [
+                        (x_center - width / 2) * asset.width,
+                        (y_center - height / 2) * asset.height,
+                        box_width,
+                        box_height,
+                    ],
+                    "area": box_width * box_height,
+                    "iscrowd": 0,
+                }
+            )
+            annotation_id += 1
+
+    payload = {
+        "info": {
+            "description": "SenseMu annotation task exchange",
+            "version": TASK_PACKAGE_SCHEMA_VERSION,
+        },
+        "licenses": [],
+        "images": images,
+        "annotations": annotations,
+        "categories": [
+            {"id": int(class_id) + 1, "name": class_map[class_id]}
+            for class_id in sorted(class_map, key=int)
+        ],
+    }
+    return json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+
+
 def export_yolo_task_package(
     session: Session,
     storage: Storage,
@@ -430,7 +524,29 @@ def export_yolo_task_package(
         raise catalog_service.conflict("标注任务没有可导出的素材")
     if sum(asset.byte_size for asset, _item in rows) > TASK_PACKAGE_MAX_BYTES:
         raise catalog_service.conflict("任务包超过 512 MB，请拆分标注任务后再导出")
+    export_rows = _read_export_bodies(storage, rows)
     manifest, _rows_by_asset_id = _package_manifest(task, rows, class_map)
+    manifest["annotation_formats"] = ["yolo-detection"]
+    manifest_assets = manifest["assets"]
+    assert isinstance(manifest_assets, list)
+    for package_asset, (_asset, _item, _image_body, label_body) in zip(
+        manifest_assets,
+        export_rows,
+        strict=True,
+    ):
+        assert isinstance(package_asset, dict)
+        package_asset["label_sha256"] = sha256(label_body).hexdigest()
+
+    coco_body = _coco_annotations_body(export_rows, class_map)
+    if coco_body is not None:
+        manifest["annotation_formats"] = ["yolo-detection", "coco-detection"]
+        manifest["coco"] = {
+            "annotation_path": "annotations/instances.json",
+            "annotation_sha256": sha256(coco_body).hexdigest(),
+        }
+        for image_id, package_asset in enumerate(manifest_assets, start=1):
+            assert isinstance(package_asset, dict)
+            package_asset["coco_image_id"] = image_id
     package = BytesIO()
     try:
         with ZipFile(package, "w", compression=ZIP_DEFLATED, compresslevel=6) as archive:
@@ -442,26 +558,15 @@ def export_yolo_task_package(
             archive.writestr(
                 "README.txt",
                 "使用外部工具标注 images 中的图片，并保留 sensemu-task.json 与图片原始内容。\n"
-                "完成后将 labels 中同名 .txt 标注与原图片一起压缩，再导入此任务。\n",
+                "可修改 labels 中同名 YOLO .txt，或（若存在）修改 annotations/instances.json 中的 COCO 检测标注。\n"
+                "一次导入只允许修改其中一种标注格式；不要同时修改两者。\n",
             )
-            for asset, item in rows:
+            for asset, _item, image_body, label_body in export_rows:
                 image_path = f"images/{asset.id}.{_image_extension(asset.media_type)}"
-                try:
-                    image_body = storage.get_bytes(asset.uri)
-                except (OSError, ValueError) as error:
-                    raise catalog_service.conflict(f"无法读取素材 {asset.id}") from error
-                if sha256(image_body).hexdigest() != asset.checksum_sha256:
-                    raise catalog_service.conflict(f"素材 {asset.id} 的内容与登记哈希不一致")
                 archive.writestr(image_path, image_body)
-                label_body = b""
-                if item.annotation_uri:
-                    try:
-                        label_body = storage.get_bytes(item.annotation_uri)
-                    except (OSError, ValueError) as error:
-                        raise catalog_service.conflict(
-                            f"无法读取素材 {asset.id} 的已有标注"
-                        ) from error
                 archive.writestr(f"labels/{asset.id}.txt", label_body)
+            if coco_body is not None:
+                archive.writestr("annotations/instances.json", coco_body)
     except OSError as error:
         raise catalog_service.conflict("无法生成 YOLO 标注任务包") from error
     return package.getvalue(), f"annotation-task-{task.id}.zip"
@@ -535,6 +640,202 @@ def _read_task_manifest(archive: ZipFile, names: set[str]) -> dict[str, object]:
     return manifest
 
 
+def _coco_number(value: object, field: str) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not isfinite(value):
+        raise catalog_service.conflict(f"COCO 标注的 {field} 必须是有限数字")
+    return float(value)
+
+
+def _coco_label_bodies(
+    archive: ZipFile,
+    names: set[str],
+    manifest: dict[str, object],
+    expected_assets: list[dict[str, object]],
+    class_map: dict[str, str],
+) -> dict[str, bytes]:
+    coco = manifest.get("coco")
+    if not isinstance(coco, dict):
+        raise catalog_service.conflict("任务包缺少 COCO 标注说明")
+    annotation_path = coco.get("annotation_path")
+    if not isinstance(annotation_path, str) or annotation_path not in names:
+        raise catalog_service.conflict("任务包缺少 COCO 标注文件")
+    try:
+        payload = json.loads(archive.read(annotation_path).decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError, KeyError) as error:
+        raise catalog_service.conflict("COCO 标注文件格式不正确") from error
+    if not isinstance(payload, dict):
+        raise catalog_service.conflict("COCO 标注文件格式不正确")
+
+    categories = payload.get("categories")
+    if not isinstance(categories, list):
+        raise catalog_service.conflict("COCO 标注缺少 categories")
+    expected_categories = {
+        int(class_id) + 1: class_map[class_id]
+        for class_id in class_map
+    }
+    package_categories: dict[int, str] = {}
+    for category in categories:
+        if not isinstance(category, dict):
+            raise catalog_service.conflict("COCO 类别定义格式不正确")
+        category_id = category.get("id")
+        category_name = category.get("name")
+        if (
+            isinstance(category_id, bool)
+            or not isinstance(category_id, int)
+            or not isinstance(category_name, str)
+            or not category_name
+            or category_id in package_categories
+        ):
+            raise catalog_service.conflict("COCO 类别定义格式不正确")
+        package_categories[category_id] = category_name
+    if package_categories != expected_categories:
+        raise catalog_service.conflict("COCO 类别定义与当前标注任务不一致")
+
+    expected_images: dict[int, dict[str, object]] = {}
+    for expected_asset in expected_assets:
+        image_id = expected_asset.get("coco_image_id")
+        if isinstance(image_id, bool) or not isinstance(image_id, int) or image_id in expected_images:
+            raise catalog_service.conflict("任务包的 COCO 图片映射不正确")
+        expected_images[image_id] = expected_asset
+    images = payload.get("images")
+    if not isinstance(images, list) or len(images) != len(expected_images):
+        raise catalog_service.conflict("COCO 图片清单与当前任务不一致")
+    package_images: dict[int, dict[str, object]] = {}
+    for image in images:
+        if not isinstance(image, dict):
+            raise catalog_service.conflict("COCO 图片清单格式不正确")
+        image_id = image.get("id")
+        if isinstance(image_id, bool) or not isinstance(image_id, int) or image_id in package_images:
+            raise catalog_service.conflict("COCO 图片编号不正确")
+        package_images[image_id] = image
+    if set(package_images) != set(expected_images):
+        raise catalog_service.conflict("COCO 图片不属于当前标注任务")
+    asset_by_coco_image_id: dict[int, str] = {}
+    for image_id, expected_asset in expected_images.items():
+        image = package_images[image_id]
+        if (
+            image.get("file_name") != expected_asset.get("image_path")
+            or image.get("width") != expected_asset.get("width")
+            or image.get("height") != expected_asset.get("height")
+        ):
+            raise catalog_service.conflict("COCO 图片清单已被修改")
+        asset_id = expected_asset.get("asset_id")
+        if not isinstance(asset_id, str):
+            raise catalog_service.conflict("任务包中的素材编号不正确")
+        asset_by_coco_image_id[image_id] = asset_id
+
+    labels_by_asset_id: dict[str, list[str]] = {
+        asset_id: [] for asset_id in asset_by_coco_image_id.values()
+    }
+    annotations = payload.get("annotations")
+    if not isinstance(annotations, list):
+        raise catalog_service.conflict("COCO 标注缺少 annotations")
+    annotation_ids: set[int] = set()
+    for annotation in annotations:
+        if not isinstance(annotation, dict):
+            raise catalog_service.conflict("COCO 标注格式不正确")
+        annotation_id = annotation.get("id")
+        image_id = annotation.get("image_id")
+        category_id = annotation.get("category_id")
+        if (
+            isinstance(annotation_id, bool)
+            or not isinstance(annotation_id, int)
+            or annotation_id in annotation_ids
+            or isinstance(image_id, bool)
+            or not isinstance(image_id, int)
+            or isinstance(category_id, bool)
+            or not isinstance(category_id, int)
+            or image_id not in expected_images
+            or category_id not in expected_categories
+        ):
+            raise catalog_service.conflict("COCO 标注引用了未知图片或类别")
+        annotation_ids.add(annotation_id)
+        iscrowd = annotation.get("iscrowd", 0)
+        if iscrowd not in (0, False, None):
+            raise catalog_service.conflict("目标检测任务不支持 COCO crowd 标注")
+        bbox = annotation.get("bbox")
+        if not isinstance(bbox, list) or len(bbox) != 4:
+            raise catalog_service.conflict("COCO 标注的 bbox 必须包含 4 个坐标")
+        x, y, width, height = (_coco_number(value, "bbox") for value in bbox)
+        expected_asset = expected_images[image_id]
+        image_width = expected_asset.get("width")
+        image_height = expected_asset.get("height")
+        if (
+            isinstance(image_width, bool)
+            or not isinstance(image_width, int)
+            or image_width <= 0
+            or isinstance(image_height, bool)
+            or not isinstance(image_height, int)
+            or image_height <= 0
+            or width <= 0
+            or height <= 0
+            or x < -1e-6
+            or y < -1e-6
+            or x + width > image_width + 1e-6
+            or y + height > image_height + 1e-6
+        ):
+            raise catalog_service.conflict("COCO 标注的 bbox 超出图片边界")
+        x = min(max(x, 0), float(image_width))
+        y = min(max(y, 0), float(image_height))
+        width = min(width, float(image_width) - x)
+        height = min(height, float(image_height) - y)
+        class_id = category_id - 1
+        x_center = (x + width / 2) / image_width
+        y_center = (y + height / 2) / image_height
+        normalized_width = width / image_width
+        normalized_height = height / image_height
+        labels_by_asset_id[asset_by_coco_image_id[image_id]].append(
+            f"{class_id} {x_center:.10g} {y_center:.10g} "
+            f"{normalized_width:.10g} {normalized_height:.10g}"
+        )
+    return {
+        asset_id: ("\n".join(lines) + ("\n" if lines else "")).encode("utf-8")
+        for asset_id, lines in labels_by_asset_id.items()
+    }
+
+
+def _select_annotation_source(
+    archive: ZipFile,
+    names: set[str],
+    manifest: dict[str, object],
+    expected_assets: list[dict[str, object]],
+    package_assets_by_id: dict[str, dict[str, object]],
+    yolo_labels: dict[str, bytes],
+    class_map: dict[str, str],
+) -> dict[str, bytes]:
+    annotation_formats = manifest.get("annotation_formats")
+    if not isinstance(annotation_formats, list) or "yolo-detection" not in annotation_formats:
+        raise catalog_service.conflict("任务包未声明 YOLO 标注格式")
+    yolo_changed = False
+    for asset_id, label_body in yolo_labels.items():
+        label_hash = package_assets_by_id[asset_id].get("label_sha256")
+        if not isinstance(label_hash, str) or len(label_hash) != 64:
+            raise catalog_service.conflict("任务包缺少原始 YOLO 标注校验和")
+        yolo_changed = yolo_changed or sha256(label_body).hexdigest() != label_hash
+    if "coco-detection" not in annotation_formats:
+        return yolo_labels
+
+    coco = manifest.get("coco")
+    if not isinstance(coco, dict):
+        raise catalog_service.conflict("任务包缺少 COCO 标注说明")
+    annotation_path = coco.get("annotation_path")
+    annotation_hash = coco.get("annotation_sha256")
+    if (
+        not isinstance(annotation_path, str)
+        or annotation_path not in names
+        or not isinstance(annotation_hash, str)
+        or len(annotation_hash) != 64
+    ):
+        raise catalog_service.conflict("任务包缺少原始 COCO 标注校验和")
+    coco_body = archive.read(annotation_path)
+    coco_changed = sha256(coco_body).hexdigest() != annotation_hash
+    if yolo_changed and coco_changed:
+        raise catalog_service.conflict("一次导入只能修改 YOLO 或 COCO 其中一种标注格式")
+    if coco_changed:
+        return _coco_label_bodies(archive, names, manifest, expected_assets, class_map)
+    return yolo_labels
+
+
 def import_yolo_task_package(
     session: Session,
     storage: Storage,
@@ -570,10 +871,22 @@ def import_yolo_task_package(
         with ZipFile(BytesIO(package_body)) as archive:
             names = _validate_archive_names(archive)
             manifest = _read_task_manifest(archive, names)
-            if manifest.get("schema_version") != TASK_PACKAGE_SCHEMA_VERSION:
+            schema_version = manifest.get("schema_version")
+            if schema_version not in {
+                LEGACY_TASK_PACKAGE_SCHEMA_VERSION,
+                TASK_PACKAGE_SCHEMA_VERSION,
+            }:
                 raise catalog_service.conflict("任务包版本不受支持")
-            if manifest.get("format") != "yolo-detection":
+            if (
+                schema_version == LEGACY_TASK_PACKAGE_SCHEMA_VERSION
+                and manifest.get("format") != "yolo-detection"
+            ):
                 raise catalog_service.conflict("任务包不是目标检测 YOLO 格式")
+            if (
+                schema_version == TASK_PACKAGE_SCHEMA_VERSION
+                and manifest.get("format") != "sensemu-annotation-task"
+            ):
+                raise catalog_service.conflict("任务包不是 SenseMu 标注交换格式")
             package_task = manifest.get("task")
             if not isinstance(package_task, dict) or package_task.get("id") != str(task.id):
                 raise catalog_service.conflict("任务包不属于当前标注任务")
@@ -596,6 +909,7 @@ def import_yolo_task_package(
             if set(package_assets_by_id) != set(rows_by_asset_id):
                 raise catalog_service.conflict("任务包中的图片不属于当前标注任务")
 
+            yolo_labels: dict[str, bytes] = {}
             for expected_asset in expected_assets:
                 assert isinstance(expected_asset, dict)
                 asset_id = expected_asset["asset_id"]
@@ -609,8 +923,16 @@ def import_yolo_task_package(
                     or package_asset.get("image_sha256") != expected_asset["image_sha256"]
                     or package_asset.get("image_byte_size") != expected_asset["image_byte_size"]
                     or package_asset.get("media_type") != expected_asset["media_type"]
+                    or package_asset.get("width") != expected_asset["width"]
+                    or package_asset.get("height") != expected_asset["height"]
                 ):
                     raise catalog_service.conflict("任务包中的图片清单已被修改")
+                if (
+                    schema_version == TASK_PACKAGE_SCHEMA_VERSION
+                    and package_asset.get("coco_image_id")
+                    != expected_asset.get("coco_image_id")
+                ):
+                    raise catalog_service.conflict("任务包的 COCO 图片映射已被修改")
                 if not isinstance(image_path, str) or image_path not in names:
                     raise catalog_service.conflict("任务包缺少原始图片")
                 image_body = archive.read(image_path)
@@ -623,9 +945,26 @@ def import_yolo_task_package(
                     raise catalog_service.conflict("任务包中的图片与原始素材不一致")
                 if not isinstance(label_path, str) or label_path not in names:
                     raise catalog_service.conflict("任务包缺少对应的 YOLO 标注文件")
-                label_body = archive.read(label_path)
+                yolo_labels[asset_id] = archive.read(label_path)
+
+            selected_labels = (
+                _select_annotation_source(
+                    archive,
+                    names,
+                    manifest,
+                    expected_assets,
+                    package_assets_by_id,
+                    yolo_labels,
+                    class_map,
+                )
+                if schema_version == TASK_PACKAGE_SCHEMA_VERSION
+                else yolo_labels
+            )
+            for asset_id, (asset, item) in rows_by_asset_id.items():
+                label_body = selected_labels.get(asset_id)
+                if label_body is None:
+                    raise catalog_service.conflict("任务包缺少图片对应的标注结果")
                 catalog_service.parse_yolo_detection_annotation(label_body, allowed_class_ids)
-                asset, item = rows_by_asset_id[asset_id]
                 imported_labels.append((asset, item, label_body))
     except BadZipFile as error:
         raise catalog_service.conflict("上传文件不是有效的 ZIP 任务包") from error
