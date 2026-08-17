@@ -18,7 +18,7 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
-import { type FormEvent, useEffect, useState } from "react";
+import { type FormEvent, useCallback, useEffect, useState } from "react";
 import {
   catalogApi,
   type ProviderDashboard,
@@ -94,7 +94,7 @@ export function ProviderWorkbench() {
   const selectedWorkspace = workspaces.find((workspace) => workspace.id === workspaceId);
   const canManage = selectedWorkspace?.role === "owner" || selectedWorkspace?.role === "admin";
 
-  function syncProfile(nextDashboard: ProviderDashboard, fallbackName: string) {
+  const syncProfile = useCallback((nextDashboard: ProviderDashboard, fallbackName: string) => {
     const profile = nextDashboard.profile;
     setPublicName(profile?.public_name ?? fallbackName);
     setSummary(profile?.summary ?? "");
@@ -103,9 +103,9 @@ export function ProviderWorkbench() {
     setWebsiteUrl(profile?.website_url ?? "");
     setServiceRegions(profile?.service_regions ?? ["中国大陆"]);
     setSupportCommitment(profile?.support_commitment ?? "");
-  }
+  }, []);
 
-  async function loadDashboard(workspace: Workspace) {
+  const loadDashboard = useCallback(async (workspace: Workspace) => {
     if (workspace.role !== "owner" && workspace.role !== "admin") {
       setDashboard(emptyDashboard);
       syncProfile(emptyDashboard, workspace.name);
@@ -114,7 +114,7 @@ export function ProviderWorkbench() {
     const nextDashboard = await catalogApi.getProviderDashboard(workspace.id);
     setDashboard(nextDashboard);
     syncProfile(nextDashboard, workspace.name);
-  }
+  }, [syncProfile]);
 
   useEffect(() => {
     void catalogApi
@@ -130,7 +130,7 @@ export function ProviderWorkbench() {
       })
       .catch((reason) => setError(reason instanceof Error ? reason.message : "供应方中心加载失败"))
       .finally(() => setLoading(false));
-  }, []);
+  }, [loadDashboard]);
 
   async function changeWorkspace(nextWorkspaceId: string) {
     const workspace = workspaces.find((item) => item.id === nextWorkspaceId);

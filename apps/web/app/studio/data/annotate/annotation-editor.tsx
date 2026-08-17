@@ -21,6 +21,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import { catalogApi, type AnnotationTask, type Asset } from "../../../../lib/catalog-api";
+import { DynamicAssetImage } from "../../../components/dynamic-asset-image";
 
 type Tool = "select" | "box" | "polygon" | "smart";
 type Label = string;
@@ -105,6 +106,8 @@ export function AnnotationEditor() {
   const dragRef = useRef<{ pointerId: number; startX: number; startY: number } | null>(null);
 
   const asset = assets[currentIndex] ?? null;
+  const assetId = asset?.id ?? null;
+  const workspaceId = workspace?.id ?? null;
   const currentLabelCounts = useMemo(() => classNames.map((label) => boxes.filter((box) => box.label === label).length), [boxes, classNames]);
 
   useEffect(() => {
@@ -130,19 +133,22 @@ export function AnnotationEditor() {
   }, [datasetId, taskId]);
 
   useEffect(() => {
-    if (!workspace || !datasetId || !asset) return;
+    if (!workspaceId || !datasetId || !assetId) {
+      setImageUrl(null);
+      return;
+    }
     const controller = new AbortController();
     let objectUrl: string | null = null;
-    void catalogApi.getAssetContent(workspace.id, datasetId, asset.id, controller.signal)
+    void catalogApi.getAssetContent(workspaceId, datasetId, assetId, controller.signal)
       .then((blob) => { objectUrl = URL.createObjectURL(blob); setImageUrl(objectUrl); })
       .catch(() => setNotice("素材预览读取失败"));
     return () => { controller.abort(); if (objectUrl) URL.revokeObjectURL(objectUrl); };
-  }, [asset?.id, datasetId, workspace?.id]);
+  }, [assetId, datasetId, workspaceId]);
 
   useEffect(() => {
-    if (!workspace || !datasetId || !asset) return;
+    if (!workspaceId || !datasetId || !assetId) return;
     const controller = new AbortController();
-    void catalogApi.getAnnotationContent(workspace.id, datasetId, asset.id, controller.signal)
+    void catalogApi.getAnnotationContent(workspaceId, datasetId, assetId, controller.signal)
       .then((text) => {
         const nextBoxes = parseYolo(text, classNames);
         boxesRef.current = nextBoxes;
@@ -165,7 +171,7 @@ export function AnnotationEditor() {
         setSelectedId(null);
       });
     return () => controller.abort();
-  }, [asset?.id, classNames, datasetId, workspace?.id]);
+  }, [assetId, classNames, datasetId, workspaceId]);
 
   function getImageFrame() {
     const canvas = canvasRef.current;
@@ -436,7 +442,7 @@ export function AnnotationEditor() {
       </header>
       <div className="annotation-editor-workspace">
         <aside className="annotation-tool-rail" aria-label="标注工具"><EditorTool active={activeTool === "select"} label="选择" onClick={() => setActiveTool("select")}><MousePointer2 size={18} /></EditorTool><EditorTool active={activeTool === "box"} label="矩形框" onClick={() => setActiveTool("box")}><Square size={18} /></EditorTool><EditorTool active={activeTool === "polygon"} label="多边形" onClick={() => setNotice("多边形工具将在专业标注工具接入后开放")}><Pentagon size={18} /></EditorTool><span className="tool-rail-divider" /><EditorTool active={false} label="智能预标注" onClick={() => setNotice("智能预标注尚未接入真实模型")}><Sparkles size={18} /></EditorTool></aside>
-        <section className="annotation-canvas-column"><div className={`annotation-canvas tool-${activeTool}`} ref={canvasRef} aria-label="标注画布">{imageUrl ? <img ref={imageRef} className="annotation-source-image" src={imageUrl} alt="当前素材" /> : <LoaderCircle className="spinner" size={24} />}{activeTool === "box" ? <div className="canvas-drag-layer" role="presentation" aria-label={`添加「${classNames[selectedClass] ?? "类别"}」矩形框`} onPointerDown={beginBox} onPointerMove={updateBox} onPointerUp={finishBox} onPointerCancel={(event) => finishBox(event, true)} onLostPointerCapture={finishBox} onMouseUp={(event) => completeBox(event.clientX, event.clientY)} /> : null}{boxes.map((box) => <button type="button" key={box.id} className={`canvas-box label-${box.classId % 3}${selectedId === box.id ? " is-selected" : ""}`} style={{ left: `${box.x}%`, top: `${box.y}%`, width: `${box.width}%`, height: `${box.height}%` }} onPointerDown={(event) => event.stopPropagation()} onClick={(event) => { event.stopPropagation(); setSelectedId(box.id); setActiveTool("select"); }} aria-label={`${box.label}标注`}><span>{box.label}</span></button>)}{draftBox ? <div className={`canvas-box is-draft label-${draftBox.classId % 3}`} style={{ left: `${draftBox.x}%`, top: `${draftBox.y}%`, width: `${draftBox.width}%`, height: `${draftBox.height}%` }} aria-hidden="true"><span>{draftBox.label}</span></div> : null}{activeTool === "box" ? <span className="canvas-help">在图片上按住并拖拽，框选「{classNames[selectedClass] ?? "类别"}」</span> : null}</div><footer className="annotation-filmstrip"><button type="button" onClick={() => moveAsset(-1)} aria-label="上一张"><ChevronLeft size={17} /></button><div className="filmstrip-items">{assets.slice(Math.max(0, currentIndex - 2), currentIndex + 3).map((item, index) => <button type="button" key={item.id} className={item.id === asset.id ? "is-active" : ""} onClick={() => setCurrentIndex(Math.max(0, currentIndex - 2 + index))}><span className="filmstrip-scene" /><small>{Math.max(0, currentIndex - 2 + index) + 1}</small></button>)}</div><button type="button" onClick={() => moveAsset(1)} aria-label="下一张"><ChevronRight size={17} /></button></footer></section>
+        <section className="annotation-canvas-column"><div className={`annotation-canvas tool-${activeTool}`} ref={canvasRef} aria-label="标注画布">{imageUrl ? <DynamicAssetImage ref={imageRef} className="annotation-source-image" src={imageUrl} alt="当前素材" /> : <LoaderCircle className="spinner" size={24} />}{activeTool === "box" ? <div className="canvas-drag-layer" role="presentation" aria-label={`添加「${classNames[selectedClass] ?? "类别"}」矩形框`} onPointerDown={beginBox} onPointerMove={updateBox} onPointerUp={finishBox} onPointerCancel={(event) => finishBox(event, true)} onLostPointerCapture={finishBox} onMouseUp={(event) => completeBox(event.clientX, event.clientY)} /> : null}{boxes.map((box) => <button type="button" key={box.id} className={`canvas-box label-${box.classId % 3}${selectedId === box.id ? " is-selected" : ""}`} style={{ left: `${box.x}%`, top: `${box.y}%`, width: `${box.width}%`, height: `${box.height}%` }} onPointerDown={(event) => event.stopPropagation()} onClick={(event) => { event.stopPropagation(); setSelectedId(box.id); setActiveTool("select"); }} aria-label={`${box.label}标注`}><span>{box.label}</span></button>)}{draftBox ? <div className={`canvas-box is-draft label-${draftBox.classId % 3}`} style={{ left: `${draftBox.x}%`, top: `${draftBox.y}%`, width: `${draftBox.width}%`, height: `${draftBox.height}%` }} aria-hidden="true"><span>{draftBox.label}</span></div> : null}{activeTool === "box" ? <span className="canvas-help">在图片上按住并拖拽，框选「{classNames[selectedClass] ?? "类别"}」</span> : null}</div><footer className="annotation-filmstrip"><button type="button" onClick={() => moveAsset(-1)} aria-label="上一张"><ChevronLeft size={17} /></button><div className="filmstrip-items">{assets.slice(Math.max(0, currentIndex - 2), currentIndex + 3).map((item, index) => <button type="button" key={item.id} className={item.id === asset.id ? "is-active" : ""} onClick={() => setCurrentIndex(Math.max(0, currentIndex - 2 + index))}><span className="filmstrip-scene" /><small>{Math.max(0, currentIndex - 2 + index) + 1}</small></button>)}</div><button type="button" onClick={() => moveAsset(1)} aria-label="下一张"><ChevronRight size={17} /></button></footer></section>
         <aside className="annotation-inspector"><section><div className="inspector-heading"><div><strong>类别</strong><small>拖拽画布时使用</small></div><span>{classNames.length}</span></div><div className="annotation-class-list">{classNames.map((name, index) => <button type="button" className={selectedClass === index ? "is-active" : ""} key={`${name}-${index}`} onClick={() => setSelectedClass(index)}><i className={`class-color color-${index % 3}`} /><span>{name}</span><small>{currentLabelCounts[index] ?? 0}</small></button>)}</div></section><section className="smart-label-panel"><div className="inspector-heading"><div><strong>智能预标注</strong><small>尚未接入真实模型</small></div><Sparkles size={15} /></div><p>接入模型并完成权限、成本和审核配置后开放。</p><button className="secondary-button smart-trial-button" type="button" onClick={() => setNotice("智能预标注尚未接入真实模型")}><Sparkles size={14} />暂未开放</button></section><section><div className="inspector-heading"><div><strong>本张标注</strong><small>{boxes.length} 个已确认</small></div></div><div className="instance-list">{boxes.map((box, index) => <button type="button" className={selectedId === box.id ? "is-active" : ""} key={box.id} onClick={() => setSelectedId(box.id)}><i className={`class-color color-${box.classId % 3}`} /><span>{box.label} {index + 1}</span></button>)}</div><button className="delete-annotation-button" type="button" disabled={!selectedId} onClick={() => { if (!selectedId) return; applyBoxes(boxesRef.current.filter((box) => box.id !== selectedId), "已删除标注，可撤销恢复"); setSelectedId(null); }}><Trash2 size={14} />删除选中标注</button></section></aside>
       </div>
     </main>

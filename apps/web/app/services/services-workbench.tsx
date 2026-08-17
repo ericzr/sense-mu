@@ -232,10 +232,17 @@ export function ServicesWorkbench() {
       ),
     [activePolicy, evaluations],
   );
-  const eligibleModels = modelVersions.filter((model) => approvedModelIds.has(model.id));
-  const publishedDeployments = deployments.filter((deployment) => deployment.status === "published");
-  const batchEligibleDeployments = publishedDeployments.filter(
-    (deployment) => deployment.task_type === "object-detection",
+  const eligibleModels = useMemo(
+    () => modelVersions.filter((model) => approvedModelIds.has(model.id)),
+    [approvedModelIds, modelVersions],
+  );
+  const publishedDeployments = useMemo(
+    () => deployments.filter((deployment) => deployment.status === "published"),
+    [deployments],
+  );
+  const batchEligibleDeployments = useMemo(
+    () => publishedDeployments.filter((deployment) => deployment.task_type === "object-detection"),
+    [publishedDeployments],
   );
   const deploymentsWithCapabilitySpec = useMemo(
     () => new Set(capabilitySpecs.map((spec) => spec.deployment_id)),
@@ -255,9 +262,10 @@ export function ServicesWorkbench() {
     () => capabilitySpecs.filter((spec) => spec.output.business_events.length > 0),
     [capabilitySpecs],
   );
-  const selectedTestDeployment =
-    publishedDeployments.find((deployment) => deployment.id === testDeploymentId) ?? null;
-  const selectedTestEndpointUrl = selectedTestDeployment?.endpoint_url ?? "";
+  const selectedTestDeployment = useMemo(
+    () => publishedDeployments.find((deployment) => deployment.id === testDeploymentId) ?? null,
+    [publishedDeployments, testDeploymentId],
+  );
 
   async function replayVisionEvent(event: VisionEvent) {
     if (!workspace || !project) return;
@@ -296,7 +304,7 @@ export function ServicesWorkbench() {
         ? current
         : publishedDeployments[0]?.id ?? "",
     );
-  }, [deployments, requestedDeploymentId]);
+  }, [publishedDeployments, requestedDeploymentId]);
 
   useEffect(() => {
     setBatchDeploymentId((current) =>
@@ -356,7 +364,7 @@ export function ServicesWorkbench() {
     return () => {
       active = false;
     };
-  }, [selectedTestEndpointUrl]);
+  }, [selectedTestDeployment]);
 
   async function createDeployment(event: FormEvent) {
     event.preventDefault();

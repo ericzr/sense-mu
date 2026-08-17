@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   type Dataset,
   type DatasetVersion,
@@ -199,7 +199,7 @@ export function TrainingWorkbench() {
 
   const activePolicy = policies.find((policy) => policy.is_active) ?? null;
 
-  async function refreshProjectState(selectedWorkspace: Workspace, selectedProject: Project) {
+  const refreshProjectState = useCallback(async (selectedWorkspace: Workspace, selectedProject: Project) => {
     const [
       datasets,
       nextRuns,
@@ -244,7 +244,7 @@ export function TrainingWorkbench() {
         ? current
         : nextModels[0]?.id ?? "",
     );
-  }
+  }, [requestedDatasetVersionId]);
 
   useEffect(() => {
     void Promise.all([catalogApi.listWorkspaces(), catalogApi.listTrainingEngines()])
@@ -260,7 +260,7 @@ export function TrainingWorkbench() {
       })
       .catch((reason) => setError(reason instanceof Error ? reason.message : "训练数据加载失败"))
       .finally(() => setLoading(false));
-  }, [requestedProjectId]);
+  }, [refreshProjectState, requestedProjectId]);
 
   useEffect(() => {
     if (

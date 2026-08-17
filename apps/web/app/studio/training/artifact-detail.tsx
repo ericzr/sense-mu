@@ -17,6 +17,7 @@ import {
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { DynamicAssetImage } from "../../components/dynamic-asset-image";
 import {
   type Dataset,
   type DatasetVersion,
@@ -216,7 +217,7 @@ function TrainingVisualizationsPanel({ visualizations }: { visualizations: Train
       <div className="training-visualizations-grid">
         {entries.map((entry) => (
           <figure className="training-visualization" key={entry.name}>
-            <img src={entry.src} alt={`${entry.title}图`} />
+            <DynamicAssetImage src={entry.src} alt={`${entry.title}图`} />
             <figcaption>
               <strong>{entry.title}</strong>
               <span>{entry.description}</span>

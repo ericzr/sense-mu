@@ -27,6 +27,7 @@ import {
 import { type ChangeEvent, type FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { DynamicAssetImage } from "../../components/dynamic-asset-image";
 import {
   type AnnotationTask,
   type Asset,
@@ -140,7 +141,7 @@ function AssetThumbnail({
 
   if (failed) return <FileImage size={20} aria-hidden="true" />;
   if (!source) return <LoaderCircle className="spinner" size={17} aria-label="正在加载素材预览" />;
-  return <img src={source} alt={assetDisplayName(asset)} />;
+  return <DynamicAssetImage src={source} alt={assetDisplayName(asset)} />;
 }
 
 async function sha256(file: File): Promise<string> {
@@ -214,6 +215,9 @@ export function DataWorkbench() {
   const [assetSearch, setAssetSearch] = useState("");
   const [assetSplitFilter, setAssetSplitFilter] = useState<"all" | "train" | "valid" | "test" | "draft">("all");
   const [assetLayout, setAssetLayout] = useState<"grid" | "list">("grid");
+  const workspaceId = workspace?.id ?? null;
+  const datasetId = dataset?.id ?? null;
+  const datasetClassMap = dataset?.class_map;
 
   async function loadWorkspaces() {
     setConnection("loading");
@@ -309,16 +313,16 @@ export function DataWorkbench() {
   }
 
   useEffect(() => {
-    if (!dataset || !workspace) {
+    if (!datasetId || !workspaceId) {
       setAssets([]);
       setVersions([]);
       return;
     }
     void Promise.all([
-      catalogApi.listAssets(workspace.id, dataset.id),
-      catalogApi.listVersions(workspace.id, dataset.id),
-      catalogApi.listSourceVideos(workspace.id, dataset.id),
-      catalogApi.listVideoExtractions(workspace.id, dataset.id),
+      catalogApi.listAssets(workspaceId, datasetId),
+      catalogApi.listVersions(workspaceId, datasetId),
+      catalogApi.listSourceVideos(workspaceId, datasetId),
+      catalogApi.listVideoExtractions(workspaceId, datasetId),
     ])
       .then(([nextAssets, nextVersions, nextSourceVideos, nextExtractions]) => {
         setAssets(nextAssets);
@@ -331,27 +335,29 @@ export function DataWorkbench() {
         });
         setSourceVideos(nextSourceVideos);
         setExtractionJobs(nextExtractions);
-        const currentClassMap = dataset.class_map ?? {};
-        setClassNames(
-          Object.entries(currentClassMap)
-            .sort(([left], [right]) => Number(left) - Number(right))
-            .map(([, name]) => name)
-            .join("\n"),
-        );
       })
       .catch((reason) => setError(reason instanceof Error ? reason.message : "数据加载失败"));
-  }, [workspace, dataset?.id, requestedVersionId]);
+  }, [datasetId, requestedVersionId, workspaceId]);
 
   useEffect(() => {
-    if (!workspace || !dataset) return;
+    setClassNames(
+      Object.entries(datasetClassMap ?? {})
+        .sort(([left], [right]) => Number(left) - Number(right))
+        .map(([, name]) => name)
+        .join("\n"),
+    );
+  }, [datasetClassMap]);
+
+  useEffect(() => {
+    if (!workspaceId || !datasetId) return;
     const hasActiveExtraction = extractionJobs.some((job) =>
       ["queued", "preparing", "running", "cancel_requested"].includes(job.status),
     );
     if (!hasActiveExtraction) return;
     const timer = window.setInterval(() => {
       void Promise.all([
-        catalogApi.listVideoExtractions(workspace.id, dataset.id),
-        catalogApi.listAssets(workspace.id, dataset.id),
+        catalogApi.listVideoExtractions(workspaceId, datasetId),
+        catalogApi.listAssets(workspaceId, datasetId),
       ])
         .then(([jobs, nextAssets]) => {
           setExtractionJobs(jobs);
@@ -360,33 +366,34 @@ export function DataWorkbench() {
         .catch(() => undefined);
     }, 2500);
     return () => window.clearInterval(timer);
-  }, [workspace?.id, dataset?.id, extractionJobs]);
+  }, [datasetId, extractionJobs, workspaceId]);
 
   useEffect(() => {
-    if (!workspace || !dataset) {
+    if (!workspaceId || !datasetId) {
       setAnnotationTasks([]);
       return;
     }
     void catalogApi
-      .listAnnotationTasks(workspace.id, dataset.id)
+      .listAnnotationTasks(workspaceId, datasetId)
       .then(setAnnotationTasks)
       .catch((reason) => setError(reason instanceof Error ? reason.message : "标注任务加载失败"));
-  }, [workspace?.id, dataset?.id]);
+  }, [datasetId, workspaceId]);
 
   const selectedVersion = versions.find((item) => item.id === selectedVersionId) ?? versions[0] ?? null;
+  const resolvedVersionId = selectedVersion?.id ?? null;
 
   useEffect(() => {
-    if (!workspace || !selectedVersion) {
+    if (!workspaceId || !resolvedVersionId) {
       setQualityReport(null);
       return;
     }
     setQualityLoading(true);
     void catalogApi
-      .getDatasetVersionQualityReport(workspace.id, selectedVersion.id)
+      .getDatasetVersionQualityReport(workspaceId, resolvedVersionId)
       .then(setQualityReport)
       .catch((reason) => setError(reason instanceof Error ? reason.message : "质量报告加载失败"))
       .finally(() => setQualityLoading(false));
-  }, [workspace?.id, selectedVersion?.id]);
+  }, [resolvedVersionId, workspaceId]);
 
   async function createWorkspace(event: FormEvent) {
     event.preventDefault();
