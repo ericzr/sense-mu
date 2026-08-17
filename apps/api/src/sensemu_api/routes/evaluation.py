@@ -117,6 +117,8 @@ def create_acceptance_run(
         idempotency_key,
         payload,
     )
+    # Dispatch only after the run can be read by a worker or a client refresh.
+    session.commit()
     if run.status == "queued":
         background_tasks.add_task(dispatcher.submit_acceptance, workspace_id, run.id)
     return TrainingRunResponse.model_validate(run).model_copy(update={"reused": reused})

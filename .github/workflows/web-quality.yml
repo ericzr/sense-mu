@@ -3,11 +3,13 @@ name: Web quality
 on:
   pull_request:
     paths:
+      - "apps/api/**"
       - "apps/web/**"
       - ".github/workflows/web-quality.yml"
   push:
     branches: [main]
     paths:
+      - "apps/api/**"
       - "apps/web/**"
       - ".github/workflows/web-quality.yml"
 
@@ -24,12 +26,24 @@ jobs:
           node-version: 24
           cache: npm
           cache-dependency-path: apps/web/package-lock.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: apps/api/pyproject.toml
       - run: npm ci
+      - name: Install Core API test runtime
+        working-directory: .
+        run: |
+          python -m venv .venv
+          .venv/bin/python -m pip install --upgrade pip
+          .venv/bin/python -m pip install -e apps/api
       - run: npx playwright install --with-deps chromium
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
       - run: npm run test:e2e
+      - run: npm run test:e2e:local
       - name: Upload Playwright report
         if: failure()
         uses: actions/upload-artifact@v4

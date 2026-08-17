@@ -11,6 +11,7 @@
     "start": "WRANGLER_LOG_PATH=.wrangler/wrangler.log vinext start",
     "test": "npm run build && node --test tests/rendered-html.test.mjs && SENSEMU_PREVIEW_MODE=true node --test tests/hosted-preview.test.mjs",
     "test:e2e": "SENSEMU_PREVIEW_MODE=true NEXT_PUBLIC_SENSEMU_PREVIEW_MODE=true npm run build && SENSEMU_PREVIEW_MODE=true NEXT_PUBLIC_SENSEMU_PREVIEW_MODE=true playwright test",
+    "test:e2e:local": "bash scripts/run-local-e2e.sh",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next"
   },

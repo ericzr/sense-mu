@@ -12,10 +12,16 @@ def test_browser_preflight_allows_supported_write_methods(method: str) -> None:
             headers={
                 "Origin": "http://localhost:3000",
                 "Access-Control-Request-Method": method,
-                "Access-Control-Request-Headers": "X-Workspace-ID, Content-Type",
+                "Access-Control-Request-Headers": (
+                    "X-Workspace-ID, Content-Type, X-Amz-Meta-Sha256"
+                ),
             },
         )
 
     assert response.status_code == 200
     allowed_methods = response.headers["access-control-allow-methods"]
     assert method in {value.strip() for value in allowed_methods.split(",")}
+    allowed_headers = response.headers["access-control-allow-headers"].lower()
+    assert "x-amz-meta-sha256" in {
+        value.strip() for value in allowed_headers.split(",")
+    }

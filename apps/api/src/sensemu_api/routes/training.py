@@ -64,6 +64,9 @@ def create_training_run(
         idempotency_key,
         payload,
     )
+    # A worker or an immediate client refresh must never observe a queued run
+    # before its row and job specification are durable.
+    session.commit()
     if run.status == "queued":
         background_tasks.add_task(dispatcher.submit, workspace_id, run.id)
     return TrainingRunResponse.model_validate(run).model_copy(update={"reused": reused})

@@ -37,6 +37,7 @@ def create_app() -> FastAPI:
             "Authorization",
             "Content-Type",
             "Idempotency-Key",
+            "X-Amz-Meta-Sha256",
             "X-Workspace-ID",
         ],
     )
