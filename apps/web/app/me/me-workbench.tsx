@@ -10,11 +10,13 @@ import {
   PackageCheck,
   RefreshCw,
   Settings,
+  ShieldCheck,
   ShoppingBag,
   WalletCards,
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { ListingIntake } from "./listing-intake";
 import {
   catalogApi,
   type Deployment,
@@ -117,9 +119,15 @@ export function MeWorkbench({ initialView }: { initialView: View }) {
   const [deployments, setDeployments] = useState<Deployment[]>([]);
   const [secret, setSecret] = useState<MarketplaceSubscriptionSecret | null>(null);
 
-  async function loadWorkspace(nextWorkspaceId: string) {
+  async function loadWorkspace(
+    nextWorkspaceId: string,
+    role?: Workspace["role"],
+  ) {
+    const canManageProvider = role === "owner" || role === "admin";
     const [nextProvider, nextSubscriptions, nextUsage, nextBilling, projects] = await Promise.all([
-      catalogApi.getProviderDashboard(nextWorkspaceId),
+      canManageProvider
+        ? catalogApi.getProviderDashboard(nextWorkspaceId)
+        : Promise.resolve(emptyProvider),
       catalogApi.listMarketplaceSubscriptions(nextWorkspaceId),
       catalogApi.listMarketplaceUsageRecords(nextWorkspaceId),
       catalogApi.getMarketplaceBilling(nextWorkspaceId),
@@ -144,9 +152,9 @@ export function MeWorkbench({ initialView }: { initialView: View }) {
     void catalogApi.listWorkspaces()
       .then(async (nextWorkspaces) => {
         setWorkspaces(nextWorkspaces);
-        const selected = nextWorkspaces[0]?.id ?? "";
-        setWorkspaceId(selected);
-        if (selected) await loadWorkspace(selected);
+        const selected = nextWorkspaces[0];
+        setWorkspaceId(selected?.id ?? "");
+        if (selected) await loadWorkspace(selected.id, selected.role);
       })
       .catch((reason) => setError(reason instanceof Error ? reason.message : "内容加载失败"))
       .finally(() => setLoading(false));
@@ -158,12 +166,13 @@ export function MeWorkbench({ initialView }: { initialView: View }) {
   }
 
   async function changeWorkspace(nextWorkspaceId: string) {
+    const nextWorkspace = workspaces.find((workspace) => workspace.id === nextWorkspaceId);
     setWorkspaceId(nextWorkspaceId);
     setLoading(true);
     setError(null);
     setSecret(null);
     try {
-      await loadWorkspace(nextWorkspaceId);
+      await loadWorkspace(nextWorkspaceId, nextWorkspace?.role);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "工作区切换失败");
     } finally {
@@ -202,6 +211,10 @@ export function MeWorkbench({ initialView }: { initialView: View }) {
 
   const activeSubscriptions = subscriptions.filter((item) => item.status === "active");
   const remainingUnits = activeSubscriptions.reduce((sum, item) => sum + item.remaining_units, 0);
+  const canManageProvider = workspaces.some(
+    (workspace) =>
+      workspace.id === workspaceId && (workspace.role === "owner" || workspace.role === "admin"),
+  );
 
   return (
     <main className="product-page me-page">
@@ -235,12 +248,29 @@ export function MeWorkbench({ initialView }: { initialView: View }) {
             <article><Boxes size={17} /><span>待结算</span><strong>{formatMoney(provider.unsettled_earnings_yuan)}</strong><small>按实际调用计算</small></article>
           </section>
 
+          {canManageProvider ? <ListingIntake workspaceId={workspaceId} onSubmitted={() => loadWorkspace(
+            workspaceId,
+            workspaces.find((workspace) => workspace.id === workspaceId)?.role,
+          )} /> : (
+            <section className="me-permission-note">
+              <ShieldCheck size={17} />
+              <span>管理员可管理商品、销售订单和结算信息。</span>
+              <Link href="/studio">继续生产 <ArrowRight size={13} /></Link>
+            </section>
+          )}
+
           <section className="me-section">
             <div className="me-section-heading"><h2>我的商品</h2><span>{provider.algorithm_listing_count + provider.data_listing_count} 个</span></div>
             <div className="me-product-grid">
               {[...provider.algorithm_listings.map((item) => ({ id: item.id, title: item.title, type: "算法", detail: `${formatMoney(item.price_per_1000_cents / 100)} / 千次`, status: item.status })),
                 ...provider.data_listings.map((item) => ({ id: item.id, title: item.title, type: "数据", detail: `${item.asset_count.toLocaleString("zh-CN")} 个文件`, status: item.status }))]
-                .map((item) => <article key={`${item.type}-${item.id}`}><span>{item.type}</span><strong>{item.title}</strong><small>{item.detail}</small><em>{listingStatus[item.status] ?? item.status}</em></article>)}
+                .map((item) => {
+                  const href = item.status === "published"
+                    ? item.type === "算法" ? `/marketplace/${item.id}` : `/data-market/${item.id}`
+                    : null;
+                  const content = <><span>{item.type}</span><strong>{item.title}</strong><small>{item.detail}</small><em>{listingStatus[item.status] ?? item.status}</em></>;
+                  return href ? <Link className="me-product-card-link" key={`${item.type}-${item.id}`} href={href}>{content}</Link> : <article key={`${item.type}-${item.id}`}>{content}</article>;
+                })}
               {!provider.algorithm_listings.length && !provider.data_listings.length ? <div className="me-empty">还没有上架商品</div> : null}
             </div>
           </section>
@@ -331,7 +361,10 @@ export function MeWorkbench({ initialView }: { initialView: View }) {
             </div>
           </section>
 
-          <section className="me-section muted-section"><div className="me-section-heading"><h2>已购数据</h2><span>购买功能尚未开放</span></div></section>
+          <section className="me-section data-access-section">
+            <div className="me-section-heading"><h2>数据授权</h2><Link href="/data-market">浏览数据市场</Link></div>
+            <div><span>数据购买和交付尚未开放</span><small>当前可查看数据卡、许可与适用范围。</small></div>
+          </section>
         </div>
       ) : null}
     </main>

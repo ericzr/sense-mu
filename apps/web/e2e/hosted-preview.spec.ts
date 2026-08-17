@@ -63,4 +63,17 @@ test.describe("托管演示站", () => {
     await page.getByPlaceholder("搜索算法或使用场景").fill("不存在的算法");
     await expect(page.getByText("没有找到符合条件的算法", { exact: true })).toBeVisible();
   });
+
+  test("我的页面提供真实资产上架入口并保留演示写入边界", async ({ page }) => {
+    await page.goto("/me?view=producer");
+    await expect(page.getByRole("heading", { name: "上架", exact: true })).toBeVisible();
+
+    await page.getByRole("button", { name: "提交审核", exact: true }).click();
+    await expect(page.getByRole("combobox", { name: "可上架能力" })).toBeVisible();
+    await page.getByRole("button", { name: "关闭上架表单" }).click();
+
+    await page.getByRole("button", { name: "创建数据卡", exact: true }).click();
+    await expect(page.getByRole("combobox", { name: "可上架数据版本" })).toBeVisible();
+    await expect(page.getByRole("checkbox", { name: "我确认拥有发布及声明上述授权范围的权利" })).toBeVisible();
+  });
 });
