@@ -107,6 +107,8 @@ type WorkbenchResources = {
   deployments: Array<Deployment & { projectName: string }>;
 };
 
+type WorkbenchResourceLoadError = "unavailable" | "permission_denied";
+
 const emptyWorkbenchResources: WorkbenchResources = {
   datasets: [],
   projects: [],
@@ -164,7 +166,7 @@ function Navigation({
   onMobileClose: () => void;
   identity: CurrentIdentity | null;
   resources: WorkbenchResources;
-  resourceLoadError: string | null;
+  resourceLoadError: WorkbenchResourceLoadError | null;
   onRefreshResources: () => void;
   expandedGroups: Record<WorkbenchGroupKey, boolean>;
   onToggleGroup: (group: WorkbenchGroupKey) => void;
@@ -197,6 +199,9 @@ function Navigation({
   const primaryRole = identity?.memberships[0]?.role;
   const profileName = identity?.display_name ?? identity?.email ?? "未登录";
   const initials = profileName.trim().slice(0, 2).toUpperCase() || "SM";
+  const resourceAlert = resourceLoadError === "permission_denied"
+    ? { label: "工作台访问权限已变更", retryLabel: "重新检查工作台权限", emptyLabel: "无法访问" }
+    : { label: "资源暂不可用", retryLabel: "重新加载工作台资源", emptyLabel: "暂不可用" };
   return (
     <aside className="sidebar" id="primary-sidebar">
       <Link className="brand-row" href="/" aria-label="SenseMu 首页">
@@ -277,11 +282,11 @@ function Navigation({
 
           {resourceLoadError ? (
             <div className="workbench-resource-alert" role="status" aria-live="polite">
-              <span>资源暂不可用</span>
+              <span>{resourceAlert.label}</span>
               <button
                 type="button"
-                aria-label="重新加载工作台资源"
-                title="重新加载工作台资源"
+                aria-label={resourceAlert.retryLabel}
+                title={resourceAlert.retryLabel}
                 onClick={onRefreshResources}
               >
                 <RefreshCw size={13} aria-hidden="true" />
@@ -301,7 +306,7 @@ function Navigation({
               addLabel="新建数据集"
               onMobileClose={onMobileClose}
             >
-              {resourceLoadError && !resources.datasets.length ? <span className="workbench-resource-empty">暂不可用</span> : resources.datasets.length ? resources.datasets.map((dataset) => {
+              {resourceLoadError && !resources.datasets.length ? <span className="workbench-resource-empty">{resourceAlert.emptyLabel}</span> : resources.datasets.length ? resources.datasets.map((dataset) => {
                 const selected = pathname.startsWith("/studio/data") && selectedDatasetId === dataset.id;
                 return (
                   <div className={`workbench-resource-row${selected ? " is-current" : ""}`} key={dataset.id}>
@@ -341,7 +346,7 @@ function Navigation({
               addLabel={currentProject ? "新建训练" : "新建项目"}
               onMobileClose={onMobileClose}
             >
-              {resourceLoadError && !resources.projects.length ? <span className="workbench-resource-empty">暂不可用</span> : resources.projects.length ? resources.projects.map((project) => {
+              {resourceLoadError && !resources.projects.length ? <span className="workbench-resource-empty">{resourceAlert.emptyLabel}</span> : resources.projects.length ? resources.projects.map((project) => {
                 const selected = (pathname === "/studio" || pathname.startsWith("/studio/training"))
                   && selectedProjectId === project.id;
                 return (
@@ -381,7 +386,7 @@ function Navigation({
               addLabel={currentProject ? "发布服务" : "新建项目"}
               onMobileClose={onMobileClose}
             >
-              {resourceLoadError && !resources.deployments.length ? <span className="workbench-resource-empty">暂不可用</span> : resources.deployments.length ? resources.deployments.map((deployment) => {
+              {resourceLoadError && !resources.deployments.length ? <span className="workbench-resource-empty">{resourceAlert.emptyLabel}</span> : resources.deployments.length ? resources.deployments.map((deployment) => {
                 const selected = pathname === "/services" && selectedProjectId === deployment.project_id;
                 return (
                   <div className={`workbench-resource-row${selected ? " is-current" : ""}`} key={deployment.id}>
@@ -614,7 +619,7 @@ export function ProductShell({
   const [previewMode, setPreviewMode] = useState(false);
   const [workbenchResources, setWorkbenchResources] = useState<WorkbenchResources>(emptyWorkbenchResources);
   const [workbenchWorkspaceId, setWorkbenchWorkspaceId] = useState<string | null>(null);
-  const [resourceLoadError, setResourceLoadError] = useState<string | null>(null);
+  const [resourceLoadError, setResourceLoadError] = useState<WorkbenchResourceLoadError | null>(null);
   const [expandedWorkbenchGroups, setExpandedWorkbenchGroups] = useState<Record<WorkbenchGroupKey, boolean>>(
     () => defaultWorkbenchGroups(pathname),
   );
@@ -733,8 +738,20 @@ export function ProductShell({
       });
       setWorkbenchWorkspaceId(workspace.id);
       setResourceLoadError(null);
-    } catch {
-      setResourceLoadError("工作台资源加载失败");
+    } catch (reason) {
+      if (reason instanceof CatalogApiError && reason.code === "permission_denied") {
+        setWorkbenchWorkspaceId(null);
+        setWorkbenchResources(emptyWorkbenchResources);
+        setResourceLoadError("permission_denied");
+        return;
+      }
+      if (reason instanceof CatalogApiError && reason.code === "session_expired") {
+        setWorkbenchWorkspaceId(null);
+        setWorkbenchResources(emptyWorkbenchResources);
+        setResourceLoadError(null);
+        return;
+      }
+      setResourceLoadError("unavailable");
     }
   }, []);
 

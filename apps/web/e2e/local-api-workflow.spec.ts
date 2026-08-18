@@ -419,3 +419,35 @@ test("刷新失败时保留已加载的工作台资源快照", async ({ page }) 
   await expect(page.getByText("资源暂不可用", { exact: true })).toBeVisible();
   await expect(projectResource).toBeVisible();
 });
+
+test("权限拒绝时清除已加载的工作台资源快照", async ({ page }) => {
+  const suffix = randomUUID().slice(0, 8);
+  const [workspace] = await coreApi<WorkspaceRecord[]>(page, "/workspaces");
+  if (!workspace) throw new Error("未找到默认工作区");
+  const project = await coreApi<ProjectRecord>(page, "/projects", {
+    method: "POST",
+    headers: { "X-Workspace-ID": workspace.id },
+    data: {
+      slug: `resource-permission-${suffix}`,
+      name: "权限边界项目",
+      task_type: "object-detection",
+    },
+  });
+
+  await page.goto("/studio");
+  const projectResource = page.getByTitle(project.name);
+  await expect(projectResource).toBeVisible();
+
+  await page.route("**/api/v1/workspaces", async (route) => {
+    await route.fulfill({
+      status: 403,
+      contentType: "application/json",
+      body: JSON.stringify({ detail: "当前账号已不再拥有该工作区的访问权限" }),
+    });
+  });
+  await page.getByRole("button", { name: "刷新工作台资源" }).click();
+
+  await expect(page.getByText("工作台访问权限已变更", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "重新检查工作台权限" })).toBeVisible();
+  await expect(projectResource).toBeHidden();
+});
