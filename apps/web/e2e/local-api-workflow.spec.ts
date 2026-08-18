@@ -511,3 +511,43 @@ test("新的刷新请求不会被旧响应覆盖", async ({ page }) => {
   await expect(page.getByText("资源暂不可用", { exact: true })).toBeHidden();
   await expect(projectResource).toBeVisible();
 });
+
+test("工作台资源服务恢复后可重新加载", async ({ page }) => {
+  const suffix = randomUUID().slice(0, 8);
+  const [workspace] = await coreApi<WorkspaceRecord[]>(page, "/workspaces");
+  if (!workspace) throw new Error("未找到默认工作区");
+  const project = await coreApi<ProjectRecord>(page, "/projects", {
+    method: "POST",
+    headers: { "X-Workspace-ID": workspace.id },
+    data: {
+      slug: `resource-recovery-${suffix}`,
+      name: "服务恢复项目",
+      task_type: "object-detection",
+    },
+  });
+
+  let firstRequest = true;
+  await page.route("**/api/v1/workspaces", async (route) => {
+    if (!firstRequest) {
+      await route.continue();
+      return;
+    }
+    firstRequest = false;
+    await route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({ detail: "工作区服务暂不可用" }),
+    });
+  });
+
+  await page.goto("/");
+  const projectResource = page.getByTitle(project.name);
+  await expect(page.getByText("资源暂不可用", { exact: true })).toBeVisible();
+  await expect(projectResource).toBeHidden();
+
+  await page.getByRole("button", { name: "重新加载工作台资源" }).click();
+  await expect(page.getByText("资源暂不可用", { exact: true })).toBeHidden();
+
+  await page.getByRole("button", { name: /^训练/ }).click();
+  await expect(projectResource).toBeVisible();
+});
