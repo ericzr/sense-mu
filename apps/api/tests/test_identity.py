@@ -7,6 +7,7 @@ import jwt
 import pytest
 from cryptography.hazmat.primitives.asymmetric import rsa
 from fastapi.testclient import TestClient
+from jwt.exceptions import PyJWKClientConnectionError
 from pydantic import ValidationError
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session, sessionmaker
@@ -205,6 +206,50 @@ def test_oidc_token_verification_and_membership_creation(monkeypatch) -> None:
             headers={"Authorization": f"Bearer {invalid_token}"},
         )
         assert rejected.status_code == 401
+    finally:
+        get_settings.cache_clear()
+
+
+def test_oidc_jwks_outage_is_reported_as_service_unavailable(monkeypatch) -> None:
+    issuer = "https://identity.example.test/realms/sensemu"
+    audience = "sensemu-api"
+    monkeypatch.setenv("SENSEMU_AUTH_MODE", "oidc")
+    monkeypatch.setenv("SENSEMU_OIDC_ISSUER_URL", issuer)
+    monkeypatch.setenv("SENSEMU_OIDC_AUDIENCE", audience)
+    monkeypatch.setenv("SENSEMU_OIDC_JWKS_URL", f"{issuer}/jwks")
+    get_settings.cache_clear()
+
+    private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    now = datetime.now(UTC)
+    token = jwt.encode(
+        {
+            "iss": issuer,
+            "sub": "oidc-outage-user",
+            "aud": audience,
+            "exp": now + timedelta(minutes=5),
+            "iat": now,
+        },
+        private_key,
+        algorithm="RS256",
+    )
+
+    class UnavailableJwksClient:
+        def get_signing_key_from_jwt(self, _token: str):
+            raise PyJWKClientConnectionError("identity provider unavailable")
+
+    monkeypatch.setattr(
+        identity_service,
+        "_jwks_client",
+        lambda _url: UnavailableJwksClient(),
+    )
+    client, _ = _client()
+    try:
+        response = client.get(
+            "/api/v1/identity/me",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert response.status_code == 503
+        assert response.json()["detail"] == "无法连接身份提供方"
     finally:
         get_settings.cache_clear()
 
