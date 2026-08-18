@@ -47,6 +47,23 @@ test("身份服务不可用时显示可恢复的会话状态", async ({ page }) 
   await expect(page.getByRole("button", { name: "重新检查" })).toBeVisible();
 });
 
+test("会话失效时登录入口保留当前工作台位置", async ({ page }) => {
+  await page.route("**/api/v1/identity/me", async (route) => {
+    await route.fulfill({
+      status: 401,
+      contentType: "application/json",
+      body: JSON.stringify({ detail: "登录状态已失效" }),
+    });
+  });
+
+  await page.goto("/studio/data?project=e2e-project&dataset=e2e-dataset");
+  await expect(page.getByRole("status").getByText("需要登录", { exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "登录" })).toHaveAttribute(
+    "href",
+    "/auth/login?return_to=%2Fstudio%2Fdata%3Fproject%3De2e-project%26dataset%3De2e-dataset",
+  );
+});
+
 test("工作台资源失败时保留明确状态而不误报为空", async ({ page }) => {
   await page.route("**/api/v1/workspaces", async (route) => {
     await route.fulfill({

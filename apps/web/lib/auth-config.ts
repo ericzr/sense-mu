@@ -34,6 +34,32 @@ function readLoginUrl(value: string | undefined): string | null {
   return readUrl(value);
 }
 
+function safeReturnTo(value: string): string {
+  if (!value.startsWith("/") || value.startsWith("//")) return "/";
+  try {
+    const url = new URL(value, "https://sensemu.local");
+    if (url.origin !== "https://sensemu.local") return "/";
+    return `${url.pathname}${url.search}`;
+  } catch {
+    return "/";
+  }
+}
+
+export function getAuthLoginHref(loginUrl: string | null, returnTo: string): string | null {
+  if (!loginUrl) return null;
+  const safePath = safeReturnTo(returnTo);
+  try {
+    const url = new URL(loginUrl, "https://sensemu.local");
+    url.searchParams.set("return_to", safePath);
+    if (loginUrl.startsWith("/") && !loginUrl.startsWith("//")) {
+      return `${url.pathname}${url.search}${url.hash}`;
+    }
+    return url.toString();
+  } catch {
+    return loginUrl;
+  }
+}
+
 export function getWebAuthConfig(): WebAuthConfig {
   const mode = process.env.NEXT_PUBLIC_SENSEMU_AUTH_MODE === "development"
     ? "development"

@@ -11,6 +11,11 @@ export VITE_SENSEMU_API_URL="$SENSEMU_API_URL"
 export NEXT_PUBLIC_SENSEMU_API_URL="$SENSEMU_API_URL"
 export SENSEMU_PREVIEW_MODE="false"
 export NEXT_PUBLIC_SENSEMU_PREVIEW_MODE="false"
+export NEXT_PUBLIC_SENSEMU_AUTH_MODE="oidc"
+export NEXT_PUBLIC_SENSEMU_AUTH_LOGIN_URL="/auth/login"
+export NEXT_PUBLIC_SENSEMU_OIDC_AUTHORIZATION_ENDPOINT="https://id.example.test/authorize"
+export NEXT_PUBLIC_SENSEMU_OIDC_CLIENT_ID="sensemu-e2e"
+export NEXT_PUBLIC_SENSEMU_OIDC_REDIRECT_URI="http://localhost:${web_port}/auth/callback"
 
 npm run build
 npx --no-install playwright test --config=playwright.local.config.ts

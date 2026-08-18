@@ -34,7 +34,7 @@ import {
   type Deployment,
   type Project,
 } from "../../lib/catalog-api";
-import { getWebAuthConfig } from "../../lib/auth-config";
+import { getAuthLoginHref, getWebAuthConfig } from "../../lib/auth-config";
 import { isHostedPreview } from "../../lib/preview-mock-api";
 import {
   type CSSProperties,
@@ -637,6 +637,10 @@ export function ProductShell({
   const resolvedSidebarWidth = sidebarWidth ?? SIDEBAR_DEFAULT_WIDTH;
   const sidebarCollapsed = resolvedSidebarWidth < SIDEBAR_MIN_EXPANDED_WIDTH;
   const webAuthConfig = getWebAuthConfig();
+  const authLoginHref = getAuthLoginHref(
+    webAuthConfig.loginUrl,
+    `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ""}`,
+  );
 
   function updateSidebarWidth(width: number) {
     sidebarWidthRef.current = width;
@@ -1016,8 +1020,8 @@ export function ProductShell({
                     : "当前 API 已启用 OIDC，但 Web 登录尚未配置完成。"}
               </small>
             </span>
-            {identityStatus === "unauthenticated" && webAuthConfig.loginUrl ? (
-              <a className="auth-status-login" href={webAuthConfig.loginUrl}>
+            {identityStatus === "unauthenticated" && authLoginHref ? (
+              <a className="auth-status-login" href={authLoginHref}>
                 登录
               </a>
             ) : null}
