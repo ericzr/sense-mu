@@ -33,6 +33,34 @@ async function coreApi<T>(
   return response.json() as Promise<T>;
 }
 
+test("身份服务不可用时显示可恢复的会话状态", async ({ page }) => {
+  await page.route("**/api/v1/identity/me", async (route) => {
+    await route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({ detail: "OIDC 身份验证尚未完成配置" }),
+    });
+  });
+
+  await page.goto("/");
+  await expect(page.getByText("身份服务暂不可用", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "重新检查" })).toBeVisible();
+});
+
+test("工作台资源失败时保留明确状态而不误报为空", async ({ page }) => {
+  await page.route("**/api/v1/workspaces", async (route) => {
+    await route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({ detail: "工作区服务暂不可用" }),
+    });
+  });
+
+  await page.goto("/");
+  await expect(page.getByText("资源暂不可用", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "重新加载工作台资源" })).toBeVisible();
+});
+
 function sha256(payload: Buffer): string {
   return createHash("sha256").update(payload).digest("hex");
 }
