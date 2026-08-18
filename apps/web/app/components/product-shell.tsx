@@ -977,11 +977,16 @@ export function ProductShell({
               <small>
                 {identityStatus === "unavailable"
                   ? "请稍后重试；如果问题持续，请检查 Core API 的 OIDC 配置。"
-                  : webAuthConfig.configured
+                  : webAuthConfig.configured && webAuthConfig.loginUrl
                     ? "当前会话已失效，请重新登录后继续操作。"
                     : "当前 API 已启用 OIDC，但 Web 登录尚未配置完成。"}
               </small>
             </span>
+            {identityStatus === "unauthenticated" && webAuthConfig.loginUrl ? (
+              <a className="auth-status-login" href={webAuthConfig.loginUrl}>
+                登录
+              </a>
+            ) : null}
             <button className="auth-status-retry" type="button" onClick={() => void refreshIdentity()}>
               <RefreshCw size={14} aria-hidden="true" />
               <span>重新检查</span>

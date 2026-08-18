@@ -6,6 +6,7 @@ export type WebAuthConfig = {
   authorizationEndpoint: string | null;
   clientId: string | null;
   redirectUri: string | null;
+  loginUrl: string | null;
   scope: string;
   missing: string[];
 };
@@ -27,6 +28,12 @@ function readUrl(value: string | undefined): string | null {
   }
 }
 
+function readLoginUrl(value: string | undefined): string | null {
+  if (!value) return null;
+  if (value.startsWith("/") && !value.startsWith("//")) return value;
+  return readUrl(value);
+}
+
 export function getWebAuthConfig(): WebAuthConfig {
   const mode = process.env.NEXT_PUBLIC_SENSEMU_AUTH_MODE === "development"
     ? "development"
@@ -37,6 +44,8 @@ export function getWebAuthConfig(): WebAuthConfig {
     NEXT_PUBLIC_SENSEMU_OIDC_CLIENT_ID: process.env.NEXT_PUBLIC_SENSEMU_OIDC_CLIENT_ID || null,
     NEXT_PUBLIC_SENSEMU_OIDC_REDIRECT_URI:
       readUrl(process.env.NEXT_PUBLIC_SENSEMU_OIDC_REDIRECT_URI),
+    NEXT_PUBLIC_SENSEMU_AUTH_LOGIN_URL:
+      readLoginUrl(process.env.NEXT_PUBLIC_SENSEMU_AUTH_LOGIN_URL),
   };
   const missing = mode === "oidc"
     ? PUBLIC_AUTH_FIELDS
@@ -50,6 +59,7 @@ export function getWebAuthConfig(): WebAuthConfig {
     authorizationEndpoint: values.NEXT_PUBLIC_SENSEMU_OIDC_AUTHORIZATION_ENDPOINT,
     clientId: values.NEXT_PUBLIC_SENSEMU_OIDC_CLIENT_ID,
     redirectUri: values.NEXT_PUBLIC_SENSEMU_OIDC_REDIRECT_URI,
+    loginUrl: values.NEXT_PUBLIC_SENSEMU_AUTH_LOGIN_URL,
     scope: process.env.NEXT_PUBLIC_SENSEMU_OIDC_SCOPE || "openid profile email",
     missing,
   };

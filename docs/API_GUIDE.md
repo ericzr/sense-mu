@@ -54,6 +54,7 @@ Web 配置契约（`apps/web/.env.example`）：
 | `NEXT_PUBLIC_SENSEMU_OIDC_AUTHORIZATION_ENDPOINT` | OIDC 授权端点，只允许 HTTPS（本地可用 localhost） |
 | `NEXT_PUBLIC_SENSEMU_OIDC_CLIENT_ID` | Web 公共客户端 ID，不是 client secret |
 | `NEXT_PUBLIC_SENSEMU_OIDC_REDIRECT_URI` | 授权回调地址，必须预先在身份提供方登记 |
+| `NEXT_PUBLIC_SENSEMU_AUTH_LOGIN_URL` | BFF 登录入口；建议使用同源 `/auth/login`，由 BFF 负责 PKCE、回调、会话 cookie 和跳回原页面 |
 | `NEXT_PUBLIC_SENSEMU_OIDC_SCOPE` | 默认 `openid profile email` |
 
 以上变量仅描述浏览器侧的公开授权参数。正式上线还必须配置 BFF 的服务端 issuer、audience、JWKS、token exchange 和安全会话 cookie；在这些配置完成前，不能把 Sites 的 `oai-authenticated-user-*` 访客头直接转换成 Core API 的 Bearer JWT。

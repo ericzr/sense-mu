@@ -997,6 +997,28 @@ html[data-sidebar-collapsed="true"] .app-shell .profile-row {
   font-weight: 650;
 }
 
+.auth-status-login {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 8px;
+  color: #fff;
+  background: #6f511e;
+  font-size: 10px;
+  font-weight: 680;
+}
+
+.auth-status-login:hover {
+  background: #543d16;
+}
+
+.auth-status-login:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
 .auth-status-retry:hover {
   background: rgb(255 255 255 / 0.78);
 }
