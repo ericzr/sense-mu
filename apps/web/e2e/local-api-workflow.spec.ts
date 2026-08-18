@@ -605,3 +605,77 @@ test("项目归档被服务端拒绝时保留资源并支持重试", async ({ pa
   await expect(dialog).toBeHidden();
   await expect(projectResource).toBeHidden();
 });
+
+test("项目暂停与继续失败时保留服务端状态并支持重试", async ({ page }) => {
+  const suffix = randomUUID().slice(0, 8);
+  let [workspace] = await coreApi<WorkspaceRecord[]>(page, "/workspaces");
+  if (!workspace) {
+    workspace = await coreApi<WorkspaceRecord>(page, "/workspaces", {
+      method: "POST",
+      data: {
+        slug: `status-retry-workspace-${suffix}`,
+        name: "状态重试工作区",
+      },
+    });
+  }
+  const project = await coreApi<ProjectRecord>(page, "/projects", {
+    method: "POST",
+    headers: { "X-Workspace-ID": workspace.id },
+    data: {
+      slug: `project-status-retry-${suffix}`,
+      name: "状态重试项目",
+      task_type: "object-detection",
+    },
+  });
+
+  await page.goto("/");
+  const projectRow = page.locator(".workbench-row").filter({ hasText: project.name });
+  await expect(projectRow).toBeVisible();
+  await expect(projectRow.getByText("进行中", { exact: true })).toBeVisible();
+
+  let pauseFirstRequest = true;
+  await page.route(`**/api/v1/projects/${project.id}:pause`, async (route) => {
+    if (!pauseFirstRequest) {
+      await route.continue();
+      return;
+    }
+    pauseFirstRequest = false;
+    await route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({ detail: "项目状态服务暂不可用，请稍后重试" }),
+    });
+  });
+
+  await projectRow.getByRole("button", { name: "暂停" }).click();
+  await expect(page.getByRole("alert")).toHaveText("项目状态服务暂不可用，请稍后重试");
+  await expect(projectRow.getByRole("button", { name: "暂停" })).toBeVisible();
+  await expect(projectRow.getByText("进行中", { exact: true })).toBeVisible();
+
+  await projectRow.getByRole("button", { name: "暂停" }).click();
+  await expect(projectRow.getByRole("button", { name: "继续" })).toBeVisible();
+  await expect(projectRow.getByText("已暂停", { exact: true })).toBeVisible();
+
+  let resumeFirstRequest = true;
+  await page.route(`**/api/v1/projects/${project.id}:resume`, async (route) => {
+    if (!resumeFirstRequest) {
+      await route.continue();
+      return;
+    }
+    resumeFirstRequest = false;
+    await route.fulfill({
+      status: 403,
+      contentType: "application/json",
+      body: JSON.stringify({ detail: "当前账号没有执行该操作的权限" }),
+    });
+  });
+
+  await projectRow.getByRole("button", { name: "继续" }).click();
+  await expect(page.getByRole("alert")).toHaveText("当前账号没有执行该操作的权限");
+  await expect(projectRow.getByRole("button", { name: "继续" })).toBeVisible();
+  await expect(projectRow.getByText("已暂停", { exact: true })).toBeVisible();
+
+  await projectRow.getByRole("button", { name: "继续" }).click();
+  await expect(projectRow.getByRole("button", { name: "暂停" })).toBeVisible();
+  await expect(projectRow.getByText("进行中", { exact: true })).toBeVisible();
+});
