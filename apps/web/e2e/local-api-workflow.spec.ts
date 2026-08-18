@@ -551,3 +551,57 @@ test("工作台资源服务恢复后可重新加载", async ({ page }) => {
   await page.getByRole("button", { name: /^训练/ }).click();
   await expect(projectResource).toBeVisible();
 });
+
+test("项目归档被服务端拒绝时保留资源并支持重试", async ({ page }) => {
+  const suffix = randomUUID().slice(0, 8);
+  let [workspace] = await coreApi<WorkspaceRecord[]>(page, "/workspaces");
+  if (!workspace) {
+    workspace = await coreApi<WorkspaceRecord>(page, "/workspaces", {
+      method: "POST",
+      data: {
+        slug: `archive-retry-workspace-${suffix}`,
+        name: "归档重试工作区",
+      },
+    });
+  }
+  const project = await coreApi<ProjectRecord>(page, "/projects", {
+    method: "POST",
+    headers: { "X-Workspace-ID": workspace.id },
+    data: {
+      slug: `project-archive-retry-${suffix}`,
+      name: "归档重试项目",
+      task_type: "object-detection",
+    },
+  });
+
+  await page.goto("/studio");
+  const projectResource = page.getByTitle(project.name);
+  await expect(projectResource).toBeVisible();
+  const projectRow = projectResource.locator("..");
+  await projectRow.hover();
+  await projectRow.getByRole("button", { name: `归档项目 ${project.name}` }).click();
+
+  let firstRequest = true;
+  await page.route(`**/api/v1/projects/${project.id}:archive`, async (route) => {
+    if (!firstRequest) {
+      await route.continue();
+      return;
+    }
+    firstRequest = false;
+    await route.fulfill({
+      status: 409,
+      contentType: "application/json",
+      body: JSON.stringify({ detail: "项目仍有运行中的在线服务，请先停用服务后再归档" }),
+    });
+  });
+
+  const dialog = page.getByRole("dialog", { name: "归档项目" });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole("button", { name: "归档项目" }).click();
+  await expect(dialog.getByRole("alert")).toHaveText("项目仍有运行中的在线服务，请先停用服务后再归档");
+  await expect(projectResource).toBeVisible();
+
+  await dialog.getByRole("button", { name: "归档项目" }).click();
+  await expect(dialog).toBeHidden();
+  await expect(projectResource).toBeHidden();
+});

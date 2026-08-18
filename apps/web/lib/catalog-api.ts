@@ -852,7 +852,12 @@ async function fetchWithTimeout(
 }
 
 function apiBaseUrl(): string {
-  const configured = process.env.NEXT_PUBLIC_SENSEMU_API_URL;
+  const viteEnv = (import.meta as unknown as {
+    env?: Record<string, string | undefined>;
+  }).env;
+  const configured = viteEnv?.VITE_SENSEMU_API_URL
+    ?? viteEnv?.NEXT_PUBLIC_SENSEMU_API_URL
+    ?? process.env.NEXT_PUBLIC_SENSEMU_API_URL;
   if (configured) return configured.replace(/\/$/, "");
   if (typeof window !== "undefined" && window.location.hostname === "localhost") {
     return "http://localhost:8000";

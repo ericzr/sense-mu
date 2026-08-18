@@ -41,6 +41,7 @@ export default defineConfig({
       env: {
         ...process.env,
         SENSEMU_API_URL: apiURL,
+        VITE_SENSEMU_API_URL: apiURL,
         NEXT_PUBLIC_SENSEMU_API_URL: apiURL,
         SENSEMU_PREVIEW_MODE: "false",
         NEXT_PUBLIC_SENSEMU_PREVIEW_MODE: "false",
