@@ -451,3 +451,63 @@ test("权限拒绝时清除已加载的工作台资源快照", async ({ page }) 
   await expect(page.getByRole("button", { name: "重新检查工作台权限" })).toBeVisible();
   await expect(projectResource).toBeHidden();
 });
+
+test("新的刷新请求不会被旧响应覆盖", async ({ page }) => {
+  const suffix = randomUUID().slice(0, 8);
+  const [workspace] = await coreApi<WorkspaceRecord[]>(page, "/workspaces");
+  if (!workspace) throw new Error("未找到默认工作区");
+  const project = await coreApi<ProjectRecord>(page, "/projects", {
+    method: "POST",
+    headers: { "X-Workspace-ID": workspace.id },
+    data: {
+      slug: `resource-race-${suffix}`,
+      name: "刷新竞态项目",
+      task_type: "object-detection",
+    },
+  });
+
+  await page.goto("/studio");
+  const projectResource = page.getByTitle(project.name);
+  await expect(projectResource).toBeVisible();
+
+  let firstRequest = true;
+  let releaseFirstRequest!: () => void;
+  let notifyFirstRequestStarted!: () => void;
+  const firstRequestStarted = new Promise<void>((resolve) => {
+    notifyFirstRequestStarted = resolve;
+  });
+  const firstRequestReleased = new Promise<void>((resolve) => {
+    releaseFirstRequest = resolve;
+  });
+  await page.route("**/api/v1/workspaces", async (route) => {
+    if (!firstRequest) {
+      await route.continue();
+      return;
+    }
+    firstRequest = false;
+    notifyFirstRequestStarted();
+    await firstRequestReleased;
+    await route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({ detail: "工作区服务暂不可用" }),
+    });
+  });
+
+  await page.getByRole("button", { name: "刷新工作台资源" }).click();
+  await firstRequestStarted;
+  const secondResponse = page.waitForResponse((response) => (
+    response.url().includes("/api/v1/workspaces") && response.ok()
+  ));
+  await page.getByRole("button", { name: "刷新工作台资源" }).click();
+  await secondResponse;
+  await expect(projectResource).toBeVisible();
+
+  const staleFailureResponse = page.waitForResponse((response) => (
+    response.url().includes("/api/v1/workspaces") && response.status() === 503
+  ));
+  releaseFirstRequest();
+  await staleFailureResponse;
+  await expect(page.getByText("资源暂不可用", { exact: true })).toBeHidden();
+  await expect(projectResource).toBeVisible();
+});

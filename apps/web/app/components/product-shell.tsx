@@ -628,6 +628,7 @@ export function ProductShell({
   const [resourceActionError, setResourceActionError] = useState<string | null>(null);
   const sidebarWidthRef = useRef(SIDEBAR_DEFAULT_WIDTH);
   const lastExpandedWidthRef = useRef(SIDEBAR_DEFAULT_WIDTH);
+  const workbenchRefreshRequestRef = useRef(0);
   const dragStateRef = useRef<{
     pointerId: number;
     startX: number;
@@ -709,8 +710,11 @@ export function ProductShell({
   }, [refreshIdentity]);
 
   const refreshWorkbenchResources = useCallback(async () => {
+    const requestId = ++workbenchRefreshRequestRef.current;
+    const isCurrentRequest = () => requestId === workbenchRefreshRequestRef.current;
     try {
       const workspaces = await catalogApi.listWorkspaces();
+      if (!isCurrentRequest()) return;
       const workspace = workspaces[0];
       if (!workspace) {
         setWorkbenchWorkspaceId(null);
@@ -731,6 +735,7 @@ export function ProductShell({
           deployments: deployments.map((deployment) => ({ ...deployment, projectName: project.name })),
         };
       }));
+      if (!isCurrentRequest()) return;
       setWorkbenchResources({
         projects: groups.map((group) => group.project),
         datasets: groups.flatMap((group) => group.datasets),
@@ -739,6 +744,7 @@ export function ProductShell({
       setWorkbenchWorkspaceId(workspace.id);
       setResourceLoadError(null);
     } catch (reason) {
+      if (!isCurrentRequest()) return;
       if (reason instanceof CatalogApiError && reason.code === "permission_denied") {
         setWorkbenchWorkspaceId(null);
         setWorkbenchResources(emptyWorkbenchResources);
