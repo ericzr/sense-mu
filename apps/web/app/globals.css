@@ -230,6 +230,43 @@ a {
   border-top: 1px solid rgb(17 18 16 / 0.075);
 }
 
+.workbench-navigation-label-row {
+  display: flex;
+  min-height: 20px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 5px 0 0;
+}
+
+.workbench-navigation-label-row .navigation-label {
+  padding-bottom: 0;
+}
+
+.workbench-resource-refresh {
+  display: inline-flex;
+  width: 22px;
+  height: 22px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  color: #858780;
+  background: transparent;
+  cursor: pointer;
+  opacity: 0;
+  transition: color 150ms ease, background-color 150ms ease, opacity 150ms ease;
+}
+
+.workbench-navigation-group:hover .workbench-resource-refresh,
+.workbench-navigation-group:focus-within .workbench-resource-refresh {
+  opacity: 1;
+}
+
+.workbench-resource-refresh:hover,
+.workbench-resource-refresh:focus-visible {
+  color: #242622;
+  background: rgb(17 18 16 / 0.07);
+}
+
 .workbench-navigation {
   display: flex;
   flex-direction: column;
@@ -753,6 +790,11 @@ html[data-sidebar-collapsed="true"] .app-shell .navigation-badge,
 html[data-sidebar-collapsed="true"] .app-shell .usage-summary,
 html[data-sidebar-collapsed="true"] .app-shell .profile-copy,
 html[data-sidebar-collapsed="true"] .app-shell .profile-row > svg {
+  display: none;
+}
+
+.app-shell.is-sidebar-collapsed .workbench-navigation-label-row,
+html[data-sidebar-collapsed="true"] .app-shell .workbench-navigation-label-row {
   display: none;
 }
 
@@ -7990,6 +8032,11 @@ html[data-sidebar-collapsed="true"] .app-shell .profile-row {
   .app-shell.is-sidebar-collapsed .navigation-label,
   html[data-sidebar-collapsed="true"] .app-shell .navigation-label {
     display: block;
+  }
+
+  .app-shell.is-sidebar-collapsed .workbench-navigation-label-row,
+  html[data-sidebar-collapsed="true"] .app-shell .workbench-navigation-label-row {
+    display: flex;
   }
 
   .app-shell.is-sidebar-collapsed .profile-copy,

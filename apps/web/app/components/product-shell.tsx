@@ -145,7 +145,7 @@ function Navigation({
   identity,
   resources,
   resourceLoadError,
-  onRetryResources,
+  onRefreshResources,
   expandedGroups,
   onToggleGroup,
   onDeleteDataset,
@@ -165,7 +165,7 @@ function Navigation({
   identity: CurrentIdentity | null;
   resources: WorkbenchResources;
   resourceLoadError: string | null;
-  onRetryResources: () => void;
+  onRefreshResources: () => void;
   expandedGroups: Record<WorkbenchGroupKey, boolean>;
   onToggleGroup: (group: WorkbenchGroupKey) => void;
   onDeleteDataset: (dataset: Dataset) => void;
@@ -252,7 +252,18 @@ function Navigation({
 
       <nav className="primary-navigation" aria-label="主导航">
         <div className="navigation-group workbench-navigation-group">
-          <span className="navigation-label">工作台</span>
+          <div className="workbench-navigation-label-row">
+            <span className="navigation-label">工作台</span>
+            <button
+              className="workbench-resource-refresh"
+              type="button"
+              aria-label="刷新工作台资源"
+              title="刷新工作台资源"
+              onClick={onRefreshResources}
+            >
+              <RefreshCw size={13} aria-hidden="true" />
+            </button>
+          </div>
           <Link
             className={`workbench-home-link${active === "overview" ? " is-current" : ""}`}
             href="/"
@@ -271,7 +282,7 @@ function Navigation({
                 type="button"
                 aria-label="重新加载工作台资源"
                 title="重新加载工作台资源"
-                onClick={onRetryResources}
+                onClick={onRefreshResources}
               >
                 <RefreshCw size={13} aria-hidden="true" />
               </button>
@@ -929,7 +940,7 @@ export function ProductShell({
         identity={identity}
         resources={workbenchResources}
         resourceLoadError={resourceLoadError}
-        onRetryResources={() => void refreshWorkbenchResources()}
+        onRefreshResources={() => void refreshWorkbenchResources()}
         expandedGroups={expandedWorkbenchGroups}
         onToggleGroup={toggleWorkbenchGroup}
         onDeleteDataset={(dataset) => requestResourceAction({
