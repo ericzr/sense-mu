@@ -108,6 +108,12 @@ export function WorkbenchOverview({
         </div>
       </header>
 
+      {initialOverview.availability === "not_configured" ? (
+        <p className="inline-notice is-error" role="status">
+          {initialOverview.availability_message ?? "Core API 尚未配置，当前页面仅显示空状态。"}
+        </p>
+      ) : null}
+
       <section className="workbench-metrics" aria-label="概览">
         {metrics.map(({ label, value, icon: Icon }) => (
           <article className="workbench-metric" key={label}>

@@ -12,6 +12,8 @@ export type RunSummary = {
 };
 
 export type OverviewResponse = {
+  availability?: "not_configured";
+  availability_message?: string;
   workspace_id: string | null;
   metrics: {
     datasets: number;
@@ -162,7 +164,14 @@ type WorkspaceSummary = { id: string };
 export async function getOverview(): Promise<OverviewResponse> {
   if (process.env.SENSEMU_PREVIEW_MODE === "true") return demoOverview;
   const configured = process.env.SENSEMU_API_URL;
-  const baseUrl = (configured || "http://127.0.0.1:8000").replace(/\/$/, "");
+  if (!configured) {
+    return {
+      ...emptyOverview,
+      availability: "not_configured",
+      availability_message: "Core API 尚未配置，当前页面仅显示空状态。",
+    };
+  }
+  const baseUrl = configured.replace(/\/$/, "");
 
   try {
     const workspacesResponse = await fetch(`${baseUrl}/api/v1/workspaces`, {
