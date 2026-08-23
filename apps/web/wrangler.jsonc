@@ -1,0 +1,19 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "sense-mu",
+  "main": "dist/server/index.js",
+  "compatibility_date": "2026-08-13",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "dist/client",
+    "binding": "ASSETS",
+    "not_found_handling": "none"
+  },
+  "images": {
+    "binding": "IMAGES"
+  },
+  "vars": {
+    "SENSEMU_PREVIEW_MODE": "true",
+    "NEXT_PUBLIC_SENSEMU_PREVIEW_MODE": "true"
+  }
+}
