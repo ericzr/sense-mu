@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SenseMu Cloudflare 部署入口</title>
+    <style>
+      :root { color: #14181f; background: #f4f5f7; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      * { box-sizing: border-box; }
+      body { margin: 0; min-height: 100vh; padding: 24px; background: #f4f5f7; }
+      main { width: min(720px, 100%); margin: 0 auto; padding: clamp(28px, 6vw, 56px); border: 1px solid #dfe3e8; border-radius: 20px; background: #fff; box-shadow: 0 18px 50px rgba(32, 38, 48, .08); }
+      h1 { margin: 0 0 14px; font-size: clamp(30px, 6vw, 48px); line-height: 1.1; letter-spacing: -.04em; }
+      p, li { color: #626974; line-height: 1.75; }
+      ol { padding-left: 1.4em; }
+      a { color: #1769e0; }
+      .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+      .button { display: inline-flex; min-height: 44px; align-items: center; padding: 0 16px; border: 1px solid #d9dde3; border-radius: 10px; color: #14181f; text-decoration: none; font-weight: 650; }
+      .button.primary { border-color: #14181f; color: #fff; background: #14181f; }
+      small { display: block; margin-top: 28px; color: #8a9099; line-height: 1.6; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Cloudflare 部署入口</h1>
+      <p>SenseMu 完整工作台由 Cloudflare Workers 承载。GitHub Pages 只提供当前说明页，不运行工作台本身。</p>
+      <ol>
+        <li>打开 Cloudflare 控制台中的 <strong>Workers &amp; Pages → sense-mu</strong>。</li>
+        <li>进入最新的 <strong>Production deployment</strong>。</li>
+        <li>在 <strong>Domains &amp; Routes</strong> 或部署详情中复制公开访问域名。</li>
+        <li>使用该域名验收首页、数据、训练、发布与在线调用页面。</li>
+      </ol>
+      <div class="actions">
+        <a class="button primary" href="https://dash.cloudflare.com/23f50cb8b259344e75d53dc6a741abd2/workers-and-pages">打开 Cloudflare 控制台</a>
+        <a class="button" href="./">返回 SenseMu 入口</a>
+      </div>
+      <small>不要使用旧的 chatgpt.site 地址；如果生产域名打不开，请以 Cloudflare 最新部署的错误信息和域名为准。</small>
+    </main>
+  </body>
+</html>
