@@ -78,6 +78,14 @@ npm test
 /me
 ```
 
+先检查部署探针，再打开页面：
+
+```text
+/__sensemu/health
+```
+
+探针必须返回 JSON，且包含 `"runtime":"cloudflare-worker"`、`"bindings":{"assets":true,"images":true}` 和当前 `release`。如果返回 GitHub Pages 的 HTML、404 或没有 `x-sensemu-worker` 响应头，说明生产域名仍指向旧静态部署；这时不要继续排查前端路由，应在 Workers Builds 将根目录改为 `/apps/web` 并重新部署 `main`。
+
 重点确认：服务端页面返回 200、刷新深路径不回退到 404、演示数据标识与环境一致、API 失败显示为明确状态、没有把完整密钥或对象存储地址渲染到页面。
 
 ## 回滚与版本核对

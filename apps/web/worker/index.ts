@@ -12,6 +12,9 @@ interface Env {
       };
     };
   };
+  SENSEMU_PREVIEW_MODE?: string;
+  NEXT_PUBLIC_SENSEMU_PREVIEW_MODE?: string;
+  SENSEMU_RELEASE?: string;
 }
 
 interface ExecutionContext {
@@ -30,6 +33,29 @@ const worker = {
     const url = new URL(request.url);
     const assets = env.ASSETS;
 
+    if (url.pathname === "/__sensemu/health") {
+      return new Response(
+        JSON.stringify({
+          service: "sensemu-web",
+          runtime: "cloudflare-worker",
+          status: "ok",
+          release: env.SENSEMU_RELEASE ?? "unknown",
+          preview: env.SENSEMU_PREVIEW_MODE === "true",
+          bindings: {
+            assets: Boolean(assets),
+            images: Boolean(env.IMAGES),
+          },
+        }),
+        {
+          headers: {
+            "content-type": "application/json; charset=utf-8",
+            "cache-control": "no-store",
+            "x-sensemu-worker": "sense-mu",
+          },
+        },
+      );
+    }
+
     if (url.pathname === "/_vinext/image" && assets) {
       const allowedWidths = [...DEFAULT_DEVICE_SIZES, ...DEFAULT_IMAGE_SIZES];
       return handleImageOptimization(request, {
@@ -43,12 +69,24 @@ const worker = {
     }
 
     try {
-      return await handler.fetch(request, env, ctx);
+      const response = await handler.fetch(request, env, ctx);
+      const headers = new Headers(response.headers);
+      headers.set("x-sensemu-worker", "sense-mu");
+      headers.set("x-sensemu-preview-mode", env.SENSEMU_PREVIEW_MODE === "true" ? "true" : "false");
+      return new Response(response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers,
+      });
     } catch (error) {
       console.error("SenseMu request failed", error);
       return new Response("SenseMu 暂时无法处理请求，请稍后重试。", {
         status: 503,
-        headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" },
+        headers: {
+          "content-type": "text/plain; charset=utf-8",
+          "cache-control": "no-store",
+          "x-sensemu-worker": "sense-mu",
+        },
       });
     }
   },

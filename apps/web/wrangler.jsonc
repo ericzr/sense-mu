@@ -14,6 +14,7 @@
   },
   "vars": {
     "SENSEMU_PREVIEW_MODE": "true",
-    "NEXT_PUBLIC_SENSEMU_PREVIEW_MODE": "true"
+    "NEXT_PUBLIC_SENSEMU_PREVIEW_MODE": "true",
+    "SENSEMU_RELEASE": "worker-v3"
   }
 }
