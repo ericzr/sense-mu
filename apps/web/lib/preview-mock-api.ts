@@ -32,6 +32,9 @@ const previewWorkspaceId = "demo-workspace";
 
 export function isHostedPreview(): boolean {
   if (process.env.NEXT_PUBLIC_SENSEMU_PREVIEW_MODE === "true") return true;
+  if (typeof document !== "undefined" && document.documentElement.dataset.sensemuPreview === "true") {
+    return true;
+  }
   if (typeof window === "undefined") return false;
   return window.location.hostname.endsWith(".chatgpt.site");
 }

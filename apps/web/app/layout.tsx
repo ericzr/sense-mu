@@ -4,6 +4,8 @@ import "./globals.css";
 
 const sidebarPreferenceScript = `(function(){try{var collapsedWidth=74;var minExpandedWidth=200;var maxWidth=288;var snapWidth=150;var width=window.matchMedia("(max-width: 820px)").matches?collapsedWidth:220;var saved=window.localStorage.getItem("sensemu-sidebar-width");var legacy=window.localStorage.getItem("sensemu-sidebar-collapsed");if(saved!==null&&Number.isFinite(Number(saved))){var value=Number(saved);width=value<snapWidth?collapsedWidth:Math.min(maxWidth,Math.max(minExpandedWidth,value));}else if(legacy!==null){width=legacy==="true"?collapsedWidth:220;}var root=document.documentElement;root.style.setProperty("--persisted-sidebar-width",width+"px");root.dataset.sidebarCollapsed=width<minExpandedWidth?"true":"false";}catch(error){}})();`;
 
+const previewMode = process.env.SENSEMU_PREVIEW_MODE === "true";
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -29,7 +31,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="zh-CN" suppressHydrationWarning>
+    <html lang="zh-CN" data-sensemu-preview={previewMode ? "true" : "false"} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: sidebarPreferenceScript }} />
       </head>

@@ -27,6 +27,7 @@ test("server-renders a consistent hosted demo overview", async () => {
   assert.equal(response.status, 200);
 
   const html = await response.text();
+  assert.match(html, /<html[^>]*data-sensemu-preview="true"/);
   assert.match(html, /<h1>工作台<\/h1>/);
   assert.match(html, /工地安全穿戴数据/);
   assert.match(html, /12 个素材/);
