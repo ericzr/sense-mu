@@ -36,10 +36,10 @@ export function formatAlgorithmPrice(cents: number): string {
 function getListingEnvironments(listing: AlgorithmCatalogItem): string[] {
   const text = listing.capability_verified_scenes.join(" ");
   return [
-    /固定|高位|俯拍|正面/.test(text) ? "固定机位" : null,
-    /室内|仓库|厂房|产线|货架|传送带/.test(text) ? "室内" : null,
-    /工地|城市路口|道路/.test(text) ? "室外" : null,
-    /夜景|夜间|白天与/.test(text) ? "昼夜" : null,
+    /固定|高位|俯拍|正面|机位/.test(text) ? "固定机位" : null,
+    /室内|仓库|厂房|产线|货架|传送带|温室|圈舍/.test(text) ? "室内" : null,
+    /工地|城市路口|道路|林区|林道|田间|果园|牧场/.test(text) ? "室外" : null,
+    /夜景|夜间|白天与|自然光/.test(text) ? "昼夜" : null,
   ].filter((item): item is string => Boolean(item));
 }
 

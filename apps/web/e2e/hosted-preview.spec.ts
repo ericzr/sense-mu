@@ -60,6 +60,12 @@ test.describe("托管演示站", () => {
     await page.getByPlaceholder("搜索算法或使用场景").fill("安全穿戴");
     await expect(page.getByRole("link", { name: "查看工地安全穿戴检测" })).toBeVisible();
 
+    await page.getByPlaceholder("搜索算法或使用场景").fill("林木健康");
+    await expect(page.getByRole("link", { name: "查看林木健康巡检" })).toBeVisible();
+
+    await page.getByPlaceholder("搜索算法或使用场景").fill("果园果实");
+    await expect(page.getByRole("link", { name: "查看果园果实计数" })).toBeVisible();
+
     await page.getByPlaceholder("搜索算法或使用场景").fill("不存在的算法");
     await expect(page.getByText("没有找到符合条件的算法", { exact: true })).toBeVisible();
   });

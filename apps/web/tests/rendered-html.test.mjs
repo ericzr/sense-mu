@@ -138,7 +138,14 @@ test("server-renders the algorithm marketplace route", async () => {
   assert.match(html, /<title>算法市场 · SenseMu<\/title>/i);
   assert.match(html, /搜索算法或使用场景/);
   assert.match(html, /工地安全穿戴检测/);
+  assert.match(html, /林木健康巡检/);
+  assert.match(html, /森林烟火早期识别/);
+  assert.match(html, /农产品分选识别/);
+  assert.match(html, /果园果实计数/);
+  assert.match(html, /蜂箱巡检与计数/);
   assert.match(html, /href="\/marketplace\/mock-alg-ppe"/);
+  assert.match(html, /href="\/marketplace\/mock-alg-forest-health"/);
+  assert.match(html, /href="\/marketplace\/mock-alg-produce-sort"/);
   assert.match(html, /catalog-preview-media scene-ppe/);
   assert.match(html, /精确率/);
   assert.match(html, /YOLO26s/);
@@ -168,6 +175,18 @@ test("server-renders a standalone algorithm detail route", async () => {
   assert.match(html, /接入方式/);
   assert.match(html, /先创建工作区/);
   assert.doesNotMatch(html, /catalog-preview is-large/);
+});
+
+test("server-renders a forestry algorithm detail route", async () => {
+  const response = await render("/marketplace/mock-alg-forest-health");
+  assert.equal(response.status, 200);
+
+  const html = await response.text();
+  assert.match(html, /<title>算法详情 · SenseMu<\/title>/i);
+  assert.match(html, /林木健康巡检/);
+  assert.match(html, /疑似枯死树/);
+  assert.match(html, /林区航拍/);
+  assert.match(html, /catalog-forest\.jpg/);
 });
 
 test("server-renders the workspace settings route", async () => {

@@ -136,7 +136,12 @@ export function AlgorithmLiveDemo({ listing }: { listing: AlgorithmCatalogItem }
           <div className="algorithm-demo-control-heading"><strong>输入图片</strong><small>选择一种方式</small></div>
           <div className="algorithm-demo-source-grid">
             <button type="button" className={source === "sample" ? "is-active" : ""} onClick={chooseSample}>
-              <span className={`algorithm-demo-thumb scene-${listing.preview.scene}`} />
+              <span
+                className={`algorithm-demo-thumb scene-${listing.preview.scene}`}
+                style={listing.preview.image_url
+                  ? { backgroundImage: `url(${listing.preview.image_url})`, backgroundPosition: "center", backgroundSize: "cover" }
+                  : undefined}
+              />
               <span><strong>商品示例</strong><small>立即体验</small></span>
               {source === "sample" ? <Check size={13} /> : null}
             </button>
