@@ -6,6 +6,7 @@ SenseMu 的产品端不是纯静态站点，而是基于 Vinext 的服务端渲�
 
 - 源码：`https://github.com/ericzr/sense-mu`
 - 生产分支：`main`
+- 当前生产域名：`https://cs.sensemu.com/`
 - 构建目录：`apps/web`
 - Node.js：仓库 `.nvmrc` 指定的 24.19.0
 - 构建命令：`npm ci && npm run build`
@@ -28,7 +29,7 @@ Production branch: main
 
 ### `workers.dev` 超时
 
-如果浏览器报 `ERR_CONNECTION_TIMED_OUT`，且 `__sensemu/health` 没有任何 HTTP 响应，不要继续修改前端代码。先在不同网络或公共 DNS 下确认 `workers.dev` 的解析；部分网络会拦截或污染该共享域名。正式验收应在 Cloudflare Workers 的 Domains & Routes 绑定自定义域名，例如 `preview.sensemu.com`，并把该自定义域名作为产品和 GitHub 入口；`workers.dev` 只保留为部署诊断地址。
+如果浏览器报 `ERR_CONNECTION_TIMED_OUT`，且 `__sensemu/health` 没有任何 HTTP 响应，不要继续修改前端代码。先确认 Cloudflare 的自定义域名已出现在 Domains & Routes 且 DNS 记录已生效。当前截图中已绑定的生产域名是 `cs.sensemu.com`，正式验收和 GitHub 入口均使用该地址；`workers.dev` 只保留为部署诊断地址。
 
 保存设置后，重新触发一次 `main` 构建。成功的部署详情应显示为可执行 Worker；如果设置页仍提示“仅静态资源”，说明旧部署尚未被新构建替换。`wrangler.jsonc` 随应用源码维护 Worker 入口、`ASSETS` 静态资源绑定和 `IMAGES` 图像绑定，避免构建产物路径变化导致线上运行时失效。`docs/` 只用于 GitHub Pages 的文档入口，不能作为 SenseMu 工作台的生产输出目录。
 
