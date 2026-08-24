@@ -70,6 +70,18 @@ test.describe("托管演示站", () => {
     await expect(page.getByText("没有找到符合条件的算法", { exact: true })).toBeVisible();
   });
 
+  test("数据市场包含林业与农业数据集", async ({ page }) => {
+    await page.goto("/data-market");
+    await expect(page.getByRole("heading", { name: "数据市场" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "查看林区树木健康数据集" })).toBeVisible();
+
+    await page.getByPlaceholder("搜索数据集或类别").fill("农产品分选");
+    await expect(page.getByRole("link", { name: "查看农产品分选数据集" })).toBeVisible();
+
+    await page.getByPlaceholder("搜索数据集或类别").fill("果园果实");
+    await expect(page.getByRole("link", { name: "查看果园果实计数数据集" })).toBeVisible();
+  });
+
   test("我的页面提供真实资产上架入口并保留演示写入边界", async ({ page }) => {
     await page.goto("/me?view=producer");
     await expect(page.getByRole("heading", { name: "上架", exact: true })).toBeVisible();

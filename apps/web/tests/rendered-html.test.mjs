@@ -208,7 +208,13 @@ test("server-renders the trusted data marketplace route", async () => {
   assert.match(html, /<title>数据市场 · SenseMu<\/title>/i);
   assert.match(html, /搜索数据集或类别/);
   assert.match(html, /工地安全穿戴数据集/);
+  assert.match(html, /林区树木健康数据集/);
+  assert.match(html, /农产品分选数据集/);
+  assert.match(html, /果园果实计数数据集/);
+  assert.match(html, /蜂场巡检数据集/);
   assert.match(html, /href="\/data-market\/mock-data-ppe"/);
+  assert.match(html, /href="\/data-market\/mock-data-forest-health"/);
+  assert.match(html, /href="\/data-market\/mock-data-produce"/);
   assert.match(html, /catalog-preview-media scene-ppe/);
   assert.match(html, /标注实例/);
   assert.match(html, /标注覆盖/);
@@ -231,6 +237,17 @@ test("server-renders a standalone data detail route", async () => {
   assert.match(html, /来源与质量/);
   assert.match(html, /购买即将开放/);
   assert.doesNotMatch(html, /catalog-preview is-large/);
+});
+
+test("server-renders a forestry data detail route", async () => {
+  const response = await render("/data-market/mock-data-forest-health");
+  assert.equal(response.status, 200);
+
+  const html = await response.text();
+  assert.match(html, /<title>数据集详情 · SenseMu<\/title>/i);
+  assert.match(html, /林区树木健康数据集/);
+  assert.match(html, /疑似枯死树/);
+  assert.match(html, /林区航拍/);
 });
 
 test("redirects the old provider route into My", async () => {
