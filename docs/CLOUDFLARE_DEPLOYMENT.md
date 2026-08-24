@@ -24,6 +24,8 @@ Deploy command: npx wrangler deploy --config wrangler.jsonc
 Production branch: main
 ```
 
+`workers_dev: true` 已写入应用配置，确保部署继续提供 `workers.dev` 访问地址；如果部署详情仍没有 `workers.dev` 域名，说明 Cloudflare 服务的域名开关或账户级 Workers 访问被关闭，需要在控制台的 Domains & Routes 中重新启用或绑定自定义域名。
+
 保存设置后，重新触发一次 `main` 构建。成功的部署详情应显示为可执行 Worker；如果设置页仍提示“仅静态资源”，说明旧部署尚未被新构建替换。`wrangler.jsonc` 随应用源码维护 Worker 入口、`ASSETS` 静态资源绑定和 `IMAGES` 图像绑定，避免构建产物路径变化导致线上运行时失效。`docs/` 只用于 GitHub Pages 的文档入口，不能作为 SenseMu 工作台的生产输出目录。
 
 ## 环境边界
