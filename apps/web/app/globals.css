@@ -4299,19 +4299,19 @@ html[data-sidebar-collapsed="true"] .app-shell .profile-row {
   width: 100%;
   height: 29px;
   padding: 0 24px 0 8px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
   outline: 0;
-  color: #83857f;
-  background: #f5f5f3;
-  font-size: 8px;
+  color: #292a27;
+  background: rgb(255 255 255 / 0.76);
+  font: inherit;
   cursor: pointer;
 }
 
-.split-select:focus { border-color: rgb(17 18 16 / 0.3); }
-.split-select.train { background: #edf3ee; color: #56705e; }
-.split-select.valid { background: #edf1f6; color: #596a83; }
-.split-select.test { background: #f4edf5; color: #746078; }
+.split-select:focus {
+  border-color: rgb(17 18 16 / 0.3);
+  box-shadow: 0 0 0 3px rgb(17 18 16 / 0.055);
+}
 
 .annotation-upload {
   position: relative;
