@@ -1,9 +1,11 @@
 # SenseMu 项目状态与后续路线
 
-- 更新日期：2026-08-21
-- 当前阶段：闭环 MVP 内部验证
+- 更新日期：2026-08-25
+- 当前阶段：公开演示 + 后端真实闭环开发
 - 首个垂直切口：工业安全目标检测
-- 发布入口：Cloudflare Workers（公开域名以生产部署详情为准）
+- 源码仓库：`https://github.com/ericzr/sense-mu`
+- 发布入口：`https://cs.sensemu.com/`（Cloudflare Worker，自定义域名）
+- 健康探针：`https://cs.sensemu.com/__sensemu/health`
 - 旧预览：`chatgpt.site` 地址已停用，不再作为验收入口
 
 ## 存储位置
@@ -18,7 +20,7 @@
 | 本地对象与模型产物 | `.local-data/objects/` | 本地开发时的资产、manifest、报告和模型产物 |
 | Codex 对话上下文 | 当前 Codex 任务 | 由 Codex 应用保存，不是项目目录中的可搬运文件 |
 
-`sense-mu` 已建立本地 Git 历史，并同步到私有远端 `https://github.com/ericzr/sense-mu`。本地业务数据、对象与模型产物、环境文件和依赖目录均被忽略，不进入远端仓库。
+`sense-mu` 已同步到 GitHub 远端 `https://github.com/ericzr/sense-mu`。本地业务数据、对象与模型产物、环境文件和依赖目录均被忽略，不进入远端仓库。后端协作者从 `docs/DEVELOPER_HANDOFF.md` 开始。
 
 ## 已完成的主干能力
 

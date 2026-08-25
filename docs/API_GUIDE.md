@@ -1,10 +1,10 @@
 # SenseMu 后端接口指南
 
-- 更新日期：2026-08-18
+- 更新日期：2026-08-25
 - Core API 版本：`0.1.0`
 - 基础前缀：`/api/v1`
 
-本文是给后端开发同事的接口地图，强调调用方、授权方式和业务顺序。字段级请求/响应以运行中的 OpenAPI 为唯一准确信源：
+本文是给后端开发同事的接口地图，强调调用方、授权方式和业务顺序。首次接入请先阅读 `docs/DEVELOPER_HANDOFF.md` 的正式地址、架构边界和 P0/P1 优先级。字段级请求/响应以运行中的 OpenAPI 为唯一准确信源：
 
 - Swagger UI：`http://localhost:8000/docs`
 - ReDoc：`http://localhost:8000/redoc`

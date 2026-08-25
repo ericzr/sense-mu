@@ -4,11 +4,18 @@ SenseMu 是一个面向视觉 AI 的端到端工作平台：在同一个可追�
 
 项目交接入口：
 
+- 后端协同开发手册与正式地址：[`docs/DEVELOPER_HANDOFF.md`](docs/DEVELOPER_HANDOFF.md)
 - 产品功能与边界：[`docs/PRODUCT_FUNCTIONS.md`](docs/PRODUCT_FUNCTIONS.md)
 - 后端接口与鉴权：[`docs/API_GUIDE.md`](docs/API_GUIDE.md)
 - 架构与代码审计：[`docs/CODE_AUDIT_2026-08-16.md`](docs/CODE_AUDIT_2026-08-16.md)
 - 当前状态与优先级：[`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md)
 - OIDC/BFF 登录边界：[`docs/adr/0037-oidc-bff-session-boundary.md`](docs/adr/0037-oidc-bff-session-boundary.md)
+
+正式地址：
+
+- GitHub：<https://github.com/ericzr/sense-mu>
+- Cloudflare Worker 预览：<https://cs.sensemu.com/>
+- 健康探针：<https://cs.sensemu.com/__sensemu/health>
 
 当前仓库是第一版工程骨架，保持五个运行时边界：
 

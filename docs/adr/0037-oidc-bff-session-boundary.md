@@ -8,6 +8,7 @@ SenseMu Core API 已完成 OIDC JWT 校验、`UserAccount` 映射和工作区角
 
 ## 决策
 
+- 首期采用“同源 BFF + 托管身份供应商”。BFF 与 Web 使用同一产品域名，浏览器不直接接触供应商 token endpoint；具体供应商可替换，不能把供应商 SDK 细节写入 Core API 领域逻辑。
 - Web 只提供配置驱动的 `NEXT_PUBLIC_SENSEMU_AUTH_LOGIN_URL` 登录入口，默认建议使用同源 `/auth/login`。
 - BFF 负责 OIDC Authorization Code + PKCE 的 state、nonce、code verifier、授权回调和 token exchange。
 - refresh token、client secret、OIDC provider session 和 BFF session cookie 只存在服务端；浏览器不写入 `localStorage` 或 `sessionStorage`。
@@ -43,6 +44,6 @@ SenseMu Core API 已完成 OIDC JWT 校验、`UserAccount` 映射和工作区角
 
 ## 未决事项
 
-- 尚未选择首发身份供应商和 BFF 部署位置。
+- 尚未选择首发托管身份供应商和 BFF 的具体部署产品；这不改变同源 BFF 的边界和安全不变量。
 - 尚未决定 Web 采用短期 token 内存注入还是由 BFF 代理 Core API；两者都必须遵守上述安全不变量。
 - 在这些外部条件确定前，不实现供应商特定的 token endpoint、refresh 逻辑或退出 URL。
