@@ -14491,6 +14491,10 @@ html[data-sidebar-collapsed="true"] .app-shell .profile-row {
   min-width: 0;
 }
 
+.versions-full-card .version-lock {
+  justify-self: center;
+}
+
 .versions-full-card .version-row > svg {
   justify-self: end;
 }
