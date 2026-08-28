@@ -26,6 +26,8 @@ test("server-renders the SenseMu product shell", async () => {
   const response = await render();
   assert.equal(response.status, 200);
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
+  assert.equal(response.headers.get("cache-control"), "no-store, no-cache, must-revalidate");
+  assert.match(response.headers.get("x-sensemu-release") ?? "", /^(?:[0-9a-f]{7,12}|unknown)$/);
 
   const html = await response.text();
   assert.match(html, /<title>SenseMu · 视觉 AI 工作平台<\/title>/i);
@@ -55,6 +57,17 @@ test("server-renders the SenseMu product shell", async () => {
   assert.match(html, /sensemu-sidebar-width/);
   assert.doesNotMatch(html, /workspace-switcher/);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape/);
+});
+
+test("health endpoint identifies the exact build release", async () => {
+  const response = await render("/__sensemu/health");
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("cache-control"), "no-store");
+
+  const health = await response.json();
+  assert.equal(health.status, "ok");
+  assert.match(health.release, /^(?:[0-9a-f]{7,12}|unknown)$/);
+  assert.notEqual(health.release, "aa0136f");
 });
 
 test("server-renders the Studio project route", async () => {

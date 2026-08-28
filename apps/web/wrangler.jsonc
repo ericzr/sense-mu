@@ -15,7 +15,6 @@
   },
   "vars": {
     "SENSEMU_PREVIEW_MODE": "true",
-    "NEXT_PUBLIC_SENSEMU_PREVIEW_MODE": "true",
-    "SENSEMU_RELEASE": "aa0136f"
+    "NEXT_PUBLIC_SENSEMU_PREVIEW_MODE": "true"
   }
 }

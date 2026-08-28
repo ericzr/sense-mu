@@ -25,6 +25,19 @@ Deploy command: npx wrangler deploy --config wrangler.jsonc
 Production branch: main
 ```
 
+## 验证线上代码版本
+
+每次生产构建都会写入对应的 Git 提交号。部署后同时检查以下两个信号：
+
+```bash
+curl -sS https://cs.sensemu.com/__sensemu/health
+curl -sSI https://cs.sensemu.com/ | grep -i x-sensemu-release
+```
+
+健康接口中的 `release` 和页面响应头中的 `x-sensemu-release` 必须与本次部署的 Git
+提交一致。HTML 与 RSC 响应显式使用 `no-store`，避免旧应用外壳遮住新的带哈希 CSS/JS
+产物。
+
 `workers_dev: true` 已写入应用配置，确保部署继续提供 `workers.dev` 访问地址；如果部署详情仍没有 `workers.dev` 域名，说明 Cloudflare 服务的域名开关或账户级 Workers 访问被关闭，需要在控制台的 Domains & Routes 中重新启用或绑定自定义域名。
 
 ### `workers.dev` 超时

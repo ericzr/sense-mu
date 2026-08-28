@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import vinext from "vinext";
 import { defineConfig } from "vite";
 import hostingConfig from "./.openai/hosting.json" with { type: "json" };
@@ -7,6 +8,24 @@ const SITE_CREATOR_PLACEHOLDER_DATABASE_ID =
   "00000000-0000-4000-8000-000000000000";
 
 const { d1, r2 } = hostingConfig;
+
+function resolveBuildRelease() {
+  const releaseFromEnvironment =
+    process.env.CF_PAGES_COMMIT_SHA ??
+    process.env.CLOUDFLARE_COMMIT_SHA ??
+    process.env.GITHUB_SHA;
+
+  if (releaseFromEnvironment) return releaseFromEnvironment.slice(0, 12);
+
+  try {
+    return execFileSync("git", ["rev-parse", "--short=12", "HEAD"], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+  } catch {
+    return "unknown";
+  }
+}
 
 // macOS Seatbelt blocks FSEvents, so Codex previews need polling for HMR.
 const isCodexSeatbeltSandbox = process.env.CODEX_SANDBOX === "seatbelt";
@@ -34,6 +53,8 @@ const localBindingConfig = {
 };
 
 export default defineConfig(async () => {
+  const buildRelease = resolveBuildRelease();
+
   // Keep Wrangler and Miniflare state project-local. These are non-secret tool
   // settings; application environment belongs in ignored `.env*` files.
   process.env.WRANGLER_WRITE_LOGS ??= "false";
@@ -44,6 +65,9 @@ export default defineConfig(async () => {
   const { cloudflare } = await import("@cloudflare/vite-plugin");
 
   return {
+    define: {
+      __SENSEMU_BUILD_RELEASE__: JSON.stringify(buildRelease),
+    },
     envPrefix: ["VITE_", "NEXT_PUBLIC_"],
     optimizeDeps: {
       exclude: ["lucide-react"],

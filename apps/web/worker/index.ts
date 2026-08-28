@@ -2,6 +2,8 @@
 import { handleImageOptimization, DEFAULT_DEVICE_SIZES, DEFAULT_IMAGE_SIZES } from "vinext/server/image-optimization";
 import handler from "vinext/server/app-router-entry";
 
+declare const __SENSEMU_BUILD_RELEASE__: string;
+
 interface Env {
   ASSETS?: Fetcher;
   DB?: D1Database;
@@ -14,7 +16,6 @@ interface Env {
   };
   SENSEMU_PREVIEW_MODE?: string;
   NEXT_PUBLIC_SENSEMU_PREVIEW_MODE?: string;
-  SENSEMU_RELEASE?: string;
 }
 
 interface ExecutionContext {
@@ -39,7 +40,7 @@ const worker = {
           service: "sensemu-web",
           runtime: "cloudflare-worker",
           status: "ok",
-          release: env.SENSEMU_RELEASE ?? "unknown",
+          release: __SENSEMU_BUILD_RELEASE__,
           preview: env.SENSEMU_PREVIEW_MODE === "true",
           bindings: {
             assets: Boolean(assets),
@@ -71,8 +72,20 @@ const worker = {
     try {
       const response = await handler.fetch(request, env, ctx);
       const headers = new Headers(response.headers);
+      const contentType = headers.get("content-type") ?? "";
+      const isDocumentResponse =
+        contentType.includes("text/html") ||
+        contentType.includes("text/x-component") ||
+        request.headers.get("rsc") === "1";
+
       headers.set("x-sensemu-worker", "sense-mu");
+      headers.set("x-sensemu-release", __SENSEMU_BUILD_RELEASE__);
       headers.set("x-sensemu-preview-mode", env.SENSEMU_PREVIEW_MODE === "true" ? "true" : "false");
+      if (isDocumentResponse) {
+        headers.set("cache-control", "no-store, no-cache, must-revalidate");
+        headers.set("pragma", "no-cache");
+        headers.set("expires", "0");
+      }
       return new Response(response.body, {
         status: response.status,
         statusText: response.statusText,
