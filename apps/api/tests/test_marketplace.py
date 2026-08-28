@@ -274,6 +274,9 @@ def test_marketplace_listing_subscription_and_atomic_quota() -> None:
     )
     assert public_listings.status_code == 200
     assert [item["id"] for item in public_listings.json()] == [listing["id"]]
+    anonymous_catalog = client.get("/api/v1/marketplace/listings/public")
+    assert anonymous_catalog.status_code == 200
+    assert [item["id"] for item in anonymous_catalog.json()] == [listing["id"]]
     own_checkout = client.post(
         f"/api/v1/marketplace/listings/{listing['id']}/subscriptions",
         headers={"X-Workspace-ID": provider_id},

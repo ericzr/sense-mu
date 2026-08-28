@@ -28,6 +28,14 @@ def list_data_listings(
     return data_market_service.list_listings(session, storage)
 
 
+@router.get("/data-market/listings/public", response_model=list[DataListingResponse])
+def list_public_data_listings(
+    session: SessionDep,
+    storage: StorageDep,
+) -> list[DataListingResponse]:
+    return data_market_service.list_listings(session, storage)
+
+
 @router.post(
     "/dataset-versions/{dataset_version_id}/data-listing",
     response_model=DataListingResponse,

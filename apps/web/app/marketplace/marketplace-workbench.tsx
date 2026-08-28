@@ -60,21 +60,26 @@ export function MarketplaceWorkbench({ previewMode }: { previewMode: boolean }) 
   const [checkoutListing, setCheckoutListing] = useState<AlgorithmCatalogItem | null>(null);
 
   const loadWorkspace = useCallback(async (nextWorkspaceId: string) => {
-    const [nextListings, nextSubscriptions] = await Promise.all([
-      catalogApi.listMarketplaceListings(nextWorkspaceId),
-      catalogApi.listMarketplaceSubscriptions(nextWorkspaceId),
-    ]);
-    setListings(mergeAlgorithmListings(nextListings, previewMode));
-    setSubscriptions(nextSubscriptions);
-  }, [previewMode]);
+    setSubscriptions(await catalogApi.listMarketplaceSubscriptions(nextWorkspaceId));
+  }, []);
 
   useEffect(() => {
-    void catalogApi.listWorkspaces()
-      .then(async (nextWorkspaces) => {
+    void Promise.all([
+      catalogApi.listPublicMarketplaceListings(),
+      catalogApi.listWorkspaces().catch(() => [] as Workspace[]),
+    ])
+      .then(async ([nextListings, nextWorkspaces]) => {
+        setListings(mergeAlgorithmListings(nextListings, previewMode));
         setWorkspaces(nextWorkspaces);
         const selected = nextWorkspaces[0]?.id ?? "";
         setWorkspaceId(selected);
-        if (selected) await loadWorkspace(selected);
+        if (selected) {
+          try {
+            await loadWorkspace(selected);
+          } catch (reason) {
+            setError(reason instanceof Error ? reason.message : "工作区授权状态加载失败");
+          }
+        }
       })
       .catch((reason) => {
         setListings(previewMode ? MOCK_ALGORITHM_LISTINGS : []);

@@ -24,13 +24,16 @@ export function AlgorithmDetailWorkbench({ listingId, previewMode }: { listingId
   const [purchased, setPurchased] = useState(false);
 
   useEffect(() => {
-    void catalogApi.listWorkspaces()
-      .then(async (nextWorkspaces) => {
+    void Promise.all([
+      initialListing ? Promise.resolve<null>(null) : catalogApi.listPublicMarketplaceListings(),
+      catalogApi.listWorkspaces().catch(() => [] as Workspace[]),
+    ])
+      .then(([publicListings, nextWorkspaces]) => {
         setWorkspaces(nextWorkspaces);
         const selected = nextWorkspaces[0]?.id ?? "";
         setWorkspaceId(selected);
-        if (!initialListing && selected) {
-          const realListing = (await catalogApi.listMarketplaceListings(selected)).find((item) => item.id === listingId);
+        if (!initialListing && publicListings) {
+          const realListing = publicListings.find((item) => item.id === listingId);
           setListing(realListing ? decorateAlgorithmListing(realListing) : null);
         }
       })

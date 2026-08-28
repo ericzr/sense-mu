@@ -1030,6 +1030,8 @@ export const catalogApi = {
     ),
   listDataMarketListings: (workspaceId: string) =>
     request<DataMarketListing[]>("/api/v1/data-market/listings", { workspaceId }),
+  listPublicDataMarketListings: () =>
+    request<DataMarketListing[]>("/api/v1/data-market/listings/public"),
   createDataMarketListing: (
     workspaceId: string,
     datasetVersionId: string,
@@ -1624,6 +1626,8 @@ export const catalogApi = {
     }),
   listMarketplaceListings: (workspaceId: string) =>
     request<MarketplaceListing[]>("/api/v1/marketplace/listings", { workspaceId }),
+  listPublicMarketplaceListings: () =>
+    request<MarketplaceListing[]>("/api/v1/marketplace/listings/public"),
   listMarketplaceSubmissions: (workspaceId: string) =>
     request<MarketplaceListingSubmission[]>("/api/v1/marketplace/submissions", {
       workspaceId,

@@ -7278,6 +7278,31 @@
         ]
       }
     },
+    "/api/v1/data-market/listings/public": {
+      "get": {
+        "operationId": "list_public_data_listings_api_v1_data_market_listings_public_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DataListingResponse"
+                  },
+                  "title": "Response List Public Data Listings Api V1 Data Market Listings Public Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Public Data Listings",
+        "tags": [
+          "data-market"
+        ]
+      }
+    },
     "/api/v1/data-market/listings/{listing_id}/delivery-spec": {
       "get": {
         "operationId": "get_data_delivery_spec_api_v1_data_market_listings__listing_id__delivery_spec_get",
@@ -10130,6 +10155,31 @@
           }
         },
         "summary": "List Marketplace Listings",
+        "tags": [
+          "marketplace"
+        ]
+      }
+    },
+    "/api/v1/marketplace/listings/public": {
+      "get": {
+        "operationId": "list_public_marketplace_listings_api_v1_marketplace_listings_public_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MarketplaceListingResponse"
+                  },
+                  "title": "Response List Public Marketplace Listings Api V1 Marketplace Listings Public Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Public Marketplace Listings",
         "tags": [
           "marketplace"
         ]

@@ -78,6 +78,16 @@ def list_marketplace_listings(
 
 
 @router.get(
+    "/marketplace/listings/public",
+    response_model=list[MarketplaceListingResponse],
+)
+def list_public_marketplace_listings(
+    session: SessionDep,
+) -> list[MarketplaceListingResponse]:
+    return marketplace_service.list_public_listings(session)
+
+
+@router.get(
     "/marketplace/submissions",
     response_model=list[MarketplaceListingSubmissionResponse],
 )

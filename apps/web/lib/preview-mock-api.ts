@@ -676,7 +676,7 @@ export function getPreviewMockResult(path: string, init: RequestInit = {}): Prev
   if (pathname === "/api/v1/projects") return { handled: true, value: previewProjects };
   if (pathname === "/api/v1/training/engines") return { handled: true, value: trainingEngines };
   if (pathname === "/api/v1/provider/dashboard") return { handled: true, value: previewProvider };
-  if (pathname === "/api/v1/marketplace/listings" || pathname === "/api/v1/marketplace/submissions" || pathname === "/api/v1/data-market/listings") return { handled: true, value: [] };
+  if (pathname === "/api/v1/marketplace/listings" || pathname === "/api/v1/marketplace/listings/public" || pathname === "/api/v1/marketplace/submissions" || pathname === "/api/v1/data-market/listings" || pathname === "/api/v1/data-market/listings/public") return { handled: true, value: [] };
   if (pathname === "/api/v1/marketplace/subscriptions") return { handled: true, value: previewSubscriptions };
   if (pathname === "/api/v1/marketplace/usage-records") return { handled: true, value: previewUsage };
   if (pathname === "/api/v1/marketplace/billing") return { handled: true, value: previewBilling };

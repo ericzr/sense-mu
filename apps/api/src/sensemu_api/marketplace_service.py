@@ -232,6 +232,18 @@ def list_listings(
     ]
 
 
+def list_public_listings(session: Session) -> list[MarketplaceListingResponse]:
+    listings = session.scalars(
+        select(MarketplaceListing)
+        .where(
+            MarketplaceListing.status == "published",
+            MarketplaceListing.capability_spec_id.is_not(None),
+        )
+        .order_by(MarketplaceListing.published_at.desc())
+    ).all()
+    return [_listing_response(session, listing, None) for listing in listings]
+
+
 def list_submissions(
     session: Session,
     provider_workspace_id: UUID,
@@ -271,7 +283,7 @@ def list_submissions(
 def _listing_response(
     session: Session,
     listing: MarketplaceListing,
-    buyer_workspace_id: UUID,
+    buyer_workspace_id: UUID | None,
 ) -> MarketplaceListingResponse:
     record = session.execute(
         select(Deployment, Workspace, ModelVersion, Model, Project, CapabilitySpec)
@@ -283,11 +295,15 @@ def _listing_response(
         .where(Deployment.id == listing.deployment_id)
     ).one()
     deployment, provider, model_version, model, project, capability = record
-    subscription = session.scalar(
-        select(MarketplaceSubscription).where(
-            MarketplaceSubscription.listing_id == listing.id,
-            MarketplaceSubscription.buyer_workspace_id == buyer_workspace_id,
+    subscription = (
+        session.scalar(
+            select(MarketplaceSubscription).where(
+                MarketplaceSubscription.listing_id == listing.id,
+                MarketplaceSubscription.buyer_workspace_id == buyer_workspace_id,
+            )
         )
+        if buyer_workspace_id is not None
+        else None
     )
     subscription_status = _effective_status(subscription) if subscription else None
     return MarketplaceListingResponse(

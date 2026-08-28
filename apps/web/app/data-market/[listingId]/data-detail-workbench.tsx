@@ -15,11 +15,9 @@ export function DataDetailWorkbench({ listingId, previewMode }: { listingId: str
 
   useEffect(() => {
     if (initialListing) return;
-    void catalogApi.listWorkspaces()
-      .then(async (workspaces) => {
-        const selected = workspaces[0]?.id ?? "";
-        if (!selected) return;
-        const realListing = (await catalogApi.listDataMarketListings(selected)).find((item) => item.id === listingId);
+    void catalogApi.listPublicDataMarketListings()
+      .then((publicListings) => {
+        const realListing = publicListings.find((item) => item.id === listingId);
         setListing(realListing ? decorateDataListing(realListing) : null);
       })
       .catch((reason) => setError(reason instanceof Error ? reason.message : "数据集详情加载失败"))

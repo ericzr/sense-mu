@@ -55,6 +55,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/data-market/listings/public": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Public Data Listings */
+        get: operations["list_public_data_listings_api_v1_data_market_listings_public_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/data-market/listings/{listing_id}/delivery-spec": {
         parameters: {
             query?: never;
@@ -630,6 +647,23 @@ export interface paths {
         };
         /** List Marketplace Listings */
         get: operations["list_marketplace_listings_api_v1_marketplace_listings_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/marketplace/listings/public": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Public Marketplace Listings */
+        get: operations["list_public_marketplace_listings_api_v1_marketplace_listings_public_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4450,6 +4484,26 @@ export interface operations {
             };
         };
     };
+    list_public_data_listings_api_v1_data_market_listings_public_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataListingResponse"][];
+                };
+            };
+        };
+    };
     get_data_delivery_spec_api_v1_data_market_listings__listing_id__delivery_spec_get: {
         parameters: {
             query?: never;
@@ -5835,6 +5889,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_public_marketplace_listings_api_v1_marketplace_listings_public_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarketplaceListingResponse"][];
                 };
             };
         };

@@ -220,7 +220,8 @@ Core API 当前遵循 FastAPI 默认格式：
 | 方法 | 路径 | 作用 |
 |---|---|---|
 | POST | `/api/v1/capability-specs/{capability_spec_id}/marketplace-listing` | 从能力契约创建算法商品 |
-| GET | `/api/v1/marketplace/listings` | 买方可发现商品 |
+| GET | `/api/v1/marketplace/listings/public` | 无工作区访客发现已公开商品 |
+| GET | `/api/v1/marketplace/listings` | 带买方授权状态的工作区商品目录 |
 | GET | `/api/v1/marketplace/submissions` | 供应方查看审核状态 |
 | POST | `/api/v1/marketplace/listings/{listing_id}/subscriptions` | 创建订阅/待支付订单 |
 | GET | `/api/v1/marketplace/subscriptions` | 列出买方授权 |
@@ -229,7 +230,8 @@ Core API 当前遵循 FastAPI 默认格式：
 | GET | `/api/v1/marketplace/usage-records` | 成功调用记录 |
 | GET | `/api/v1/marketplace/billing` | 订单、支付和收入事实 |
 | POST | `/api/v1/dataset-versions/{dataset_version_id}/data-listing` | 从冻结版本发布数据卡 |
-| GET | `/api/v1/data-market/listings` | 列出公开数据卡 |
+| GET | `/api/v1/data-market/listings/public` | 无工作区访客列出公开数据卡 |
+| GET | `/api/v1/data-market/listings` | 带工作区上下文的公开数据卡目录 |
 | GET | `/api/v1/data-market/listings/{listing_id}/delivery-spec` | 读取交付规范 |
 | GET | `/api/v1/provider/dashboard` | 供应方聚合看板 |
 | GET / PATCH | `/api/v1/provider/profile` | 读取或更新供应方资料 |

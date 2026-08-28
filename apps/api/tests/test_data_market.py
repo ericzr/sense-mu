@@ -155,6 +155,9 @@ def test_publish_and_discover_trusted_data_card() -> None:
     listed = client.get("/api/v1/data-market/listings", headers=headers)
     assert listed.status_code == 200
     assert listed.json()[0]["dataset_version_id"] == str(version.id)
+    public_listed = client.get("/api/v1/data-market/listings/public")
+    assert public_listed.status_code == 200
+    assert public_listed.json()[0]["dataset_version_id"] == str(version.id)
     provider_dashboard = client.get(
         "/api/v1/provider/dashboard", headers=headers
     )

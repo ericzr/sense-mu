@@ -2,7 +2,7 @@
 
 import { ArrowUpRight, BadgeCheck, Database, LoaderCircle, Search } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CatalogFilterMenu } from "../components/catalog-filter-menu";
 import { CatalogPreview } from "../components/catalog-preview";
 import {
@@ -54,23 +54,16 @@ export function DataMarketWorkbench({ previewMode }: { previewMode: boolean }) {
   const [scale, setScale] = useState("全部规模");
   const [license, setLicense] = useState("全部授权");
 
-  const loadWorkspace = useCallback(async (nextWorkspaceId: string) => {
-    setListings(mergeDataListings(await catalogApi.listDataMarketListings(nextWorkspaceId), previewMode));
-  }, [previewMode]);
-
   useEffect(() => {
-    void catalogApi.listWorkspaces()
-      .then(async (nextWorkspaces) => {
-        const selected = nextWorkspaces[0]?.id ?? "";
-        if (selected) await loadWorkspace(selected);
-      })
+    void catalogApi.listPublicDataMarketListings()
+      .then((nextListings) => setListings(mergeDataListings(nextListings, previewMode)))
       .catch((reason) => {
         setListings(previewMode ? MOCK_DATA_LISTINGS : []);
         const message = reason instanceof Error ? reason.message : "服务暂不可用";
         setError(previewMode ? `${message}；当前显示示例数据集。` : message);
       })
       .finally(() => setLoading(false));
-  }, [loadWorkspace, previewMode]);
+  }, [previewMode]);
 
   const tasks = useMemo(
     () => ["全部", ...Array.from(new Set(listings.map((listing) => dataTaskLabels[listing.task_type] ?? listing.task_type)))],
