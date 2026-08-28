@@ -4164,6 +4164,7 @@ html[data-sidebar-collapsed="true"] .app-shell .profile-row {
 }
 
 .asset-grid-card {
+  container-type: inline-size;
   min-width: 0;
   overflow: hidden;
   border: 1px solid var(--border);
@@ -4227,17 +4228,21 @@ html[data-sidebar-collapsed="true"] .app-shell .profile-row {
 
 .asset-grid-actions {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(84px, 0.9fr) minmax(100px, 1.1fr);
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   padding: 0 10px 10px;
 }
 
 .asset-grid-actions .annotation-upload {
-  min-width: 0;
+  min-width: 100px;
   width: auto;
-  padding-inline: 6px;
+  padding-inline: 8px;
   white-space: nowrap;
+}
+
+.asset-grid-actions .split-select {
+  min-width: 84px;
 }
 
 .asset-grid-actions .annotation-upload span {
@@ -14500,6 +14505,25 @@ html[data-sidebar-collapsed="true"] .app-shell .profile-row {
   border-radius: 10px;
 }
 
+.versions-full-card .version-row:hover {
+  border-color: #b9c8ce;
+  background: #fafcfb;
+}
+
+.versions-full-card .version-row.is-active {
+  border-color: #9eb4be;
+  background: #f1f6f7;
+  box-shadow: inset 3px 0 0 #557786;
+}
+
+.versions-full-card .version-row.is-active strong {
+  color: #2f4d5a;
+}
+
+.versions-full-card .version-row.is-active > svg {
+  color: #4f7b68;
+}
+
 .versions-full-card .version-row > span:nth-child(2) {
   min-width: 0;
 }
@@ -15534,6 +15558,17 @@ html[data-sidebar-collapsed="true"] .app-shell .profile-row {
     width: 100%;
     max-height: 90vh;
     border-radius: 18px 18px 0 0;
+  }
+}
+
+@container (max-width: 250px) {
+  .asset-grid-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .asset-grid-actions .annotation-upload,
+  .asset-grid-actions .split-select {
+    width: 100%;
   }
 }
 

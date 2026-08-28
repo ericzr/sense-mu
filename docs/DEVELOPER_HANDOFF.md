@@ -142,6 +142,8 @@ cd apps/web && npm run typecheck && npm run lint && npm test
 
 ## 8. 后端协同优先级
 
+服务器上线前的可执行验收矩阵见 `docs/PRE_SERVER_ACCEPTANCE.md`。其中“已由代码和自动化证明”不等于生产设施已验证；身份、PostgreSQL、对象存储、Redis、GPU、告警和恢复演练必须在真实环境留证。
+
 ### P0：让真实后端可被安全接入
 
 - 确定托管身份供应商和 BFF 部署位置，完成登录、回调、会话、退出和权限撤销 E2E。

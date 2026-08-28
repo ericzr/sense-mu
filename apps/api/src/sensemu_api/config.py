@@ -1,5 +1,7 @@
 from functools import lru_cache
+from ipaddress import ip_address
 from typing import Literal
+from urllib.parse import urlparse
 
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -10,6 +12,24 @@ Environment = Literal["development", "test", "staging", "production"]
 def _unsafe_production_secret(value: str) -> bool:
     normalized = value.strip().lower()
     return len(value.strip()) < 32 or "local-only" in normalized
+
+
+def _is_local_endpoint(value: str) -> bool:
+    hostname = urlparse(value).hostname
+    if not hostname:
+        return False
+    normalized = hostname.rstrip(".").lower()
+    if normalized == "localhost" or normalized.endswith(".localhost"):
+        return True
+    try:
+        return ip_address(normalized).is_loopback
+    except ValueError:
+        return False
+
+
+def _is_https_url(value: str) -> bool:
+    parsed = urlparse(value)
+    return parsed.scheme == "https" and bool(parsed.hostname)
 
 
 class Settings(BaseSettings):
@@ -73,6 +93,22 @@ class Settings(BaseSettings):
         ]
         if missing_oidc:
             raise ValueError(f"OIDC 配置不完整: {', '.join(missing_oidc)}")
+        insecure_public_urls = [
+            name
+            for name, value in {
+                "oidc_issuer_url": self.oidc_issuer_url,
+                "oidc_jwks_url": self.oidc_jwks_url,
+                "api_public_url": self.api_public_url,
+                "web_origin": self.web_origin,
+                "inference_gateway_public_url": self.inference_gateway_public_url,
+            }.items()
+            if not _is_https_url(value)
+        ]
+        if insecure_public_urls:
+            raise ValueError(
+                "staging/production 公开地址必须使用 HTTPS: "
+                + ", ".join(insecure_public_urls)
+            )
 
         unsafe_secrets = [
             name
@@ -93,6 +129,22 @@ class Settings(BaseSettings):
             )
         if self.object_storage_endpoint.strip().lower() == "local://":
             raise ValueError("staging/production 禁止使用本地对象存储")
+        if not self.database_url.startswith("postgresql"):
+            raise ValueError("staging/production 必须使用 PostgreSQL")
+        local_endpoints = [
+            name
+            for name, value in {
+                "database_url": self.database_url,
+                "redis_url": self.redis_url,
+                "celery_broker_url": self.celery_broker_url,
+                "object_storage_endpoint": self.object_storage_endpoint,
+            }.items()
+            if _is_local_endpoint(value)
+        ]
+        if local_endpoints:
+            raise ValueError(
+                "staging/production 禁止连接本机依赖: " + ", ".join(local_endpoints)
+            )
         return self
 
 

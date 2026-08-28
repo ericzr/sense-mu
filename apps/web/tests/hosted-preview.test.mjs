@@ -36,3 +36,35 @@ test("server-renders a consistent hosted demo overview", async () => {
   assert.match(html, /3 个版本/);
   assert.doesNotMatch(html, /1,248 个素材|594 个素材/);
 });
+
+test("hosted preview keeps the algorithm catalog and demo detail available", async () => {
+  const catalogResponse = await render("/marketplace");
+  assert.equal(catalogResponse.status, 200);
+  const catalogHtml = await catalogResponse.text();
+  assert.match(catalogHtml, /工地安全穿戴检测/);
+  assert.match(catalogHtml, /林木健康巡检/);
+  assert.match(catalogHtml, /href="\/marketplace\/mock-alg-ppe"/);
+
+  const detailResponse = await render("/marketplace/mock-alg-ppe");
+  assert.equal(detailResponse.status, 200);
+  const detailHtml = await detailResponse.text();
+  assert.match(detailHtml, /工地安全穿戴检测/);
+  assert.match(detailHtml, /在线体验/);
+  assert.match(detailHtml, /适用边界/);
+});
+
+test("hosted preview keeps the data catalog and demo detail available", async () => {
+  const catalogResponse = await render("/data-market");
+  assert.equal(catalogResponse.status, 200);
+  const catalogHtml = await catalogResponse.text();
+  assert.match(catalogHtml, /工地安全穿戴数据集/);
+  assert.match(catalogHtml, /林区树木健康数据集/);
+  assert.match(catalogHtml, /href="\/data-market\/mock-data-ppe"/);
+
+  const detailResponse = await render("/data-market/mock-data-ppe");
+  assert.equal(detailResponse.status, 200);
+  const detailHtml = await detailResponse.text();
+  assert.match(detailHtml, /工地安全穿戴数据集/);
+  assert.match(detailHtml, /数据概览/);
+  assert.match(detailHtml, /来源与质量/);
+});

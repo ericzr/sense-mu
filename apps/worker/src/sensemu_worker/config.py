@@ -1,5 +1,20 @@
 import os
 from dataclasses import dataclass
+from ipaddress import ip_address
+from urllib.parse import urlparse
+
+
+def _is_local_endpoint(value: str) -> bool:
+    hostname = urlparse(value).hostname
+    if not hostname:
+        return False
+    normalized = hostname.rstrip(".").lower()
+    if normalized == "localhost" or normalized.endswith(".localhost"):
+        return True
+    try:
+        return ip_address(normalized).is_loopback
+    except ValueError:
+        return False
 
 
 @dataclass(frozen=True)
@@ -51,6 +66,21 @@ class WorkerSettings:
             raise ValueError("staging/production 禁止使用本地对象存储")
         if self.docker_allow_cross_architecture:
             raise ValueError("staging/production 禁止跨架构转译训练")
+        local_endpoints = [
+            name
+            for name, value in {
+                "api_url": self.api_url,
+                "runtime_url": self.runtime_url,
+                "object_storage_endpoint": self.object_storage_endpoint,
+            }.items()
+            if _is_local_endpoint(value)
+        ]
+        if local_endpoints:
+            raise ValueError(
+                "staging/production 禁止连接本机依赖: " + ", ".join(local_endpoints)
+            )
+        if "@sha256:" not in self.docker_image:
+            raise ValueError("staging/production 训练镜像必须固定 sha256 摘要")
 
     @staticmethod
     def _env_bool(name: str, default: bool = False) -> bool:

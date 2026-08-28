@@ -12,8 +12,8 @@ import {
 import { catalogApi, type Workspace } from "../../../lib/catalog-api";
 import { AlgorithmLiveDemo } from "./algorithm-live-demo";
 
-export function AlgorithmDetailWorkbench({ listingId }: { listingId: string }) {
-  const initialListing = findMockAlgorithm(listingId);
+export function AlgorithmDetailWorkbench({ listingId, previewMode }: { listingId: string; previewMode: boolean }) {
+  const initialListing = previewMode ? findMockAlgorithm(listingId) : null;
   const [listing, setListing] = useState<AlgorithmCatalogItem | null>(initialListing);
   const [loading, setLoading] = useState(!initialListing);
   const [error, setError] = useState<string | null>(null);
@@ -43,13 +43,15 @@ export function AlgorithmDetailWorkbench({ listingId }: { listingId: string }) {
     setBusy(true);
     setError(null);
     try {
-      if (listing.is_mock) {
+      if (listing.is_mock && previewMode) {
         setPurchased(true);
         setNotice("示例购买流程已完成；接入支付后将创建真实 API 授权。");
-      } else {
+      } else if (!listing.is_mock) {
         const checkout = await catalogApi.subscribeMarketplaceListing(workspaceId, listing.id);
         setPurchased(checkout.status === "active");
         setNotice(checkout.status === "active" ? "购买成功，请到“我的”领取 API 密钥。" : "订单已创建，请到“我的”查看。");
+      } else {
+        throw new Error("演示商品不能在正式环境购买");
       }
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "购买失败");

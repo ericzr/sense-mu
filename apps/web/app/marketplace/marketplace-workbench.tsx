@@ -2,7 +2,7 @@
 
 import { ArrowUpRight, BadgeCheck, LoaderCircle, Search, ShoppingBag } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { CatalogFilterMenu } from "../components/catalog-filter-menu";
 import { CatalogPreview } from "../components/catalog-preview";
 import {
@@ -43,14 +43,14 @@ function getListingEnvironments(listing: AlgorithmCatalogItem): string[] {
   ].filter((item): item is string => Boolean(item));
 }
 
-export function MarketplaceWorkbench() {
+export function MarketplaceWorkbench({ previewMode }: { previewMode: boolean }) {
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [workspaceId, setWorkspaceId] = useState("");
-  const [listings, setListings] = useState<AlgorithmCatalogItem[]>(MOCK_ALGORITHM_LISTINGS);
+  const [listings, setListings] = useState<AlgorithmCatalogItem[]>(previewMode ? MOCK_ALGORITHM_LISTINGS : []);
   const [subscriptions, setSubscriptions] = useState<MarketplaceSubscription[]>([]);
   const [mockPurchasedIds, setMockPurchasedIds] = useState<string[]>([]);
   const [query, setQuery] = useState("");
@@ -59,14 +59,14 @@ export function MarketplaceWorkbench() {
   const [environment, setEnvironment] = useState("全部环境");
   const [checkoutListing, setCheckoutListing] = useState<AlgorithmCatalogItem | null>(null);
 
-  async function loadWorkspace(nextWorkspaceId: string) {
+  const loadWorkspace = useCallback(async (nextWorkspaceId: string) => {
     const [nextListings, nextSubscriptions] = await Promise.all([
       catalogApi.listMarketplaceListings(nextWorkspaceId),
       catalogApi.listMarketplaceSubscriptions(nextWorkspaceId),
     ]);
-    setListings(mergeAlgorithmListings(nextListings));
+    setListings(mergeAlgorithmListings(nextListings, previewMode));
     setSubscriptions(nextSubscriptions);
-  }
+  }, [previewMode]);
 
   useEffect(() => {
     void catalogApi.listWorkspaces()
@@ -77,11 +77,12 @@ export function MarketplaceWorkbench() {
         if (selected) await loadWorkspace(selected);
       })
       .catch((reason) => {
-        setListings(MOCK_ALGORITHM_LISTINGS);
-        setError(reason instanceof Error ? `${reason.message}；当前显示示例商品。` : "服务暂不可用；当前显示示例商品。");
+        setListings(previewMode ? MOCK_ALGORITHM_LISTINGS : []);
+        const message = reason instanceof Error ? reason.message : "服务暂不可用";
+        setError(previewMode ? `${message}；当前显示示例商品。` : message);
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [loadWorkspace, previewMode]);
 
   const categories = useMemo(
     () => ["全部", ...Array.from(new Set(listings.map((listing) => taskLabels[listing.task_type] ?? listing.category)))],
@@ -124,12 +125,13 @@ export function MarketplaceWorkbench() {
     setError(null);
     setNotice(null);
     try {
-      if (listing.is_mock) {
+      if (listing.is_mock && previewMode) {
         setMockPurchasedIds((current) => [...new Set([...current, listing.id])]);
         setCheckoutListing(null);
         setNotice("示例购买流程已完成；接入支付后将创建真实 API 授权。");
         return;
       }
+      if (listing.is_mock) throw new Error("演示商品不能在正式环境购买");
       const checkout = await catalogApi.subscribeMarketplaceListing(workspaceId, listing.id);
       await loadWorkspace(workspaceId);
       setCheckoutListing(null);

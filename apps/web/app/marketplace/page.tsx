@@ -8,9 +8,10 @@ export const metadata: Metadata = {
 };
 
 export default function MarketplacePage() {
+  const previewMode = process.env.SENSEMU_PREVIEW_MODE === "true";
   return (
     <ProductShell active="algorithm-market">
-      <MarketplaceWorkbench />
+      <MarketplaceWorkbench previewMode={previewMode} />
     </ProductShell>
   );
 }

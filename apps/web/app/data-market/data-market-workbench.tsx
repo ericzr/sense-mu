@@ -2,7 +2,7 @@
 
 import { ArrowUpRight, BadgeCheck, Database, LoaderCircle, Search } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { CatalogFilterMenu } from "../components/catalog-filter-menu";
 import { CatalogPreview } from "../components/catalog-preview";
 import {
@@ -43,10 +43,10 @@ function formatDatasetCount(value: number | null): string {
   return value === null ? "待公布" : value.toLocaleString("zh-CN");
 }
 
-export function DataMarketWorkbench() {
+export function DataMarketWorkbench({ previewMode }: { previewMode: boolean }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [listings, setListings] = useState<DataCatalogItem[]>(MOCK_DATA_LISTINGS);
+  const [listings, setListings] = useState<DataCatalogItem[]>(previewMode ? MOCK_DATA_LISTINGS : []);
   const [query, setQuery] = useState("");
   const [task, setTask] = useState("全部");
   const [scene, setScene] = useState("全部场景");
@@ -54,9 +54,9 @@ export function DataMarketWorkbench() {
   const [scale, setScale] = useState("全部规模");
   const [license, setLicense] = useState("全部授权");
 
-  async function loadWorkspace(nextWorkspaceId: string) {
-    setListings(mergeDataListings(await catalogApi.listDataMarketListings(nextWorkspaceId)));
-  }
+  const loadWorkspace = useCallback(async (nextWorkspaceId: string) => {
+    setListings(mergeDataListings(await catalogApi.listDataMarketListings(nextWorkspaceId), previewMode));
+  }, [previewMode]);
 
   useEffect(() => {
     void catalogApi.listWorkspaces()
@@ -65,11 +65,12 @@ export function DataMarketWorkbench() {
         if (selected) await loadWorkspace(selected);
       })
       .catch((reason) => {
-        setListings(MOCK_DATA_LISTINGS);
-        setError(reason instanceof Error ? `${reason.message}；当前显示示例数据集。` : "服务暂不可用；当前显示示例数据集。");
+        setListings(previewMode ? MOCK_DATA_LISTINGS : []);
+        const message = reason instanceof Error ? reason.message : "服务暂不可用";
+        setError(previewMode ? `${message}；当前显示示例数据集。` : message);
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [loadWorkspace, previewMode]);
 
   const tasks = useMemo(
     () => ["全部", ...Array.from(new Set(listings.map((listing) => dataTaskLabels[listing.task_type] ?? listing.task_type)))],

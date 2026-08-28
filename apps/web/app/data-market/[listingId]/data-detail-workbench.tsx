@@ -7,8 +7,8 @@ import { dataTaskLabels, getDatasetListingCounts, licenseLabels } from "../data-
 import { decorateDataListing, findMockData, type DataCatalogItem } from "../../../lib/catalog-mock-data";
 import { catalogApi } from "../../../lib/catalog-api";
 
-export function DataDetailWorkbench({ listingId }: { listingId: string }) {
-  const initialListing = findMockData(listingId);
+export function DataDetailWorkbench({ listingId, previewMode }: { listingId: string; previewMode: boolean }) {
+  const initialListing = previewMode ? findMockData(listingId) : null;
   const [listing, setListing] = useState<DataCatalogItem | null>(initialListing);
   const [loading, setLoading] = useState(!initialListing);
   const [error, setError] = useState<string | null>(null);

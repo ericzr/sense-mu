@@ -1357,6 +1357,19 @@ def test_training_run_submission_is_persisted_idempotent_and_cancellable() -> No
         },
     )
     assert unsafe_workflow.status_code == 422
+    unsafe_hostname_workflow = client.post(
+        f"/api/v1/projects/{project['id']}/workflow-specs",
+        headers=workspace_headers,
+        json={
+            "workflow_slug": "ppe-alerts",
+            "display_name": "PPE 违规告警",
+            "capability_spec_id": capability["id"],
+            "event_types": ["missing_hardhat"],
+            "deduplication_window_seconds": 60,
+            "webhook_url": "https://localhost/events",
+        },
+    )
+    assert unsafe_hostname_workflow.status_code == 422
     unsupported_event = client.post(
         f"/api/v1/projects/{project['id']}/workflow-specs",
         headers=workspace_headers,

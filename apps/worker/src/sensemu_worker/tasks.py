@@ -1,8 +1,11 @@
 import json
 import logging
+import socket
 import tempfile
+from ipaddress import ip_address
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 from uuid import UUID, uuid4
 
 import httpx
@@ -32,6 +35,37 @@ from sensemu_worker.video_extraction import VideoExtractionError, extract_frames
 
 logger = logging.getLogger(__name__)
 TERMINAL_STATUSES = {"succeeded", "failed", "cancelled"}
+
+
+def _require_public_webhook_target(target_url: str) -> None:
+    parsed = urlparse(target_url)
+    hostname = parsed.hostname
+    if parsed.scheme != "https" or not hostname or parsed.username:
+        raise ValueError("Webhook 地址必须为不含凭据的 HTTPS 地址")
+    try:
+        port = parsed.port
+    except ValueError as error:
+        raise ValueError("Webhook 地址端口无效") from error
+    if port not in {None, 443}:
+        raise ValueError("Webhook 地址只能使用默认 HTTPS 端口")
+    normalized = hostname.rstrip(".").lower()
+    if normalized == "localhost" or normalized.endswith(
+        (".localhost", ".local", ".internal")
+    ):
+        raise ValueError("Webhook 地址不能指向本地或内部域名")
+    try:
+        addresses = {
+            ip_address(sockaddr[0].split("%", 1)[0])
+            for _, _, _, _, sockaddr in socket.getaddrinfo(
+                normalized,
+                443,
+                type=socket.SOCK_STREAM,
+            )
+        }
+    except (OSError, ValueError) as error:
+        raise ValueError("Webhook 域名无法安全解析") from error
+    if not addresses or any(not address.is_global for address in addresses):
+        raise ValueError("Webhook 域名不能解析到本地、私有或保留网络")
 
 
 @shared_task(bind=True, name="sensemu.video-extraction.execute", max_retries=3)
@@ -289,6 +323,7 @@ def deliver_webhook(delivery_id: str) -> dict[str, Any]:
         sort_keys=True,
     ).encode()
     try:
+        _require_public_webhook_target(delivery["target_url"])
         response = httpx.post(
             delivery["target_url"],
             content=encoded,
@@ -300,7 +335,7 @@ def deliver_webhook(delivery_id: str) -> dict[str, Any]:
             timeout=10,
             follow_redirects=False,
         )
-    except httpx.HTTPError as error:
+    except (httpx.HTTPError, ValueError) as error:
         return api.complete_webhook_delivery(
             delivery_id,
             succeeded=False,

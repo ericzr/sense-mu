@@ -150,18 +150,8 @@ test("server-renders the algorithm marketplace route", async () => {
   const html = await response.text();
   assert.match(html, /<title>算法市场 · SenseMu<\/title>/i);
   assert.match(html, /搜索算法或使用场景/);
-  assert.match(html, /工地安全穿戴检测/);
-  assert.match(html, /林木健康巡检/);
-  assert.match(html, /森林烟火早期识别/);
-  assert.match(html, /农产品分选识别/);
-  assert.match(html, /果园果实计数/);
-  assert.match(html, /蜂箱巡检与计数/);
-  assert.match(html, /href="\/marketplace\/mock-alg-ppe"/);
-  assert.match(html, /href="\/marketplace\/mock-alg-forest-health"/);
-  assert.match(html, /href="\/marketplace\/mock-alg-produce-sort"/);
-  assert.match(html, /catalog-preview-media scene-ppe/);
-  assert.match(html, /精确率/);
-  assert.match(html, /YOLO26s/);
+  assert.match(html, /正在加载/);
+  assert.doesNotMatch(html, /mock-alg-|工地安全穿戴检测|林木健康巡检/);
   assert.match(html, /全部场景/);
   assert.match(html, /aria-label="工作台对象"/);
   assert.match(html, /数据与标注/);
@@ -178,28 +168,18 @@ test("server-renders a standalone algorithm detail route", async () => {
 
   const html = await response.text();
   assert.match(html, /<title>算法详情 · SenseMu<\/title>/i);
-  assert.match(html, /工地安全穿戴检测/);
-  assert.match(html, /效果与规格/);
-  assert.match(html, /在线体验/);
-  assert.match(html, /运行识别/);
-  assert.match(html, /上传图片/);
-  assert.match(html, /置信度/);
-  assert.match(html, /适用边界/);
-  assert.match(html, /接入方式/);
-  assert.match(html, /先创建工作区/);
-  assert.doesNotMatch(html, /catalog-preview is-large/);
+  assert.match(html, /正在加载算法详情/);
+  assert.doesNotMatch(html, /工地安全穿戴检测|示例购买流程/);
 });
 
-test("server-renders a forestry algorithm detail route", async () => {
+test("does not expose another mock algorithm detail outside preview mode", async () => {
   const response = await render("/marketplace/mock-alg-forest-health");
   assert.equal(response.status, 200);
 
   const html = await response.text();
   assert.match(html, /<title>算法详情 · SenseMu<\/title>/i);
-  assert.match(html, /林木健康巡检/);
-  assert.match(html, /疑似枯死树/);
-  assert.match(html, /林区航拍/);
-  assert.match(html, /catalog-forest\.jpg/);
+  assert.match(html, /正在加载算法详情/);
+  assert.doesNotMatch(html, /林木健康巡检|catalog-forest\.jpg/);
 });
 
 test("server-renders the workspace settings route", async () => {
@@ -220,17 +200,8 @@ test("server-renders the trusted data marketplace route", async () => {
   const html = await response.text();
   assert.match(html, /<title>数据市场 · SenseMu<\/title>/i);
   assert.match(html, /搜索数据集或类别/);
-  assert.match(html, /工地安全穿戴数据集/);
-  assert.match(html, /林区树木健康数据集/);
-  assert.match(html, /农产品分选数据集/);
-  assert.match(html, /果园果实计数数据集/);
-  assert.match(html, /蜂场巡检数据集/);
-  assert.match(html, /href="\/data-market\/mock-data-ppe"/);
-  assert.match(html, /href="\/data-market\/mock-data-forest-health"/);
-  assert.match(html, /href="\/data-market\/mock-data-produce"/);
-  assert.match(html, /catalog-preview-media scene-ppe/);
-  assert.match(html, /标注实例/);
-  assert.match(html, /标注覆盖/);
+  assert.match(html, /正在加载/);
+  assert.doesNotMatch(html, /href="\/data-market\/mock-data-/);
   assert.match(html, /全部筛选/);
   assert.doesNotMatch(html, /storefront-detail/);
   assert.match(html, /href="\/data-market"[^>]*aria-current="page"/);
@@ -242,25 +213,18 @@ test("server-renders a standalone data detail route", async () => {
 
   const html = await response.text();
   assert.match(html, /<title>数据集详情 · SenseMu<\/title>/i);
-  assert.match(html, /工地安全穿戴数据集/);
-  assert.match(html, /数据概览/);
-  assert.match(html, /已标注图片/);
-  assert.match(html, /标注实例/);
-  assert.match(html, /类别分布/);
-  assert.match(html, /来源与质量/);
-  assert.match(html, /购买即将开放/);
-  assert.doesNotMatch(html, /catalog-preview is-large/);
+  assert.match(html, /正在加载数据集详情/);
+  assert.doesNotMatch(html, /工地安全穿戴数据集|购买即将开放/);
 });
 
-test("server-renders a forestry data detail route", async () => {
+test("does not expose another mock data detail outside preview mode", async () => {
   const response = await render("/data-market/mock-data-forest-health");
   assert.equal(response.status, 200);
 
   const html = await response.text();
   assert.match(html, /<title>数据集详情 · SenseMu<\/title>/i);
-  assert.match(html, /林区树木健康数据集/);
-  assert.match(html, /疑似枯死树/);
-  assert.match(html, /林区航拍/);
+  assert.match(html, /正在加载数据集详情/);
+  assert.doesNotMatch(html, /林区树木健康数据集|疑似枯死树/);
 });
 
 test("redirects the old provider route into My", async () => {

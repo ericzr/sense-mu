@@ -1,5 +1,7 @@
 from functools import lru_cache
+from ipaddress import ip_address
 from typing import Literal
+from urllib.parse import urlparse
 
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -8,6 +10,19 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 def _unsafe_production_secret(value: str) -> bool:
     normalized = value.strip().lower()
     return len(value.strip()) < 32 or "local-only" in normalized
+
+
+def _is_local_endpoint(value: str) -> bool:
+    hostname = urlparse(value).hostname
+    if not hostname:
+        return False
+    normalized = hostname.rstrip(".").lower()
+    if normalized == "localhost" or normalized.endswith(".localhost"):
+        return True
+    try:
+        return ip_address(normalized).is_loopback
+    except ValueError:
+        return False
 
 
 class RuntimeSettings(BaseSettings):
@@ -54,6 +69,8 @@ class RuntimeSettings(BaseSettings):
             )
         if self.object_storage_endpoint.strip().lower() == "local://":
             raise ValueError("staging/production 禁止使用本地对象存储")
+        if _is_local_endpoint(self.object_storage_endpoint):
+            raise ValueError("staging/production 禁止连接本机对象存储")
         return self
 
 

@@ -9,9 +9,10 @@ export const metadata: Metadata = {
 
 export default async function AlgorithmDetailPage({ params }: { params: Promise<{ listingId: string }> }) {
   const { listingId } = await params;
+  const previewMode = process.env.SENSEMU_PREVIEW_MODE === "true";
   return (
     <ProductShell active="algorithm-market">
-      <AlgorithmDetailWorkbench listingId={listingId} />
+      <AlgorithmDetailWorkbench listingId={listingId} previewMode={previewMode} />
     </ProductShell>
   );
 }

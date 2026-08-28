@@ -969,14 +969,18 @@ export function decorateDataListing(listing: DataMarketListing, index = 0): Data
   };
 }
 
-export function mergeAlgorithmListings(listings: MarketplaceListing[]): AlgorithmCatalogItem[] {
+export function mergeAlgorithmListings(listings: MarketplaceListing[], includeMocks = false): AlgorithmCatalogItem[] {
   const real = listings.map(decorateAlgorithmListing);
-  return [...real, ...MOCK_ALGORITHM_LISTINGS.filter((mock) => !real.some((item) => item.title === mock.title))];
+  return includeMocks
+    ? [...real, ...MOCK_ALGORITHM_LISTINGS.filter((mock) => !real.some((item) => item.title === mock.title))]
+    : real;
 }
 
-export function mergeDataListings(listings: DataMarketListing[]): DataCatalogItem[] {
+export function mergeDataListings(listings: DataMarketListing[], includeMocks = false): DataCatalogItem[] {
   const real = listings.map(decorateDataListing);
-  return [...real, ...MOCK_DATA_LISTINGS.filter((mock) => !real.some((item) => item.title === mock.title))];
+  return includeMocks
+    ? [...real, ...MOCK_DATA_LISTINGS.filter((mock) => !real.some((item) => item.title === mock.title))]
+    : real;
 }
 
 export function findMockAlgorithm(id: string): AlgorithmCatalogItem | null {

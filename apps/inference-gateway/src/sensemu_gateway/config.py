@@ -1,5 +1,7 @@
 from functools import lru_cache
+from ipaddress import ip_address
 from typing import Literal
+from urllib.parse import urlparse
 
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -8,6 +10,19 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 def _unsafe_production_secret(value: str) -> bool:
     normalized = value.strip().lower()
     return len(value.strip()) < 32 or "local-only" in normalized
+
+
+def _is_local_endpoint(value: str) -> bool:
+    hostname = urlparse(value).hostname
+    if not hostname:
+        return False
+    normalized = hostname.rstrip(".").lower()
+    if normalized == "localhost" or normalized.endswith(".localhost"):
+        return True
+    try:
+        return ip_address(normalized).is_loopback
+    except ValueError:
+        return False
 
 
 class GatewaySettings(BaseSettings):
@@ -49,6 +64,20 @@ class GatewaySettings(BaseSettings):
                 "staging/production 必须显式配置安全凭据: "
                 + ", ".join(unsafe_secrets)
             )
+        local_endpoints = [
+            name
+            for name, value in {
+                "runtime_url": self.runtime_url,
+                "control_plane_url": self.control_plane_url,
+            }.items()
+            if _is_local_endpoint(value)
+        ]
+        if local_endpoints:
+            raise ValueError(
+                "staging/production 禁止连接本机依赖: " + ", ".join(local_endpoints)
+            )
+        if urlparse(self.web_origin).scheme != "https":
+            raise ValueError("staging/production Web 来源必须使用 HTTPS")
         return self
 
 

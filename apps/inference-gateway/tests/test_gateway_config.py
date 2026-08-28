@@ -20,7 +20,9 @@ def test_production_gateway_accepts_explicit_configuration() -> None:
         environment="production",
         runtime_url="http://runtime:8090",
         runtime_token=SAFE_SECRET,
+        control_plane_url="http://api:8000",
         control_plane_token=SAFE_SECRET,
+        web_origin="https://app.sensemu.example",
     )
 
     assert settings.environment == "production"

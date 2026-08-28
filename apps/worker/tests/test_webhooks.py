@@ -36,6 +36,13 @@ def webhook_claim() -> dict:
 def install_fake_api(monkeypatch, api: FakeWebhookAPI) -> None:
     monkeypatch.setattr(tasks.WorkerSettings, "from_environment", lambda: object())
     monkeypatch.setattr(tasks, "WorkerAPIClient", lambda settings: api)
+    monkeypatch.setattr(
+        tasks.socket,
+        "getaddrinfo",
+        lambda *args, **kwargs: [
+            (tasks.socket.AF_INET, tasks.socket.SOCK_STREAM, 6, "", ("8.8.8.8", 443))
+        ],
+    )
 
 
 def test_webhook_delivery_uses_canonical_json_and_signature(monkeypatch) -> None:
@@ -86,6 +93,29 @@ def test_webhook_network_failure_is_recorded_for_retry(monkeypatch) -> None:
     assert api.completions[0][0] == "delivery-1"
     assert api.completions[0][1]["succeeded"] is False
     assert "网络请求失败" in api.completions[0][1]["error"]
+
+
+def test_webhook_private_dns_target_is_blocked_before_request(monkeypatch) -> None:
+    api = FakeWebhookAPI(webhook_claim())
+    install_fake_api(monkeypatch, api)
+    monkeypatch.setattr(
+        tasks.socket,
+        "getaddrinfo",
+        lambda *args, **kwargs: [
+            (tasks.socket.AF_INET, tasks.socket.SOCK_STREAM, 6, "", ("127.0.0.1", 443))
+        ],
+    )
+
+    def unexpected_post(*args, **kwargs) -> httpx.Response:
+        raise AssertionError("私网 Webhook 不应发起网络请求")
+
+    monkeypatch.setattr(tasks.httpx, "post", unexpected_post)
+
+    result = tasks.deliver_webhook("delivery-1")
+
+    assert result["status"] == "retrying"
+    assert api.completions[0][1]["succeeded"] is False
+    assert "私有或保留网络" in api.completions[0][1]["error"]
 
 
 def test_recovery_dispatches_every_queued_delivery(monkeypatch) -> None:

@@ -26,8 +26,13 @@ class WorkflowSpecCreate(BaseModel):
             raise ValueError("Webhook 地址端口无效") from error
         if port not in {None, 443}:
             raise ValueError("Webhook 地址只能使用默认 HTTPS 端口")
+        hostname = parsed.hostname.rstrip(".").lower()
+        if hostname == "localhost" or hostname.endswith(
+            (".localhost", ".local", ".internal")
+        ):
+            raise ValueError("Webhook 地址不能指向本地或内部域名")
         try:
-            address = ip_address(parsed.hostname)
+            address = ip_address(hostname)
         except ValueError:
             return value
         if not address.is_global:

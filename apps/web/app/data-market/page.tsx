@@ -8,9 +8,10 @@ export const metadata: Metadata = {
 };
 
 export default function DataMarketPage() {
+  const previewMode = process.env.SENSEMU_PREVIEW_MODE === "true";
   return (
     <ProductShell active="data-market">
-      <DataMarketWorkbench />
+      <DataMarketWorkbench previewMode={previewMode} />
     </ProductShell>
   );
 }
