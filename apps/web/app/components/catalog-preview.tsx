@@ -28,6 +28,10 @@ const sceneImages: Partial<Record<CatalogPreviewData["scene"], { url: string; as
   "urban-greening": { url: "/catalog-urban-street.jpg", aspectRatio: 1600 / 1067 },
 };
 
+export function getCatalogSceneImage(scene: CatalogPreviewData["scene"]) {
+  return sceneImages[scene] ?? null;
+}
+
 export function getCoverBoxStyle(
   box: CatalogPreviewData["boxes"][number],
   sourceRatio: number,
@@ -53,7 +57,7 @@ export function getCoverBoxStyle(
 
 export function CatalogPreview({ preview, kind, large = false }: CatalogPreviewProps) {
   const frameRatio = large ? 4 / 3 : 16 / 9;
-  const sceneImage = sceneImages[preview.scene];
+  const sceneImage = getCatalogSceneImage(preview.scene);
   const sourceRatio = Math.min(4, Math.max(0.25, preview.aspect_ratio ?? sceneImage?.aspectRatio ?? 1));
   const mediaStyle: CSSProperties = { width: "100%", height: "100%" };
 

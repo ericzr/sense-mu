@@ -10,7 +10,7 @@ import {
   UploadCloud,
 } from "lucide-react";
 import { type ChangeEvent, useMemo, useState } from "react";
-import { getCoverBoxStyle } from "../../components/catalog-preview";
+import { getCatalogSceneImage, getCoverBoxStyle } from "../../components/catalog-preview";
 import type { AlgorithmCatalogItem } from "../../../lib/catalog-mock-data";
 
 type DemoSource = "sample" | "upload";
@@ -28,7 +28,8 @@ export function AlgorithmLiveDemo({ listing }: { listing: AlgorithmCatalogItem }
     () => listing.preview.boxes.filter((box) => Number(box.confidence ?? 1) >= confidence),
     [confidence, listing.preview.boxes],
   );
-  const sampleSourceRatio = Math.min(4, Math.max(0.25, listing.preview.aspect_ratio ?? 1));
+  const sceneImage = getCatalogSceneImage(listing.preview.scene);
+  const sampleSourceRatio = Math.min(4, Math.max(0.25, listing.preview.aspect_ratio ?? sceneImage?.aspectRatio ?? 1));
   const demoFrameRatio = 16 / 10;
 
   function chooseSample() {
@@ -100,9 +101,7 @@ export function AlgorithmLiveDemo({ listing }: { listing: AlgorithmCatalogItem }
             className={`algorithm-demo-canvas scene-${listing.preview.scene}${source === "upload" ? " is-upload" : ""}`}
             style={uploadedImage
               ? { backgroundImage: `url(${uploadedImage})` }
-              : listing.preview.image_url
-                ? { backgroundImage: `url(${listing.preview.image_url})`, backgroundPosition: "center", backgroundSize: "cover" }
-                : undefined}
+              : { backgroundImage: `url(${listing.preview.image_url ?? sceneImage?.url ?? "/catalog-vision-samples.png"})`, backgroundPosition: "center", backgroundSize: "cover" }}
             role="img"
             aria-label={source === "sample" ? listing.preview.alt : `待识别图片 ${uploadedName}`}
           >
@@ -138,9 +137,7 @@ export function AlgorithmLiveDemo({ listing }: { listing: AlgorithmCatalogItem }
             <button type="button" className={source === "sample" ? "is-active" : ""} onClick={chooseSample}>
               <span
                 className={`algorithm-demo-thumb scene-${listing.preview.scene}`}
-                style={listing.preview.image_url
-                  ? { backgroundImage: `url(${listing.preview.image_url})`, backgroundPosition: "center", backgroundSize: "cover" }
-                  : undefined}
+                style={{ backgroundImage: `url(${listing.preview.image_url ?? sceneImage?.url ?? "/catalog-vision-samples.png"})`, backgroundPosition: "center", backgroundSize: "cover" }}
               />
               <span><strong>商品示例</strong><small>立即体验</small></span>
               {source === "sample" ? <Check size={13} /> : null}

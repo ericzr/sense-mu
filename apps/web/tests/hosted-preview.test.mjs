@@ -66,6 +66,7 @@ test("hosted preview exposes road and urban algorithm details", async () => {
   assert.match(roadHtml, /路面病害识别/);
   assert.match(roadHtml, /横向裂缝/);
   assert.match(roadHtml, /待真实服务/);
+  assert.match(roadHtml, /catalog-road-inspection\.jpg/);
 
   const urbanResponse = await render("/marketplace/mock-alg-urban-illegal");
   assert.equal(urbanResponse.status, 200);
@@ -73,6 +74,7 @@ test("hosted preview exposes road and urban algorithm details", async () => {
   assert.match(urbanHtml, /违法建设识别/);
   assert.match(urbanHtml, /楼顶新增搭建/);
   assert.match(urbanHtml, /适用边界/);
+  assert.match(urbanHtml, /catalog-urban-buildings\.jpg/);
 });
 
 test("hosted preview keeps the data catalog and demo detail available", async () => {
