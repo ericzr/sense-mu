@@ -25,7 +25,9 @@
     "api:types:check": "node scripts/check-api-types.mjs"
   },
   "dependencies": {
+    "lucide": "1.30.0",
     "lucide-react": "^1.30.0",
+    "morphicons": "1.7.1",
     "react": "19.2.8",
     "react-dom": "19.2.8"
   },

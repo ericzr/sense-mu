@@ -9,9 +9,7 @@ import {
   Database,
   FolderKanban,
   LayoutDashboard,
-  Menu,
   MoreHorizontal,
-  PanelLeft,
   Plus,
   Power,
   RefreshCw,
@@ -25,6 +23,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+import { MorphIcon } from "./morph-icon";
+import { Menu as MenuData, PanelLeft as PanelLeftData, PanelRight as PanelRightData, X as XData } from "lucide";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   catalogApi,
@@ -561,12 +561,12 @@ function Topbar({
       <button
         className="mobile-menu-button"
         type="button"
-        aria-label="打开主菜单"
+        aria-label={mobileNavigationOpen ? "关闭主菜单" : "打开主菜单"}
         aria-expanded={mobileNavigationOpen}
         aria-controls="primary-sidebar"
         onClick={onMobileNavigationOpen}
       >
-        <Menu size={18} aria-hidden="true" />
+        <MorphIcon icon={mobileNavigationOpen ? XData : MenuData} size={18} aria-hidden="true" />
       </button>
       <button
         className="desktop-sidebar-toggle"
@@ -577,7 +577,7 @@ function Topbar({
         aria-controls="primary-sidebar"
         onClick={onSidebarToggle}
       >
-        <PanelLeft size={18} strokeWidth={1.8} aria-hidden="true" />
+        <MorphIcon icon={sidebarCollapsed ? PanelRightData : PanelLeftData} size={18} strokeWidth={1.8} aria-hidden="true" />
       </button>
       <label className="global-search">
         <Search size={16} aria-hidden="true" />

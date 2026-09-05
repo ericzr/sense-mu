@@ -8,12 +8,12 @@ import {
   Database,
   FolderKanban,
   Image as ImageIcon,
-  Pause,
-  Play,
   Plus,
   Rocket,
 } from "lucide-react";
 import Link from "next/link";
+import { MorphIcon } from "./components/morph-icon";
+import { Pause as PauseData, Play as PlayData } from "lucide";
 import { useState } from "react";
 import type { OverviewResponse } from "../lib/api";
 import { catalogApi } from "../lib/catalog-api";
@@ -166,7 +166,7 @@ export function WorkbenchOverview({
                   </div>
                   <div className="workbench-row-actions">
                     <button className="text-button compact" type="button" disabled={changingProjectId === project.id || !initialOverview.workspace_id} onClick={() => void changeProjectStatus(project.id, paused ? "active" : "paused")}>
-                      {paused ? <Play size={13} /> : <Pause size={13} />}{paused ? "继续" : "暂停"}
+                      <MorphIcon icon={paused ? PlayData : PauseData} size={13} aria-hidden="true" />{paused ? "继续" : "暂停"}
                     </button>
                     <Link className="secondary-button compact" href={`/studio?project=${project.id}`}>打开 <ArrowRight size={14} /></Link>
                   </div>
