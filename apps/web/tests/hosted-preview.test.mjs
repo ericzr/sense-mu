@@ -43,6 +43,10 @@ test("hosted preview keeps the algorithm catalog and demo detail available", asy
   const catalogHtml = await catalogResponse.text();
   assert.match(catalogHtml, /工地安全穿戴检测/);
   assert.match(catalogHtml, /林木健康巡检/);
+  assert.match(catalogHtml, /路面病害识别/);
+  assert.match(catalogHtml, /桥梁设施病害识别/);
+  assert.match(catalogHtml, /违法建设识别/);
+  assert.match(catalogHtml, /园林绿化问题识别/);
   assert.match(catalogHtml, /href="\/marketplace\/mock-alg-ppe"/);
 
   const detailResponse = await render("/marketplace/mock-alg-ppe");
@@ -51,6 +55,22 @@ test("hosted preview keeps the algorithm catalog and demo detail available", asy
   assert.match(detailHtml, /工地安全穿戴检测/);
   assert.match(detailHtml, /在线体验/);
   assert.match(detailHtml, /适用边界/);
+});
+
+test("hosted preview exposes road and urban algorithm details", async () => {
+  const roadResponse = await render("/marketplace/mock-alg-road-surface");
+  assert.equal(roadResponse.status, 200);
+  const roadHtml = await roadResponse.text();
+  assert.match(roadHtml, /路面病害识别/);
+  assert.match(roadHtml, /横向裂缝/);
+  assert.match(roadHtml, /待真实服务/);
+
+  const urbanResponse = await render("/marketplace/mock-alg-urban-illegal");
+  assert.equal(urbanResponse.status, 200);
+  const urbanHtml = await urbanResponse.text();
+  assert.match(urbanHtml, /违法建设识别/);
+  assert.match(urbanHtml, /楼顶新增搭建/);
+  assert.match(urbanHtml, /适用边界/);
 });
 
 test("hosted preview keeps the data catalog and demo detail available", async () => {

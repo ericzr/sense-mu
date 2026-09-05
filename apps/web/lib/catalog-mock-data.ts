@@ -95,7 +95,7 @@ const algorithmDefaults = {
   remaining_units: null,
 };
 
-export const MOCK_ALGORITHM_LISTINGS: AlgorithmCatalogItem[] = [
+const CORE_MOCK_ALGORITHM_LISTINGS: AlgorithmCatalogItem[] = [
   {
     ...mockProvider,
     ...algorithmDefaults,
@@ -564,6 +564,90 @@ export const MOCK_ALGORITHM_LISTINGS: AlgorithmCatalogItem[] = [
     evaluation_basis: "独立测试集 1,760 张蜂场巡检图像",
     updated_label: "2026-07-27",
   },
+];
+
+type MockAlgorithmInput = {
+  id: string;
+  title: string;
+  summary: string;
+  slug: string;
+  problem: string;
+  category: string;
+  scene: CatalogScene;
+  classes: string[];
+  verifiedScenes: string[];
+  unsupported: string[];
+  boxes: PreviewBox[];
+  price: number;
+  quota: number;
+};
+
+function createMockAlgorithm(input: MockAlgorithmInput): AlgorithmCatalogItem {
+  return {
+    ...mockProvider,
+    ...algorithmDefaults,
+    id: input.id,
+    deployment_id: `mock-deployment-${input.slug}`,
+    capability_spec_id: `mock-capability-${input.slug}`,
+    capability_slug: input.slug,
+    capability_display_name: input.title,
+    capability_problem_definition: input.problem,
+    capability_output_contract: "detections.v1",
+    capability_verified_scenes: input.verifiedScenes,
+    capability_unsupported_conditions: input.unsupported,
+    endpoint_url: `/v1/marketplace/${input.id}/infer`,
+    model_name: "YOLO26m",
+    model_version_number: 1,
+    task_type: "object-detection",
+    title: input.title,
+    summary: input.summary,
+    category: input.category,
+    price_per_1000_cents: input.price,
+    monthly_quota_units: input.quota,
+    is_mock: true,
+    preview: { scene: input.scene, alt: `${input.title}效果样例`, boxes: input.boxes },
+    metrics: [
+      { label: "mAP50", value: "待真实训练" },
+      { label: "精确率", value: "待真实训练" },
+      { label: "召回率", value: "待真实训练" },
+    ],
+    classes: input.classes,
+    model_architecture: "YOLO26m",
+    input_size: "1280 × 720",
+    latency_p95: "待真实服务",
+    evaluation_basis: "演示能力卡，待接入真实训练与独立验收",
+    updated_label: "2026-09-06",
+  };
+}
+
+const ROAD_ALGORITHM_LISTINGS: AlgorithmCatalogItem[] = [
+  createMockAlgorithm({ id: "mock-alg-road-surface", title: "路面病害识别", summary: "识别裂缝、坑槽、车辙、沉陷等路面病害，辅助道路巡检。", slug: "road-surface-defects", problem: "从道路巡检图像中发现并分类典型路面病害。", category: "道路工程", scene: "road-surface", classes: ["横向裂缝", "纵向裂缝", "网状裂缝", "坑槽", "车辙", "沉陷", "龟裂", "修补不良"], verifiedScenes: ["车载道路巡检", "沥青与水泥路面", "白天可见光图像"], unsupported: ["夜间无补光", "积雪与严重积水"], boxes: [{ label: "横向裂缝", confidence: "演示", x: 8, y: 40, width: 38, height: 9 }, { label: "坑槽", confidence: "演示", x: 60, y: 52, width: 22, height: 18 }], price: 2480, quota: 18000 }),
+  createMockAlgorithm({ id: "mock-alg-road-safety", title: "交安设施异常识别", summary: "发现护栏、防眩板、标志标牌、标线和防撞桶异常。", slug: "road-safety-facilities", problem: "从道路巡检图像中识别交通安全设施缺失、损坏和外观异常。", category: "道路工程", scene: "road-safety", classes: ["护栏缺失", "护栏损坏", "护栏污损", "护栏变形", "防眩板损坏", "防眩板缺失", "标牌反光异常", "标牌倾斜", "标牌污损", "标线不清晰", "轮廓标", "防撞桶"], verifiedScenes: ["高速公路巡检", "国省道路侧", "白天与路灯夜景"], unsupported: ["强逆光", "设施内部结构损伤"], boxes: [{ label: "护栏变形", confidence: "演示", x: 8, y: 47, width: 48, height: 18 }, { label: "标牌倾斜", confidence: "演示", x: 67, y: 12, width: 18, height: 28 }], price: 2280, quota: 20000 }),
+  createMockAlgorithm({ id: "mock-alg-road-slope", title: "路基边坡异常识别", summary: "识别滑坡、塌方、冲沟、防护网和挡墙异常。", slug: "road-slope-anomalies", problem: "从山区道路巡检图像中发现边坡和排水设施异常线索。", category: "道路工程", scene: "road-slope", classes: ["滑坡", "塌方", "冲沟", "防护网破损", "挡墙开裂", "挡墙倾斜", "排水沟堵塞"], verifiedScenes: ["山区公路", "雨后边坡", "车载与航拍图像"], unsupported: ["植被完全遮挡", "地质结构内部风险"], boxes: [{ label: "滑坡", confidence: "演示", x: 42, y: 11, width: 42, height: 34 }, { label: "防护网破损", confidence: "演示", x: 12, y: 38, width: 26, height: 27 }], price: 2380, quota: 16000 }),
+  createMockAlgorithm({ id: "mock-alg-road-environment", title: "路域环境异常识别", summary: "发现抛洒物、违法占用、绿化遮挡、积水和结冰等路况异常。", slug: "road-environment-anomalies", problem: "从道路巡检图像中发现影响通行和环境的异常目标。", category: "道路工程", scene: "road-environment", classes: ["散落物", "油污", "大件垃圾", "违章堆放", "占道施工", "枝叶侵入", "标志遮挡", "火灾烟雾", "积水", "结冰"], verifiedScenes: ["城市道路", "高速路段", "日常巡检视频"], unsupported: ["严重雨雪", "无法确认的污染成分"], boxes: [{ label: "散落物", confidence: "演示", x: 28, y: 61, width: 17, height: 12 }, { label: "占道施工", confidence: "演示", x: 57, y: 43, width: 31, height: 27 }], price: 2180, quota: 22000 }),
+  createMockAlgorithm({ id: "mock-alg-tunnel", title: "隧道设施异常识别", summary: "识别洞口、衬砌、排水和照明风机等隧道设施异常。", slug: "tunnel-facility-anomalies", problem: "从隧道巡检图像中发现设施外观和结构表面异常线索。", category: "道路工程", scene: "tunnel", classes: ["洞口滑坡", "洞口落石", "防护网破损", "衬砌裂缝", "衬砌渗漏水", "衬砌剥落", "背后空洞迹象", "排水沟堵塞", "排水沟积水", "排水沟破损", "照明外观异常", "风机外观异常"], verifiedScenes: ["公路隧道", "洞口与拱顶", "车载巡检图像"], unsupported: ["不可见内部空洞", "无照明极暗画面"], boxes: [{ label: "衬砌裂缝", confidence: "演示", x: 38, y: 21, width: 25, height: 12 }, { label: "渗漏水", confidence: "演示", x: 67, y: 39, width: 15, height: 26 }], price: 2580, quota: 15000 }),
+  createMockAlgorithm({ id: "mock-alg-bridge", title: "桥梁设施病害识别", summary: "识别桥面、伸缩缝、支座、墩台和梁体病害。", slug: "bridge-facility-defects", problem: "从桥梁巡检图像中发现构件表面病害和异常线索。", category: "道路工程", scene: "bridge", classes: ["桥面裂缝", "桥面坑槽", "桥面车辙", "伸缩缝堵塞", "伸缩缝损坏", "伸缩缝错位", "支座老化", "支座开裂", "支座脱空", "支座偏位", "墩台冲刷", "混凝土剥落", "钢筋锈蚀", "梁体裂缝", "梁体渗水", "梁体白华"], verifiedScenes: ["公路桥梁", "桥面与墩台", "无人机与近距离图像"], unsupported: ["构件内部损伤", "无法接近的遮挡区域"], boxes: [{ label: "桥面裂缝", confidence: "演示", x: 12, y: 47, width: 37, height: 10 }, { label: "伸缩缝堵塞", confidence: "演示", x: 55, y: 51, width: 24, height: 14 }], price: 2680, quota: 14000 }),
+];
+
+const URBAN_ALGORITHM_LISTINGS: AlgorithmCatalogItem[] = [
+  createMockAlgorithm({ id: "mock-alg-urban-illegal", title: "违法建设识别", summary: "发现楼顶搭建、露台封闭、阳光房和彩钢房等疑似违建线索。", slug: "urban-illegal-construction", problem: "从航拍与街景图像中发现建筑外观变化和疑似违建线索。", category: "城市治理", scene: "urban-illegal", classes: ["楼顶新增搭建", "露台封闭", "阳光房", "彩钢房", "新建建筑", "外立面明显变化", "疑似违建脚手架", "疑似违建围挡"], verifiedScenes: ["城市航拍", "城乡结合部", "建筑外立面"], unsupported: ["缺少历史对照影像", "无法替代规划执法认定"], boxes: [{ label: "楼顶新增搭建", confidence: "演示", x: 48, y: 12, width: 28, height: 24 }, { label: "彩钢房", confidence: "演示", x: 14, y: 51, width: 27, height: 24 }], price: 2480, quota: 16000 }),
+  createMockAlgorithm({ id: "mock-alg-urban-sanitation", title: "市容环境问题识别", summary: "识别占道经营、垃圾堆积、乱贴乱画和非机动车乱停放。", slug: "urban-sanitation-issues", problem: "从网格巡查图像中发现影响市容环境的异常目标。", category: "城市治理", scene: "urban-sanitation", classes: ["占道摊位", "占道棚亭", "游商小贩", "垃圾堆积", "垃圾爆桶", "乱贴乱画", "违规广告", "非机动车乱停放", "店外经营", "店外乱堆放"], verifiedScenes: ["城市街区", "商圈与社区", "网格巡查图像"], unsupported: ["夜间低照度", "不输出商户身份和处罚结论"], boxes: [{ label: "占道摊位", confidence: "演示", x: 8, y: 48, width: 28, height: 28 }, { label: "垃圾爆桶", confidence: "演示", x: 65, y: 58, width: 18, height: 25 }], price: 2280, quota: 20000 }),
+  createMockAlgorithm({ id: "mock-alg-urban-construction-waste", title: "建筑垃圾与渣土识别", summary: "发现偷倒乱倒、渣土车抛洒滴漏和露天堆放等问题。", slug: "urban-construction-waste", problem: "从道路和工地周边图像中识别建筑垃圾与渣土异常。", category: "城市治理", scene: "urban-construction-waste", classes: ["建筑垃圾偷倒", "建筑垃圾乱倒", "渣土车抛洒", "渣土车滴漏", "装修垃圾露天堆放", "消纳场违规倾倒"], verifiedScenes: ["工地周边", "城乡结合部", "消纳场卡口"], unsupported: ["不追踪车辆轨迹", "无法单凭图像认定责任主体"], boxes: [{ label: "建筑垃圾偷倒", confidence: "演示", x: 12, y: 49, width: 31, height: 26 }, { label: "渣土车抛洒", confidence: "演示", x: 51, y: 36, width: 34, height: 31 }], price: 2180, quota: 18000 }),
+  createMockAlgorithm({ id: "mock-alg-urban-site", title: "工地施工违规识别", summary: "识别施工扬尘、裸土、围挡和出入口污染等违规线索。", slug: "urban-construction-site", problem: "从工地固定机位图像中发现施工环境违规线索。", category: "城市治理", scene: "urban-site", classes: ["可见施工扬尘", "裸土未覆盖", "围挡超范围", "围挡破损", "施工机械违规作业", "黄土裸露", "工地出入口污染"], verifiedScenes: ["房建工地", "道路工地", "工地出入口"], unsupported: ["扬尘受天气影响", "不判断施工许可"], boxes: [{ label: "可见施工扬尘", confidence: "演示", x: 42, y: 9, width: 37, height: 35 }, { label: "围挡破损", confidence: "演示", x: 67, y: 48, width: 22, height: 27 }], price: 2280, quota: 18000 }),
+  createMockAlgorithm({ id: "mock-alg-urban-advertising", title: "户外广告与招牌识别", summary: "识别广告牌破损倾斜、广告布脱落和招牌掉落风险。", slug: "urban-advertising-signage", problem: "从街景图像中发现户外广告和店招的外观异常。", category: "城市治理", scene: "urban-advertising", classes: ["广告牌破损", "广告牌倾斜", "广告布脱落", "违规悬挂横幅", "店招破损", "店招掉落风险"], verifiedScenes: ["商业街区", "主次干道", "楼宇外立面"], unsupported: ["不判断广告内容合规性", "不替代结构安全鉴定"], boxes: [{ label: "广告牌倾斜", confidence: "演示", x: 9, y: 15, width: 27, height: 31 }, { label: "广告布脱落", confidence: "演示", x: 56, y: 12, width: 33, height: 27 }], price: 1980, quota: 16000 }),
+  createMockAlgorithm({ id: "mock-alg-urban-municipal", title: "市政设施损坏识别", summary: "发现道路破损、井盖异常、路灯和城市家具损坏。", slug: "urban-municipal-damage", problem: "从市政巡查图像中识别道路和公共设施外观损坏。", category: "城市治理", scene: "urban-municipal", classes: ["道路坑槽", "道路破损", "井盖缺失", "井盖移位", "井盖破损", "路灯损坏", "路灯倾斜", "交通护栏损坏", "交通护栏缺失", "座椅破损", "垃圾桶破损"], verifiedScenes: ["城市道路", "人行道", "公园与广场"], unsupported: ["积水遮挡井盖", "不估算维修费用"], boxes: [{ label: "井盖缺失", confidence: "演示", x: 24, y: 58, width: 18, height: 16 }, { label: "路灯倾斜", confidence: "演示", x: 68, y: 7, width: 14, height: 63 }], price: 2180, quota: 20000 }),
+  createMockAlgorithm({ id: "mock-alg-urban-water", title: "河道与水域污染识别", summary: "识别漂浮物、油污、禁钓禁泳行为和可见污水直排。", slug: "urban-water-pollution", problem: "从河道和水域巡查图像中发现污染和违规行为线索。", category: "城市治理", scene: "urban-water", classes: ["垃圾漂浮物", "水草漂浮物", "水面油污", "水面彩色污染", "禁钓区垂钓", "禁泳区游泳", "污水直排", "污水偷排"], verifiedScenes: ["城市河道", "湖泊闸口", "排污口巡查"], unsupported: ["不判断污染物成分", "水面强反光"], boxes: [{ label: "垃圾漂浮物", confidence: "演示", x: 16, y: 55, width: 23, height: 16 }, { label: "禁钓区垂钓", confidence: "演示", x: 72, y: 10, width: 15, height: 33 }], price: 2080, quota: 16000 }),
+  createMockAlgorithm({ id: "mock-alg-urban-ecology", title: "生态环境问题识别", summary: "识别焚烧烟雾、工地扬尘和裸露地块扬尘。", slug: "urban-ecology-issues", problem: "从生态环境巡查图像中发现烟雾和扬尘视觉线索。", category: "城市治理", scene: "urban-ecology", classes: ["秸秆焚烧烟雾", "垃圾焚烧烟雾", "工地扬尘", "裸露地块扬尘"], verifiedScenes: ["城乡结合部", "农田与裸地", "工地周边"], unsupported: ["雾霾和云雾干扰", "不判断排放浓度"], boxes: [{ label: "秸秆焚烧烟雾", confidence: "演示", x: 18, y: 20, width: 30, height: 34 }, { label: "工地扬尘", confidence: "演示", x: 58, y: 40, width: 30, height: 27 }], price: 1880, quota: 16000 }),
+  createMockAlgorithm({ id: "mock-alg-urban-fire", title: "火情与安全隐患识别", summary: "识别明火、浓烟、火灾蔓延迹象和易燃物违规堆放。", slug: "urban-fire-hazards", problem: "从城市监控图像中发现火情和安全隐患视觉线索。", category: "城市治理", scene: "urban-fire", classes: ["明火", "浓烟", "火灾蔓延迹象", "易燃物违规堆放"], verifiedScenes: ["社区与商铺", "工地与仓储", "室内外监控"], unsupported: ["不替代消防报警器", "强光反射干扰"], boxes: [{ label: "明火", confidence: "演示", x: 48, y: 47, width: 18, height: 27 }, { label: "浓烟", confidence: "演示", x: 37, y: 10, width: 36, height: 40 }], price: 2080, quota: 18000 }),
+  createMockAlgorithm({ id: "mock-alg-urban-crowd", title: "人员聚集与公共安全识别", summary: "识别异常聚集、拥堵、突发事件现场和人流密度异常。", slug: "urban-crowd-safety", problem: "从公共空间监控图像中发现人群密度和秩序异常线索。", category: "城市治理", scene: "urban-crowd", classes: ["人员异常聚集", "人群拥堵", "突发事件现场", "人流密度异常"], verifiedScenes: ["商圈广场", "车站出入口", "大型活动场地"], unsupported: ["不识别个人身份", "密度阈值需按场所配置"], boxes: [{ label: "人员异常聚集", confidence: "演示", x: 30, y: 35, width: 40, height: 35 }, { label: "人群拥堵", confidence: "演示", x: 58, y: 57, width: 31, height: 27 }], price: 2280, quota: 18000 }),
+  createMockAlgorithm({ id: "mock-alg-urban-traffic", title: "交通与停车秩序识别", summary: "识别禁停区违法停车、应急车道占用和无警示占道施工。", slug: "urban-traffic-order", problem: "从道路监控图像中发现停车和施工秩序异常线索。", category: "城市治理", scene: "urban-traffic", classes: ["禁停区违法停车", "应急车道占用", "交通拥堵", "占道施工无警示"], verifiedScenes: ["城市道路", "高速应急车道", "施工路段"], unsupported: ["不输出处罚结论", "需结合道路规则配置"], boxes: [{ label: "禁停区违法停车", confidence: "演示", x: 12, y: 55, width: 30, height: 22 }, { label: "占道施工无警示", confidence: "演示", x: 65, y: 18, width: 24, height: 28 }], price: 2180, quota: 20000 }),
+  createMockAlgorithm({ id: "mock-alg-urban-greening", title: "园林绿化问题识别", summary: "识别毁绿种菜、树木倒伏折断、绿化带垃圾和黄土裸露。", slug: "urban-greening-issues", problem: "从公园和道路绿化巡查图像中发现绿化养护异常。", category: "城市治理", scene: "urban-greening", classes: ["毁绿种菜", "树木倒伏", "树木折断", "绿化带垃圾堆积", "绿地黄土裸露"], verifiedScenes: ["城市公园", "道路绿化带", "社区绿地"], unsupported: ["季节性养护混淆", "不评估树木健康等级"], boxes: [{ label: "毁绿种菜", confidence: "演示", x: 14, y: 54, width: 28, height: 22 }, { label: "树木倒伏", confidence: "演示", x: 51, y: 40, width: 35, height: 19 }], price: 1880, quota: 16000 }),
+];
+
+export const MOCK_ALGORITHM_LISTINGS: AlgorithmCatalogItem[] = [
+  ...CORE_MOCK_ALGORITHM_LISTINGS,
+  ...ROAD_ALGORITHM_LISTINGS,
+  ...URBAN_ALGORITHM_LISTINGS,
 ];
 
 function qualityReport(
