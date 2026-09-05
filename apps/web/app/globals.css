@@ -13219,6 +13219,12 @@ html[data-sidebar-collapsed="true"] .app-shell .profile-row {
 .catalog-preview:not(.is-large) .catalog-preview-media.scene-defect { background-position: 0 84.8%; }
 .catalog-preview:not(.is-large) .catalog-preview-media.scene-parcel { background-position: 50% 84.8%; }
 .catalog-preview:not(.is-large) .catalog-preview-media.scene-shelf { background-position: 100% 84.8%; }
+.catalog-preview:not(.is-large) .catalog-preview-media.scene-road-surface { background-position: 100% 15.2%; }
+.catalog-preview:not(.is-large) .catalog-preview-media.scene-road-safety { background-position: 50% 15.2%; }
+.catalog-preview:not(.is-large) .catalog-preview-media.scene-road-slope { background-position: 0 84.8%; }
+.catalog-preview:not(.is-large) .catalog-preview-media.scene-road-environment { background-position: 100% 84.8%; }
+.catalog-preview:not(.is-large) .catalog-preview-media.scene-tunnel { background-position: 50% 84.8%; }
+.catalog-preview:not(.is-large) .catalog-preview-media.scene-bridge { background-position: 0 15.2%; }
 
 .catalog-preview.is-large .catalog-preview-media.scene-ppe { background-position: 0 10%; }
 .catalog-preview.is-large .catalog-preview-media.scene-fire { background-position: 50% 10%; }
@@ -13226,6 +13232,12 @@ html[data-sidebar-collapsed="true"] .app-shell .profile-row {
 .catalog-preview.is-large .catalog-preview-media.scene-defect { background-position: 0 90%; }
 .catalog-preview.is-large .catalog-preview-media.scene-parcel { background-position: 50% 90%; }
 .catalog-preview.is-large .catalog-preview-media.scene-shelf { background-position: 100% 90%; }
+.catalog-preview.is-large .catalog-preview-media.scene-road-surface { background-position: 100% 10%; }
+.catalog-preview.is-large .catalog-preview-media.scene-road-safety { background-position: 50% 10%; }
+.catalog-preview.is-large .catalog-preview-media.scene-road-slope { background-position: 0 90%; }
+.catalog-preview.is-large .catalog-preview-media.scene-road-environment { background-position: 100% 90%; }
+.catalog-preview.is-large .catalog-preview-media.scene-tunnel { background-position: 50% 90%; }
+.catalog-preview.is-large .catalog-preview-media.scene-bridge { background-position: 0 10%; }
 
 .catalog-preview.is-large {
   width: 100%;

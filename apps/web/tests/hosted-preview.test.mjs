@@ -59,6 +59,10 @@ test("hosted preview keeps the data catalog and demo detail available", async ()
   const catalogHtml = await catalogResponse.text();
   assert.match(catalogHtml, /工地安全穿戴数据集/);
   assert.match(catalogHtml, /林区树木健康数据集/);
+  assert.match(catalogHtml, /路面病害识别数据集/);
+  assert.match(catalogHtml, /交安设施识别数据集/);
+  assert.match(catalogHtml, /隧道设施异常数据集/);
+  assert.match(catalogHtml, /桥梁设施病害数据集/);
   assert.match(catalogHtml, /href="\/data-market\/mock-data-ppe"/);
 
   const detailResponse = await render("/data-market/mock-data-ppe");
@@ -67,4 +71,20 @@ test("hosted preview keeps the data catalog and demo detail available", async ()
   assert.match(detailHtml, /工地安全穿戴数据集/);
   assert.match(detailHtml, /数据概览/);
   assert.match(detailHtml, /来源与质量/);
+});
+
+test("hosted preview exposes road engineering dataset details", async () => {
+  const detailResponse = await render("/data-market/mock-data-road-surface");
+  assert.equal(detailResponse.status, 200);
+  const detailHtml = await detailResponse.text();
+  assert.match(detailHtml, /路面病害识别数据集/);
+  assert.match(detailHtml, /横向裂缝/);
+  assert.match(detailHtml, /修补不良/);
+
+  const bridgeResponse = await render("/data-market/mock-data-bridge");
+  assert.equal(bridgeResponse.status, 200);
+  const bridgeHtml = await bridgeResponse.text();
+  assert.match(bridgeHtml, /桥梁设施病害数据集/);
+  assert.match(bridgeHtml, /伸缩缝错位/);
+  assert.match(bridgeHtml, /支座脱空/);
 });
