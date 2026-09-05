@@ -63,6 +63,10 @@ test("hosted preview keeps the data catalog and demo detail available", async ()
   assert.match(catalogHtml, /交安设施识别数据集/);
   assert.match(catalogHtml, /隧道设施异常数据集/);
   assert.match(catalogHtml, /桥梁设施病害数据集/);
+  assert.match(catalogHtml, /违法建设识别数据集/);
+  assert.match(catalogHtml, /市容环境问题数据集/);
+  assert.match(catalogHtml, /火情与安全隐患数据集/);
+  assert.match(catalogHtml, /园林绿化问题数据集/);
   assert.match(catalogHtml, /href="\/data-market\/mock-data-ppe"/);
 
   const detailResponse = await render("/data-market/mock-data-ppe");
@@ -87,4 +91,20 @@ test("hosted preview exposes road engineering dataset details", async () => {
   assert.match(bridgeHtml, /桥梁设施病害数据集/);
   assert.match(bridgeHtml, /伸缩缝错位/);
   assert.match(bridgeHtml, /支座脱空/);
+});
+
+test("hosted preview exposes urban governance dataset details", async () => {
+  const detailResponse = await render("/data-market/mock-data-urban-illegal");
+  assert.equal(detailResponse.status, 200);
+  const detailHtml = await detailResponse.text();
+  assert.match(detailHtml, /违法建设识别数据集/);
+  assert.match(detailHtml, /楼顶新增搭建/);
+  assert.match(detailHtml, /疑似违建围挡/);
+
+  const waterResponse = await render("/data-market/mock-data-urban-water");
+  assert.equal(waterResponse.status, 200);
+  const waterHtml = await waterResponse.text();
+  assert.match(waterHtml, /河道与水域污染数据集/);
+  assert.match(waterHtml, /污水直排/);
+  assert.match(waterHtml, /禁钓区垂钓/);
 });

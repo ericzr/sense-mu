@@ -13225,6 +13225,18 @@ html[data-sidebar-collapsed="true"] .app-shell .profile-row {
 .catalog-preview:not(.is-large) .catalog-preview-media.scene-road-environment { background-position: 100% 84.8%; }
 .catalog-preview:not(.is-large) .catalog-preview-media.scene-tunnel { background-position: 50% 84.8%; }
 .catalog-preview:not(.is-large) .catalog-preview-media.scene-bridge { background-position: 0 15.2%; }
+.catalog-preview:not(.is-large) .catalog-preview-media.scene-urban-illegal { background-position: 50% 15.2%; }
+.catalog-preview:not(.is-large) .catalog-preview-media.scene-urban-sanitation { background-position: 100% 15.2%; }
+.catalog-preview:not(.is-large) .catalog-preview-media.scene-urban-construction-waste { background-position: 0 84.8%; }
+.catalog-preview:not(.is-large) .catalog-preview-media.scene-urban-site { background-position: 50% 84.8%; }
+.catalog-preview:not(.is-large) .catalog-preview-media.scene-urban-advertising { background-position: 100% 84.8%; }
+.catalog-preview:not(.is-large) .catalog-preview-media.scene-urban-municipal { background-position: 0 15.2%; }
+.catalog-preview:not(.is-large) .catalog-preview-media.scene-urban-water { background-position: 50% 15.2%; }
+.catalog-preview:not(.is-large) .catalog-preview-media.scene-urban-ecology { background-position: 100% 15.2%; }
+.catalog-preview:not(.is-large) .catalog-preview-media.scene-urban-fire { background-position: 0 84.8%; }
+.catalog-preview:not(.is-large) .catalog-preview-media.scene-urban-crowd { background-position: 50% 84.8%; }
+.catalog-preview:not(.is-large) .catalog-preview-media.scene-urban-traffic { background-position: 100% 84.8%; }
+.catalog-preview:not(.is-large) .catalog-preview-media.scene-urban-greening { background-position: 0 15.2%; }
 
 .catalog-preview.is-large .catalog-preview-media.scene-ppe { background-position: 0 10%; }
 .catalog-preview.is-large .catalog-preview-media.scene-fire { background-position: 50% 10%; }
@@ -13238,6 +13250,18 @@ html[data-sidebar-collapsed="true"] .app-shell .profile-row {
 .catalog-preview.is-large .catalog-preview-media.scene-road-environment { background-position: 100% 90%; }
 .catalog-preview.is-large .catalog-preview-media.scene-tunnel { background-position: 50% 90%; }
 .catalog-preview.is-large .catalog-preview-media.scene-bridge { background-position: 0 10%; }
+.catalog-preview.is-large .catalog-preview-media.scene-urban-illegal { background-position: 50% 10%; }
+.catalog-preview.is-large .catalog-preview-media.scene-urban-sanitation { background-position: 100% 10%; }
+.catalog-preview.is-large .catalog-preview-media.scene-urban-construction-waste { background-position: 0 90%; }
+.catalog-preview.is-large .catalog-preview-media.scene-urban-site { background-position: 50% 90%; }
+.catalog-preview.is-large .catalog-preview-media.scene-urban-advertising { background-position: 100% 90%; }
+.catalog-preview.is-large .catalog-preview-media.scene-urban-municipal { background-position: 0 10%; }
+.catalog-preview.is-large .catalog-preview-media.scene-urban-water { background-position: 50% 10%; }
+.catalog-preview.is-large .catalog-preview-media.scene-urban-ecology { background-position: 100% 10%; }
+.catalog-preview.is-large .catalog-preview-media.scene-urban-fire { background-position: 0 90%; }
+.catalog-preview.is-large .catalog-preview-media.scene-urban-crowd { background-position: 50% 90%; }
+.catalog-preview.is-large .catalog-preview-media.scene-urban-traffic { background-position: 100% 90%; }
+.catalog-preview.is-large .catalog-preview-media.scene-urban-greening { background-position: 0 10%; }
 
 .catalog-preview.is-large {
   width: 100%;
