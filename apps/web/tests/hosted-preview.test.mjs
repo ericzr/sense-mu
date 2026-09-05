@@ -47,6 +47,8 @@ test("hosted preview keeps the algorithm catalog and demo detail available", asy
   assert.match(catalogHtml, /桥梁设施病害识别/);
   assert.match(catalogHtml, /违法建设识别/);
   assert.match(catalogHtml, /园林绿化问题识别/);
+  assert.match(catalogHtml, /catalog-road-inspection\.jpg/);
+  assert.match(catalogHtml, /catalog-urban-street\.jpg/);
   assert.match(catalogHtml, /href="\/marketplace\/mock-alg-ppe"/);
 
   const detailResponse = await render("/marketplace/mock-alg-ppe");

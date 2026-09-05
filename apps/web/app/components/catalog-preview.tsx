@@ -7,6 +7,27 @@ type CatalogPreviewProps = {
   large?: boolean;
 };
 
+const sceneImages: Partial<Record<CatalogPreviewData["scene"], { url: string; aspectRatio: number }>> = {
+  "road-surface": { url: "/catalog-road-inspection.jpg", aspectRatio: 1600 / 2400 },
+  "road-safety": { url: "/catalog-road-inspection.jpg", aspectRatio: 1600 / 2400 },
+  "road-slope": { url: "/catalog-road-inspection.jpg", aspectRatio: 1600 / 2400 },
+  "road-environment": { url: "/catalog-urban-street.jpg", aspectRatio: 1600 / 1067 },
+  tunnel: { url: "/catalog-road-inspection.jpg", aspectRatio: 1600 / 2400 },
+  bridge: { url: "/catalog-construction-site.jpg", aspectRatio: 1600 / 1067 },
+  "urban-illegal": { url: "/catalog-urban-buildings.jpg", aspectRatio: 1600 / 1067 },
+  "urban-sanitation": { url: "/catalog-urban-street.jpg", aspectRatio: 1600 / 1067 },
+  "urban-construction-waste": { url: "/catalog-construction-site.jpg", aspectRatio: 1600 / 1067 },
+  "urban-site": { url: "/catalog-construction-site.jpg", aspectRatio: 1600 / 1067 },
+  "urban-advertising": { url: "/catalog-urban-buildings.jpg", aspectRatio: 1600 / 1067 },
+  "urban-municipal": { url: "/catalog-urban-street.jpg", aspectRatio: 1600 / 1067 },
+  "urban-water": { url: "/catalog-waterway.jpg", aspectRatio: 1600 / 1068 },
+  "urban-ecology": { url: "/catalog-waterway.jpg", aspectRatio: 1600 / 1068 },
+  "urban-fire": { url: "/catalog-construction-site.jpg", aspectRatio: 1600 / 1067 },
+  "urban-crowd": { url: "/catalog-urban-street.jpg", aspectRatio: 1600 / 1067 },
+  "urban-traffic": { url: "/catalog-urban-traffic.jpg", aspectRatio: 1600 / 1067 },
+  "urban-greening": { url: "/catalog-urban-street.jpg", aspectRatio: 1600 / 1067 },
+};
+
 export function getCoverBoxStyle(
   box: CatalogPreviewData["boxes"][number],
   sourceRatio: number,
@@ -32,11 +53,13 @@ export function getCoverBoxStyle(
 
 export function CatalogPreview({ preview, kind, large = false }: CatalogPreviewProps) {
   const frameRatio = large ? 4 / 3 : 16 / 9;
-  const sourceRatio = Math.min(4, Math.max(0.25, preview.aspect_ratio ?? 1));
+  const sceneImage = sceneImages[preview.scene];
+  const sourceRatio = Math.min(4, Math.max(0.25, preview.aspect_ratio ?? sceneImage?.aspectRatio ?? 1));
   const mediaStyle: CSSProperties = { width: "100%", height: "100%" };
 
-  if (preview.image_url) {
-    mediaStyle.backgroundImage = `url("${preview.image_url}")`;
+  const imageUrl = preview.image_url ?? sceneImage?.url;
+  if (imageUrl) {
+    mediaStyle.backgroundImage = `url("${imageUrl}")`;
     mediaStyle.backgroundPosition = "center";
     mediaStyle.backgroundSize = "cover";
   }
