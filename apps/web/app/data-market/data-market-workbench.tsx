@@ -23,8 +23,10 @@ export const dataTaskLabels: Record<string, string> = {
 export const licenseLabels: Record<string, string> = {
   "CC0-1.0": "自由使用",
   "CC-BY-4.0": "署名使用",
+  "CC-BY-SA-4.0": "署名-相同方式共享",
   "ODC-BY-1.0": "开放数据",
   "CUSTOM-COMMERCIAL": "商业许可",
+  "CUSTOM-RESEARCH": "研究用途",
 };
 
 const dataScaleOptions = ["全部规模", "1 万张以下", "1–3 万张", "3 万张以上"];

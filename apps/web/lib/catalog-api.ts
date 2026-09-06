@@ -85,7 +85,7 @@ export type DataMarketListing = {
   collection_method: string;
   coverage_summary: string;
   known_limitations: string;
-  license_code: "CC0-1.0" | "CC-BY-4.0" | "ODC-BY-1.0" | "CUSTOM-COMMERCIAL";
+  license_code: "CC0-1.0" | "CC-BY-4.0" | "CC-BY-SA-4.0" | "ODC-BY-1.0" | "CUSTOM-COMMERCIAL" | "CUSTOM-RESEARCH";
   custom_license_terms: string | null;
   allow_commercial_use: boolean;
   allow_model_training: boolean;
