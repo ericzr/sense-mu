@@ -48,6 +48,16 @@ test("hosted preview keeps the algorithm catalog and demo detail available", asy
   assert.match(catalogHtml, /违法建设识别/);
   assert.match(catalogHtml, /园林绿化问题识别/);
   assert.match(catalogHtml, /catalog-real-road-surface\.png/);
+  assert.match(catalogHtml, /catalog-real-ppe\.jpg/);
+  assert.match(catalogHtml, /catalog-real-defect\.jpg/);
+  assert.match(catalogHtml, /catalog-real-crop\.jpg/);
+  assert.match(catalogHtml, /catalog-real-parcel\.jpg/);
+  assert.match(catalogHtml, /catalog-real-shelf\.jpg/);
+  assert.match(catalogHtml, /catalog-real-orchard\.jpg/);
+  assert.match(catalogHtml, /catalog-real-apiary\.jpg/);
+  assert.match(catalogHtml, /catalog-real-forest\.jpg/);
+  assert.match(catalogHtml, /catalog-real-forest-fire\.jpg/);
+  assert.match(catalogHtml, /数据集官方预览图/);
   assert.match(catalogHtml, /catalog-real-urban-sanitation\.jpg/);
   assert.match(catalogHtml, /catalog-preview-backdrop/);
   assert.match(catalogHtml, /真实公开样本/);
@@ -56,6 +66,16 @@ test("hosted preview keeps the algorithm catalog and demo detail available", asy
 
   const realSampleAssets = [
     "catalog-real-road-surface.png",
+    "catalog-real-ppe.jpg",
+    "catalog-real-defect.jpg",
+    "catalog-real-crop.jpg",
+    "catalog-real-parcel.jpg",
+    "catalog-real-shelf.jpg",
+    "catalog-real-orchard.jpg",
+    "catalog-real-apiary.jpg",
+    "catalog-real-forest.jpg",
+    "catalog-real-forest-fire.jpg",
+    "catalog-real-traffic.jpg",
     "catalog-real-road-safety.jpg",
     "catalog-real-road-slope.jpg",
     "catalog-real-road-environment.png",

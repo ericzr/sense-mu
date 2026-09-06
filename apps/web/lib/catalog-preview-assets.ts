@@ -7,9 +7,44 @@ export type CatalogPreviewAsset = {
   sample: string;
   license: string;
   sourceUrl: string;
+  /** Whether the file is a source image or an official dataset/project preview montage. */
+  assetKind?: "raw-sample" | "dataset-preview";
 };
 
 const catalogPreviewAssets: Partial<Record<CatalogScene, CatalogPreviewAsset>> = {
+  ppe: {
+    url: "/catalog-real-ppe.jpg", aspectRatio: 960 / 640, dataset: "SH17 / Pexels source", sample: "Pexels photo 159306 (listed by SH17)", license: "SH17 CC BY-NC-SA 4.0; source image Pexels License", sourceUrl: "https://github.com/ahmadmughees/SH17dataset",
+  },
+  fire: {
+    url: "/catalog-real-forest-fire.jpg", aspectRatio: 640 / 480, dataset: "Open Images V7", sample: "Open Images 2afab7192939c56d", license: "CC BY 2.0", sourceUrl: "https://www.flickr.com/photos/glennbatuyong/4729261348",
+  },
+  traffic: {
+    url: "/catalog-real-traffic.jpg", aspectRatio: 640 / 480, dataset: "Open Images V7", sample: "Open Images 1ab5db67d31e2038", license: "CC BY 2.0", sourceUrl: "https://www.flickr.com/photos/24810925@N04/2648287727",
+  },
+  defect: {
+    url: "/catalog-real-defect.jpg", aspectRatio: 1, dataset: "NEU-DET", sample: "test_images/scratches_39.jpg", license: "学术研究用途（来源仓库未声明 OSI 许可）", sourceUrl: "https://github.com/songzhiweiknight/NEU-DET-Datasets",
+  },
+  parcel: {
+    url: "/catalog-real-parcel.jpg", aspectRatio: 1, dataset: "Wisdom Logistics Express Parcel Damage Dataset", sample: "README 03.jpg（社区仓库预览图）", license: "授权待核验；社区仓库预览图，非原始单图", sourceUrl: "https://github.com/lonlonago/Wisdom-Logistics-Express-Parcel-Damage-Detection-Dataset-VOC-YOLO-Format-with-1340-Images", assetKind: "dataset-preview",
+  },
+  shelf: {
+    url: "/catalog-real-shelf.jpg", aspectRatio: 1385 / 1405, dataset: "SKU-110K", sample: "官方项目 qualitative.jpg（数据集结果预览图）", license: "研究用途；商用需联系作者", sourceUrl: "https://github.com/eg4000/SKU110K_CVPR19", assetKind: "dataset-preview",
+  },
+  forest: {
+    url: "/catalog-real-forest.jpg", aspectRatio: 640 / 427, dataset: "Open Images V7", sample: "Open Images 2e49ef1ef93f6fd6", license: "CC BY 2.0", sourceUrl: "https://www.flickr.com/photos/br1dotcom/2914696201",
+  },
+  "forest-fire": {
+    url: "/catalog-real-forest-fire.jpg", aspectRatio: 640 / 480, dataset: "Open Images V7", sample: "Open Images 2afab7192939c56d", license: "CC BY 2.0", sourceUrl: "https://www.flickr.com/photos/glennbatuyong/4729261348",
+  },
+  crop: {
+    url: "/catalog-real-crop.jpg", aspectRatio: 1, dataset: "Fruits-360", sample: "Test/Apple Braeburn/321_100.jpg", license: "MIT（数据集仓库）", sourceUrl: "https://github.com/Horea94/Fruit-Images-Dataset",
+  },
+  orchard: {
+    url: "/catalog-real-orchard.jpg", aspectRatio: 639 / 636, dataset: "Orchard Apple Detection Dataset", sample: "img_00.png", license: "授权待核验；社区仓库样本", sourceUrl: "https://github.com/lonlonago/orchard-apple-detection-dataset",
+  },
+  apiary: {
+    url: "/catalog-real-apiary.jpg", aspectRatio: 1, dataset: "Picking honey Scene Bawah Bee Detection Dataset", sample: "README 01.jpg（社区仓库预览图）", license: "授权待核验；社区仓库预览图，非原始单图", sourceUrl: "https://github.com/lonlonago/Picking-honey-Scene-Bawah-Bee-Detection-Dataset-6640-imagesVOC-YOLO-format", assetKind: "dataset-preview",
+  },
   "road-surface": {
     url: "/catalog-real-road-surface.png", aspectRatio: 352 / 288, dataset: "Road Traversing Knowledge", sample: "RTK image/000000112.png", license: "CC BY 4.0", sourceUrl: "https://doi.org/10.17632/hssswvmjwf.1",
   },

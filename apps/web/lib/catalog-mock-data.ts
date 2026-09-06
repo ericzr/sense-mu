@@ -12,6 +12,7 @@ export type CatalogScene =
   | "parcel"
   | "shelf"
   | "forest"
+  | "forest-fire"
   | "crop"
   | "orchard"
   | "apiary"
@@ -370,8 +371,6 @@ const CORE_MOCK_ALGORITHM_LISTINGS: AlgorithmCatalogItem[] = [
     preview: {
       scene: "forest",
       alt: "林区林木健康巡检效果样例",
-      image_url: "/catalog-forest.jpg",
-      aspect_ratio: 1600 / 1067,
       boxes: [
         { label: "疑似枯死树", confidence: "0.91", x: 4, y: 20, width: 18, height: 63 },
         { label: "倒伏树木", confidence: "0.88", x: 67, y: 54, width: 25, height: 18 },
@@ -412,10 +411,8 @@ const CORE_MOCK_ALGORITHM_LISTINGS: AlgorithmCatalogItem[] = [
     monthly_quota_units: 12000,
     is_mock: true,
     preview: {
-      scene: "forest",
+      scene: "forest-fire",
       alt: "森林烟火早期识别效果样例",
-      image_url: "/catalog-forest.jpg",
-      aspect_ratio: 1600 / 1067,
       boxes: [{ label: "烟雾", confidence: "0.93", x: 49, y: 4, width: 38, height: 30 }],
     },
     metrics: [
@@ -455,12 +452,8 @@ const CORE_MOCK_ALGORITHM_LISTINGS: AlgorithmCatalogItem[] = [
     preview: {
       scene: "crop",
       alt: "农产品分选识别效果样例",
-      image_url: "/catalog-crop.jpg",
-      aspect_ratio: 1600 / 1067,
       boxes: [
-        { label: "苦瓜", confidence: "0.96", x: 8, y: 14, width: 41, height: 37 },
-        { label: "黄瓜", confidence: "0.94", x: 56, y: 8, width: 37, height: 43 },
-        { label: "胡萝卜", confidence: "0.92", x: 45, y: 48, width: 31, height: 39 },
+        { label: "苹果", confidence: "0.96", x: 15, y: 14, width: 70, height: 70 },
       ],
     },
     metrics: [
@@ -468,7 +461,7 @@ const CORE_MOCK_ALGORITHM_LISTINGS: AlgorithmCatalogItem[] = [
       { label: "精确率", value: "93.8%" },
       { label: "召回率", value: "91.7%" },
     ],
-    classes: ["苦瓜", "黄瓜", "胡萝卜", "辣椒", "疑似外观缺陷"],
+    classes: ["苹果", "香蕉", "黄瓜", "胡萝卜", "辣椒", "疑似外观缺陷"],
     model_architecture: "YOLO26s",
     input_size: "512 × 512",
     latency_p95: "41 ms",
@@ -500,8 +493,6 @@ const CORE_MOCK_ALGORITHM_LISTINGS: AlgorithmCatalogItem[] = [
     preview: {
       scene: "orchard",
       alt: "果园果实计数效果样例",
-      image_url: "/catalog-orchard.jpg",
-      aspect_ratio: 1600 / 1065,
       boxes: [
         { label: "果实", confidence: "0.94", x: 43, y: 20, width: 12, height: 17 },
         { label: "果实", confidence: "0.91", x: 58, y: 34, width: 14, height: 18 },
@@ -545,8 +536,6 @@ const CORE_MOCK_ALGORITHM_LISTINGS: AlgorithmCatalogItem[] = [
     preview: {
       scene: "apiary",
       alt: "蜂箱巡检与计数效果样例",
-      image_url: "/catalog-apiary.jpg",
-      aspect_ratio: 1600 / 1063,
       boxes: [
         { label: "巡检人员", confidence: "0.97", x: 16, y: 10, width: 38, height: 77 },
         { label: "蜂箱", confidence: "0.94", x: 54, y: 23, width: 31, height: 49 },
@@ -710,6 +699,7 @@ const dataSceneCategories: Record<CatalogScene, string> = {
   parcel: "仓储物流",
   shelf: "智慧零售",
   forest: "林业",
+  "forest-fire": "林业",
   crop: "农业",
   orchard: "农业",
   apiary: "农业",
@@ -886,10 +876,10 @@ export const MOCK_DATA_LISTINGS: DataCatalogItem[] = [
     taskType: "object-detection",
     assetCount: 600,
     classes: ["纸箱", "软包", "编织袋"],
-    source: "暂无完全匹配的权威公开数据集；Roboflow Universe 存在社区 parcel/package 检测数据，许可需逐个核验。",
-    method: "当前标注为演示样例；正式版本需采集自有分拣线画面并人工框选。",
+    source: "公开社区数据集 Wisdom Logistics Express Parcel Damage（GitHub 仓库公开 README 预览图；约 1,340 张、含 package / Damaged 类）。完整原始文件需向作者申请，授权待核验。",
+    method: "当前卡片使用作者 README 的数据集预览图，不把拼图预览当作可下载原始训练图片；正式接入前需获取原始文件、校验授权与 checksum。",
     coverage: "覆盖不同传送带颜色、俯拍角度、包裹尺寸与堆叠程度（演示样例）。",
-    limitations: "社区数据集规模与许可参差不齐，本卡当前为演示数据，不承诺样本出处。",
+    limitations: "当前只展示社区仓库公开预览图，不能作为训练数据商品或授权证明；完整数据与商业许可待核验。",
     license: "CUSTOM-RESEARCH",
     commercial: false,
     price: "演示样例，正式版本另议",
@@ -907,8 +897,8 @@ export const MOCK_DATA_LISTINGS: DataCatalogItem[] = [
     taskType: "object-detection",
     assetCount: 11762,
     classes: ["缺货区域", "低库存区域", "正常陈列"],
-    source: "公开数据集 SKU-110K（github.com/eg4000/SKU110K_CVPR19）：11,762 张真实商超货架图像、170 万+ 密集商品框标注。",
-    method: "真实零售货架密集商品目标框标注，官方提供训练/验证/测试划分。",
+    source: "公开数据集 SKU-110K（github.com/eg4000/SKU110K_CVPR19）：11,762 张真实商超货架图像、170 万+ 密集商品框标注。当前卡片使用官方 qualitative 结果预览图。",
+    method: "真实零售货架密集商品目标框标注，官方提供训练/验证/测试划分；卡片展示图是官方项目预览拼图，不代表单张原始样本。",
     coverage: "覆盖多家商超的真实货架、密集商品陈列与不同拍摄角度。",
     limitations: "SKU-110K 许可为研究用途，商用需联系作者授权；缺货区域专用标签需二次标注。",
     license: "CUSTOM-RESEARCH",
@@ -928,8 +918,8 @@ export const MOCK_DATA_LISTINGS: DataCatalogItem[] = [
     taskType: "object-detection",
     assetCount: 500,
     classes: ["健康树木", "疑似枯死树", "倒伏树木", "病害斑块"],
-    source: "暂无完全匹配的公开数据集；可参考 Open Images V7（图像 CC BY 2.0）树木类别与 Roboflow Universe 社区林业数据。",
-    method: "当前标注为演示样例；正式版本需采集自有林区航拍并按巡检规范标注。",
+    source: "Open Images V7 树木/绿地图像（CC BY 2.0）用于展示公开真实样本；林木健康、枯死和倒伏标签仍需按林业巡检规范二次采集与标注。",
+    method: "卡片展示 Open Images 原始照片，框线为 SenseMu Mock 演示；正式版本需接入林区航拍或固定机位数据并独立验收。",
     coverage: "覆盖针叶林、阔叶林、林缘与林道，以及晴天和阴天光照（演示样例）。",
     limitations: "社区数据规模与许可参差不齐，本卡当前为演示数据，不承诺样本出处。",
     license: "CUSTOM-RESEARCH",
@@ -937,8 +927,6 @@ export const MOCK_DATA_LISTINGS: DataCatalogItem[] = [
     price: "演示样例，正式版本另议",
     annotationType: "目标框",
     imageSize: "1080p–4K",
-    imageUrl: "/catalog-forest.jpg",
-    aspectRatio: 1600 / 1067,
     boxes: [
       { label: "疑似枯死树", x: 4, y: 20, width: 18, height: 63 },
       { label: "倒伏树木", x: 67, y: 54, width: 25, height: 18 },
@@ -948,14 +936,14 @@ export const MOCK_DATA_LISTINGS: DataCatalogItem[] = [
   }),
   dataListing({
     id: "mock-data-forest-fire",
-    scene: "forest",
+    scene: "forest-fire",
     title: "森林烟火监控数据集",
     summary: "林区烟雾、火点与云雾反光对照数据，用于早期火情识别。",
     taskType: "object-detection",
     assetCount: 21527,
     classes: ["烟雾", "火点", "云雾", "高亮反光"],
-    source: "公开数据集 D-Fire（github.com/gaiasd/DFireDataset，含野火场景）与 FLAME 林火热成像/可见光数据集（IEEE Dataport）组合。",
-    method: "YOLO 框标注的真实火烟图像，含无人机与固定高点视角；FLAME 提供林火航拍视频帧。",
+    source: "D-Fire（github.com/gaia-solutions-on-demand/DFireDataset）与 FLAME 公开研究数据集用于能力定义；卡片展示的是可追溯的 Open Images CC BY 2.0 火情照片。",
+    method: "卡片展示 Open Images 原始照片，框线为 SenseMu Mock 演示；真实 D-Fire / FLAME 训练样本需按其研究授权单独入库。",
     coverage: "覆盖野外/林地火点、远距离烟柱与负样本对照。",
     limitations: "D-Fire 为研究用途授权，FLAME 需 IEEE Dataport 注册获取；负样本以城市背景为主。",
     license: "CUSTOM-RESEARCH",
@@ -963,8 +951,6 @@ export const MOCK_DATA_LISTINGS: DataCatalogItem[] = [
     price: "公开数据集免费获取",
     annotationType: "目标框",
     imageSize: "720p–4K",
-    imageUrl: "/catalog-forest.jpg",
-    aspectRatio: 1600 / 1067,
     boxes: [{ label: "烟雾", x: 49, y: 4, width: 38, height: 30 }],
     coveragePercent: 98.1,
     advisories: ["云雾与烟雾对照样本已分层，但仍建议结合现场阈值复核。"],
@@ -976,8 +962,8 @@ export const MOCK_DATA_LISTINGS: DataCatalogItem[] = [
     summary: "蔬果品类与明显外观缺陷标注，适合收购与分选台训练。",
     taskType: "object-detection",
     assetCount: 90483,
-    classes: ["苦瓜", "黄瓜", "胡萝卜", "辣椒", "疑似外观缺陷"],
-    source: "公开数据集 Fruits-360（github.com/Horea94/Fruit-Images-Dataset）：约 9 万张蔬果图像、130+ 品类；Kaggle 新鲜/变质水果数据可补充品质标注。",
+    classes: ["苹果", "香蕉", "黄瓜", "胡萝卜", "辣椒", "疑似外观缺陷"],
+    source: "公开数据集 Fruits-360（github.com/Horea94/Fruit-Images-Dataset）：约 9 万张蔬果图像、130+ 品类；当前卡片使用 Apple Braeburn 原始样本。",
     method: "白底单果与真实场景拍摄结合，品类分类标注；新鲜/变质对照需二次标注。",
     coverage: "覆盖苹果、香蕉、黄瓜、胡萝卜、辣椒等 130+ 品类的单果与堆放场景。",
     limitations: "Fruits-360 以白底单果为主，分选台密集堆叠场景需自行采集补充；许可为研究与教学用途。",
@@ -986,12 +972,8 @@ export const MOCK_DATA_LISTINGS: DataCatalogItem[] = [
     price: "公开数据集免费获取",
     annotationType: "目标框",
     imageSize: "1080p–4K",
-    imageUrl: "/catalog-crop.jpg",
-    aspectRatio: 1600 / 1067,
     boxes: [
-      { label: "苦瓜", x: 8, y: 14, width: 41, height: 37 },
-      { label: "黄瓜", x: 56, y: 8, width: 37, height: 43 },
-      { label: "胡萝卜", x: 45, y: 48, width: 31, height: 39 },
+      { label: "苹果", x: 15, y: 14, width: 70, height: 70 },
     ],
     coveragePercent: 99.1,
     advisories: ["疑似外观缺陷类别已单独标注，适合先做人工复核再用于自动分选。"],
@@ -1013,8 +995,6 @@ export const MOCK_DATA_LISTINGS: DataCatalogItem[] = [
     price: "公开数据集免费获取",
     annotationType: "目标框",
     imageSize: "1080p–4K",
-    imageUrl: "/catalog-orchard.jpg",
-    aspectRatio: 1600 / 1065,
     boxes: [
       { label: "果实", x: 43, y: 20, width: 12, height: 17 },
       { label: "果实", x: 58, y: 34, width: 14, height: 18 },
@@ -1031,17 +1011,15 @@ export const MOCK_DATA_LISTINGS: DataCatalogItem[] = [
     taskType: "object-detection",
     assetCount: 640,
     classes: ["蜂箱", "巡检人员", "疑似空箱"],
-    source: "暂无权威公开数据集；Roboflow Universe 存在多个社区蜂箱检测数据，许可需逐个核验。",
-    method: "当前标注为演示样例；正式版本需采集自有蜂场固定机位画面并标注。",
+    source: "公开社区数据集 Picking honey Scene Bawah Bee Detection（GitHub 仓库声明 6,640 张、bees 单类）；当前卡片使用 README 公开预览图，完整原始文件与授权待核验。",
+    method: "卡片展示社区仓库预览拼图，框线为 SenseMu Mock 演示；正式版本需获取原始单图和许可凭证。",
     coverage: "覆盖蜂箱排列、植被背景、作业人员进入和白天自然光（演示样例）。",
-    limitations: "社区数据规模与许可参差不齐，本卡当前为演示数据，不承诺样本出处。",
+    limitations: "当前只展示社区仓库公开预览图，不能作为训练数据商品或商业授权证明。",
     license: "CUSTOM-RESEARCH",
     commercial: false,
     price: "演示样例，正式版本另议",
     annotationType: "目标框",
     imageSize: "1080p–2K",
-    imageUrl: "/catalog-apiary.jpg",
-    aspectRatio: 1600 / 1063,
     boxes: [
       { label: "巡检人员", x: 16, y: 10, width: 38, height: 77 },
       { label: "蜂箱", x: 54, y: 23, width: 31, height: 49 },

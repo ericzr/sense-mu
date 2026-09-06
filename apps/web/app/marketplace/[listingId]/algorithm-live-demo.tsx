@@ -175,7 +175,7 @@ export function AlgorithmLiveDemo({ listing }: { listing: AlgorithmCatalogItem }
           </div>
           {source === "sample" && sceneImage ? (
             <p className="algorithm-demo-sample-origin">
-              <span>真实公开样本</span>
+              <span>{sceneImage.assetKind === "dataset-preview" ? "数据集官方预览图" : "真实公开样本"}</span>
               <a href={sceneImage.sourceUrl} target="_blank" rel="noreferrer">{sceneImage.dataset} · {sceneImage.license}</a>
               <small>识别框仅为 Mock 演示。</small>
             </p>

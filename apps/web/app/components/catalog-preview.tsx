@@ -73,7 +73,7 @@ export function CatalogPreview({ preview, kind, large = false, zoom = 1 }: Catal
       <span className="catalog-preview-kind">{kind === "algorithm" ? "效果样例" : "标注样例"}</span>
       {sceneImage ? (
         <span className="catalog-preview-origin" title={`${sceneImage.dataset} · ${sceneImage.sample} · ${sceneImage.license}`}>
-          真实公开样本
+          {sceneImage.assetKind === "dataset-preview" ? "数据集官方预览图" : "真实公开样本"}
         </span>
       ) : null}
       {sceneImage ? <span className="catalog-preview-demo-label">Mock 演示框线</span> : null}

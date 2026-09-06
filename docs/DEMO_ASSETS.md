@@ -1,6 +1,6 @@
 # SenseMu 演示素材清单
 
-数据市场和算法市场的道路工程、城市治理 mock 卡片使用仓库内的真实公开数据集样本。每张图片的来源、样本标识和许可证均记录在本文件；图片只用于产品预览，页面上的框线和中文标签仍由 mock 数据生成，不能解释为原始标注或真实模型推理结果。
+数据市场和算法市场的 mock 卡片使用可追溯的公开数据集原始样本，或在无法取得单张原图时使用数据集官方项目预览图。每张图片的来源、样本标识和许可证均记录在本文件；图片只用于产品预览，页面上的框线和中文标签仍由 mock 数据生成，不能解释为原始标注或真实模型推理结果。
 
 页面所用的可读结构化元数据维护在 `apps/web/lib/catalog-preview-assets.ts`。它是预览图片地址、比例、来源、样本 ID、许可证和原始链接的运行时单一来源；本文件保留完整归因与审核说明。
 
@@ -10,6 +10,29 @@
 - Open Images 样本按其图像元数据中记录的 `CC BY 2.0` 使用，发布时保留作者、原始落地页和许可证链接。
 - RTK 与 TACO 样本的原始数据集为 `CC BY 4.0`；页面展示没有改变原始图片内容。
 - 正式商品发布需要供应方授权、采集和去标识化证据；不能将这里的预览图或 mock 框作为训练、评测或生产结果。
+- 页面标记“真实公开样本”表示仓库内保存的是可追溯的单张来源图片；标记“数据集官方预览图”表示来源是官方 README/项目页的样本拼图或结果预览，不能当作原始训练单图。
+
+## 通用视觉能力
+
+| 场景 | 文件 | 数据集样本 | 原始来源与许可证 |
+|---|---|---|---|
+| 工地安全穿戴 | `catalog-real-ppe.jpg` | SH17 清单中的 Pexels photo 159306 | [SH17](https://github.com/ahmadmughees/SH17dataset)，数据集 CC BY-NC-SA 4.0；原图遵循 Pexels License |
+| 烟火 / 森林烟火 | `catalog-real-forest-fire.jpg` | Open Images `2afab7192939c56d` | Glenn Batuyong，[原图](https://www.flickr.com/photos/glennbatuyong/4729261348)，CC BY 2.0；不是 D-Fire 原始文件 |
+| 道路车辆 | `catalog-real-traffic.jpg` | Open Images `1ab5db67d31e2038` | Andy Chan，[原图](https://www.flickr.com/photos/24810925@N04/2648287727)，CC BY 2.0；不是 BDD100K 原始文件 |
+| 金属表面缺陷 | `catalog-real-defect.jpg` | NEU-DET `test_images/scratches_39.jpg` | [NEU-DET 仓库](https://github.com/songzhiweiknight/NEU-DET-Datasets)，来源仓库未声明 OSI 许可，按学术研究用途处理 |
+| 林木 / 绿地 | `catalog-real-forest.jpg` | Open Images `2e49ef1ef93f6fd6` | Bruno Cordioli，[原图](https://www.flickr.com/photos/br1dotcom/2914696201)，CC BY 2.0；林木健康标签仍需二次标注 |
+| 农产品 | `catalog-real-crop.jpg` | Fruits-360 `Test/Apple Braeburn/321_100.jpg` | [Fruits-360](https://github.com/Horea94/Fruit-Images-Dataset)，MIT（仓库）；页面已将示例框调整为苹果 |
+
+## 仅有官方项目预览图的能力
+
+以下素材已替换掉旧的通用拼贴图，但当前仍不是可下载的原始训练单图，页面会明确标记“数据集官方预览图”：
+
+| 场景 | 文件 | 来源与限制 |
+|---|---|---|
+| 包裹损伤 | `catalog-real-parcel.jpg` | [Wisdom Logistics Express Parcel Damage](https://github.com/lonlonago/Wisdom-Logistics-Express-Parcel-Damage-Detection-Dataset-VOC-YOLO-Format-with-1340-Images) README 预览图；完整数据需向作者申请，授权待核验 |
+| 货架密集商品 | `catalog-real-shelf.jpg` | [SKU-110K](https://github.com/eg4000/SKU110K_CVPR19) 官方 `qualitative.jpg`；研究用途，商用需联系作者 |
+| 果园果实 | `catalog-real-orchard.jpg` | [Orchard Apple Detection Dataset](https://github.com/lonlonago/orchard-apple-detection-dataset) `img_00.png` 原始样本；社区仓库授权待核验 |
+| 蜂场巡检 | `catalog-real-apiary.jpg` | [Picking honey Scene Bawah Bee Detection](https://github.com/lonlonago/Picking-honey-Scene-Bawah-Bee-Detection-Dataset-6640-imagesVOC-YOLO-format) README 预览图；完整数据与授权待核验 |
 
 ## 道路工程
 

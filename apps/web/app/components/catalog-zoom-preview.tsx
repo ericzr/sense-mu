@@ -38,7 +38,7 @@ export function CatalogZoomPreview({ preview, kind }: { preview: CatalogPreviewD
       <CatalogPreview preview={preview} kind={kind} large zoom={zoom} />
       {source ? (
         <p className="catalog-preview-attribution">
-          <span>真实公开样本</span>
+          <span>{source.assetKind === "dataset-preview" ? "数据集官方预览图" : "真实公开样本"}</span>
           <a href={source.sourceUrl} target="_blank" rel="noreferrer">{source.dataset} · {source.sample} · {source.license}</a>
           <small>框线与中文类别为 Mock 演示，不是原始标注或模型输出。</small>
         </p>
