@@ -173,6 +173,13 @@ export function AlgorithmLiveDemo({ listing }: { listing: AlgorithmCatalogItem }
               </>
             ) : <small>{message ?? "支持 JPEG、PNG、WebP，最大 10 MB"}</small>}
           </div>
+          {source === "sample" && sceneImage ? (
+            <p className="algorithm-demo-sample-origin">
+              <span>真实公开样本</span>
+              <a href={sceneImage.sourceUrl} target="_blank" rel="noreferrer">{sceneImage.dataset} · {sceneImage.license}</a>
+              <small>识别框仅为 Mock 演示。</small>
+            </p>
+          ) : null}
         </div>
 
         <aside className="algorithm-demo-controls">

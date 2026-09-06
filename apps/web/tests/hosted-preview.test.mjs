@@ -50,6 +50,8 @@ test("hosted preview keeps the algorithm catalog and demo detail available", asy
   assert.match(catalogHtml, /catalog-real-road-surface\.png/);
   assert.match(catalogHtml, /catalog-real-urban-sanitation\.jpg/);
   assert.match(catalogHtml, /catalog-preview-backdrop/);
+  assert.match(catalogHtml, /真实公开样本/);
+  assert.match(catalogHtml, /Mock 演示框线/);
   assert.match(catalogHtml, /href="\/marketplace\/mock-alg-ppe"/);
 
   const realSampleAssets = [
@@ -92,6 +94,8 @@ test("hosted preview exposes road and urban algorithm details", async () => {
   assert.match(roadHtml, /横向裂缝/);
   assert.match(roadHtml, /待真实服务/);
   assert.match(roadHtml, /catalog-real-road-surface\.png/);
+  assert.match(roadHtml, /真实公开样本/);
+  assert.match(roadHtml, /识别框仅为 Mock 演示/);
 
   const urbanResponse = await render("/marketplace/mock-alg-urban-illegal");
   assert.equal(urbanResponse.status, 200);
@@ -101,6 +105,7 @@ test("hosted preview exposes road and urban algorithm details", async () => {
   assert.match(urbanHtml, /适用边界/);
   assert.match(urbanHtml, /catalog-real-urban-illegal\.jpg/);
   assert.match(urbanHtml, /体验图片缩放/);
+  assert.match(urbanHtml, /Open Images/);
 });
 
 test("hosted preview keeps the data catalog and demo detail available", async () => {

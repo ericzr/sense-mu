@@ -3,11 +3,12 @@
 import { RotateCcw, ZoomIn, ZoomOut } from "lucide-react";
 import { useState } from "react";
 import type { CatalogPreview as CatalogPreviewData } from "../../lib/catalog-mock-data";
-import { CatalogPreview } from "./catalog-preview";
+import { CatalogPreview, getCatalogSceneImage } from "./catalog-preview";
 
 export function CatalogZoomPreview({ preview, kind }: { preview: CatalogPreviewData; kind: "algorithm" | "data" }) {
   const [zoom, setZoom] = useState(1);
   const percent = Math.round(zoom * 100);
+  const source = getCatalogSceneImage(preview.scene);
 
   return (
     <section className="catalog-zoom-preview" aria-labelledby="catalog-zoom-preview-title">
@@ -35,6 +36,13 @@ export function CatalogZoomPreview({ preview, kind }: { preview: CatalogPreviewD
         </div>
       </header>
       <CatalogPreview preview={preview} kind={kind} large zoom={zoom} />
+      {source ? (
+        <p className="catalog-preview-attribution">
+          <span>真实公开样本</span>
+          <a href={source.sourceUrl} target="_blank" rel="noreferrer">{source.dataset} · {source.sample} · {source.license}</a>
+          <small>框线与中文类别为 Mock 演示，不是原始标注或模型输出。</small>
+        </p>
+      ) : null}
     </section>
   );
 }

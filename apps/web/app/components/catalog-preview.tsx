@@ -1,5 +1,6 @@
 /* eslint-disable @next/next/no-img-element -- Catalog previews preserve source pixels and annotation coordinates across local, remote, and data URL images. */
 import type { CatalogPreview as CatalogPreviewData } from "../../lib/catalog-mock-data";
+import { getCatalogPreviewAsset } from "../../lib/catalog-preview-assets";
 import type { CSSProperties } from "react";
 
 type CatalogPreviewProps = {
@@ -11,29 +12,8 @@ type CatalogPreviewProps = {
 
 type PreviewStyle = CSSProperties & { "--catalog-image"?: string };
 
-const sceneImages: Partial<Record<CatalogPreviewData["scene"], { url: string; aspectRatio: number }>> = {
-  "road-surface": { url: "/catalog-real-road-surface.png", aspectRatio: 352 / 288 },
-  "road-safety": { url: "/catalog-real-road-safety.jpg", aspectRatio: 640 / 427 },
-  "road-slope": { url: "/catalog-real-road-slope.jpg", aspectRatio: 640 / 480 },
-  "road-environment": { url: "/catalog-real-road-environment.png", aspectRatio: 352 / 288 },
-  tunnel: { url: "/catalog-real-tunnel.jpg", aspectRatio: 480 / 640 },
-  bridge: { url: "/catalog-real-bridge.jpg", aspectRatio: 640 / 480 },
-  "urban-illegal": { url: "/catalog-real-urban-illegal.jpg", aspectRatio: 640 / 427 },
-  "urban-sanitation": { url: "/catalog-real-urban-sanitation.jpg", aspectRatio: 640 / 480 },
-  "urban-construction-waste": { url: "/catalog-real-urban-construction-waste.jpg", aspectRatio: 640 / 480 },
-  "urban-site": { url: "/catalog-real-urban-site.jpg", aspectRatio: 640 / 482 },
-  "urban-advertising": { url: "/catalog-real-urban-advertising.jpg", aspectRatio: 640 / 480 },
-  "urban-municipal": { url: "/catalog-real-urban-municipal.jpg", aspectRatio: 640 / 480 },
-  "urban-water": { url: "/catalog-real-urban-water.jpg", aspectRatio: 480 / 640 },
-  "urban-ecology": { url: "/catalog-real-urban-ecology.jpg", aspectRatio: 640 / 480 },
-  "urban-fire": { url: "/catalog-real-urban-fire.jpg", aspectRatio: 640 / 480 },
-  "urban-crowd": { url: "/catalog-real-urban-crowd.jpg", aspectRatio: 640 / 427 },
-  "urban-traffic": { url: "/catalog-real-urban-traffic.jpg", aspectRatio: 640 / 480 },
-  "urban-greening": { url: "/catalog-real-urban-greening.jpg", aspectRatio: 640 / 427 },
-};
-
 export function getCatalogSceneImage(scene: CatalogPreviewData["scene"]) {
-  return sceneImages[scene] ?? null;
+  return getCatalogPreviewAsset(scene);
 }
 
 export function getCoverBoxStyle(
@@ -91,6 +71,12 @@ export function CatalogPreview({ preview, kind, large = false, zoom = 1 }: Catal
       aria-label={preview.alt}
     >
       <span className="catalog-preview-kind">{kind === "algorithm" ? "效果样例" : "标注样例"}</span>
+      {sceneImage ? (
+        <span className="catalog-preview-origin" title={`${sceneImage.dataset} · ${sceneImage.sample} · ${sceneImage.license}`}>
+          真实公开样本
+        </span>
+      ) : null}
+      {sceneImage ? <span className="catalog-preview-demo-label">Mock 演示框线</span> : null}
       {imageUrl ? (
         <>
           <span className="catalog-preview-backdrop" aria-hidden="true" />
