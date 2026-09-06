@@ -47,10 +47,34 @@ test("hosted preview keeps the algorithm catalog and demo detail available", asy
   assert.match(catalogHtml, /桥梁设施病害识别/);
   assert.match(catalogHtml, /违法建设识别/);
   assert.match(catalogHtml, /园林绿化问题识别/);
-  assert.match(catalogHtml, /catalog-road-inspection\.jpg/);
-  assert.match(catalogHtml, /catalog-urban-street\.jpg/);
+  assert.match(catalogHtml, /catalog-real-road-surface\.png/);
+  assert.match(catalogHtml, /catalog-real-urban-sanitation\.jpg/);
   assert.match(catalogHtml, /catalog-preview-backdrop/);
   assert.match(catalogHtml, /href="\/marketplace\/mock-alg-ppe"/);
+
+  const realSampleAssets = [
+    "catalog-real-road-surface.png",
+    "catalog-real-road-safety.jpg",
+    "catalog-real-road-slope.jpg",
+    "catalog-real-road-environment.png",
+    "catalog-real-tunnel.jpg",
+    "catalog-real-bridge.jpg",
+    "catalog-real-urban-illegal.jpg",
+    "catalog-real-urban-sanitation.jpg",
+    "catalog-real-urban-construction-waste.jpg",
+    "catalog-real-urban-site.jpg",
+    "catalog-real-urban-advertising.jpg",
+    "catalog-real-urban-municipal.jpg",
+    "catalog-real-urban-water.jpg",
+    "catalog-real-urban-ecology.jpg",
+    "catalog-real-urban-fire.jpg",
+    "catalog-real-urban-crowd.jpg",
+    "catalog-real-urban-traffic.jpg",
+    "catalog-real-urban-greening.jpg",
+  ];
+  for (const asset of realSampleAssets) {
+    assert.match(catalogHtml, new RegExp(asset.replace(".", "\\.")));
+  }
 
   const detailResponse = await render("/marketplace/mock-alg-ppe");
   assert.equal(detailResponse.status, 200);
@@ -67,7 +91,7 @@ test("hosted preview exposes road and urban algorithm details", async () => {
   assert.match(roadHtml, /路面病害识别/);
   assert.match(roadHtml, /横向裂缝/);
   assert.match(roadHtml, /待真实服务/);
-  assert.match(roadHtml, /catalog-road-inspection\.jpg/);
+  assert.match(roadHtml, /catalog-real-road-surface\.png/);
 
   const urbanResponse = await render("/marketplace/mock-alg-urban-illegal");
   assert.equal(urbanResponse.status, 200);
@@ -75,7 +99,7 @@ test("hosted preview exposes road and urban algorithm details", async () => {
   assert.match(urbanHtml, /违法建设识别/);
   assert.match(urbanHtml, /楼顶新增搭建/);
   assert.match(urbanHtml, /适用边界/);
-  assert.match(urbanHtml, /catalog-urban-buildings\.jpg/);
+  assert.match(urbanHtml, /catalog-real-urban-illegal\.jpg/);
   assert.match(urbanHtml, /体验图片缩放/);
 });
 
