@@ -49,6 +49,7 @@ test("hosted preview keeps the algorithm catalog and demo detail available", asy
   assert.match(catalogHtml, /园林绿化问题识别/);
   assert.match(catalogHtml, /catalog-road-inspection\.jpg/);
   assert.match(catalogHtml, /catalog-urban-street\.jpg/);
+  assert.match(catalogHtml, /catalog-preview-backdrop/);
   assert.match(catalogHtml, /href="\/marketplace\/mock-alg-ppe"/);
 
   const detailResponse = await render("/marketplace/mock-alg-ppe");
@@ -75,6 +76,7 @@ test("hosted preview exposes road and urban algorithm details", async () => {
   assert.match(urbanHtml, /楼顶新增搭建/);
   assert.match(urbanHtml, /适用边界/);
   assert.match(urbanHtml, /catalog-urban-buildings\.jpg/);
+  assert.match(urbanHtml, /体验图片缩放/);
 });
 
 test("hosted preview keeps the data catalog and demo detail available", async () => {
@@ -99,6 +101,8 @@ test("hosted preview keeps the data catalog and demo detail available", async ()
   assert.match(detailHtml, /工地安全穿戴数据集/);
   assert.match(detailHtml, /数据概览/);
   assert.match(detailHtml, /来源与质量/);
+  assert.match(detailHtml, /示例图片缩放/);
+  assert.match(detailHtml, /默认完整显示原图/);
 });
 
 test("hosted preview exposes road engineering dataset details", async () => {

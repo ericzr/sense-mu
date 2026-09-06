@@ -13204,6 +13204,8 @@ html[data-sidebar-collapsed="true"] .app-shell .profile-row {
 
 .catalog-preview-media {
   position: relative;
+  width: 100%;
+  height: 100%;
   flex: none;
   overflow: hidden;
   background-color: #d8dad6;
@@ -13211,6 +13213,44 @@ html[data-sidebar-collapsed="true"] .app-shell .profile-row {
   background-repeat: no-repeat;
   background-size: 300% auto;
   box-shadow: 0 0 0 1px rgb(255 255 255 / 0.2), 0 9px 28px rgb(17 18 16 / 0.1);
+}
+
+.catalog-preview-backdrop,
+.algorithm-demo-backdrop {
+  position: absolute;
+  inset: -18px;
+  background-image: linear-gradient(rgb(17 18 16 / 0.04), rgb(17 18 16 / 0.18)), var(--catalog-image);
+  background-position: center;
+  background-size: cover;
+  filter: blur(15px) saturate(0.72);
+  opacity: 0.7;
+  transform: scale(1.08);
+}
+
+.catalog-preview.has-image::after {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  background: rgb(17 18 16 / 0.08);
+  content: "";
+}
+
+.catalog-preview-media.is-contained {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: 50%;
+  background: transparent;
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.2), 0 10px 30px rgb(17 18 16 / 0.16);
+  transition: transform 180ms ease;
+}
+
+.catalog-preview-media.is-contained > img,
+.algorithm-demo-image-frame > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .catalog-preview:not(.is-large) .catalog-preview-media.scene-ppe { background-position: 0 15.2%; }
@@ -13275,7 +13315,7 @@ html[data-sidebar-collapsed="true"] .app-shell .profile-row {
 
 .catalog-preview-kind {
   position: absolute;
-  z-index: 2;
+  z-index: 4;
   top: 10px;
   left: 10px;
   padding: 5px 7px;
@@ -13291,6 +13331,72 @@ html[data-sidebar-collapsed="true"] .app-shell .profile-row {
   z-index: 1;
   border: 1.5px solid rgb(255 255 255 / 0.95);
   box-shadow: 0 0 0 1px rgb(17 18 16 / 0.24), inset 0 0 0 1px rgb(17 18 16 / 0.12);
+}
+
+.catalog-zoom-preview {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 17px;
+  background: rgb(255 255 255 / 0.82);
+  box-shadow: var(--shadow-card);
+}
+
+.catalog-zoom-preview > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.catalog-zoom-preview > header h2 {
+  margin: 0 0 4px;
+  font-size: 15px;
+}
+
+.catalog-zoom-preview > header p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.catalog-zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted-strong);
+}
+
+.catalog-zoom-controls input {
+  width: clamp(86px, 14vw, 150px);
+  accent-color: #111210;
+}
+
+.catalog-zoom-controls output {
+  min-width: 34px;
+  color: var(--foreground);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 9px;
+}
+
+.catalog-zoom-controls button {
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--muted-strong);
+  background: #fafaf8;
+  font-size: 9px;
+  cursor: pointer;
+}
+
+.catalog-zoom-controls button:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 
 .catalog-preview-box small {
@@ -13839,6 +13945,20 @@ html[data-sidebar-collapsed="true"] .app-shell .profile-row {
 }
 
 @media (max-width: 520px) {
+  .catalog-zoom-preview > header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .catalog-zoom-controls {
+    width: 100%;
+  }
+
+  .catalog-zoom-controls input {
+    min-width: 0;
+    flex: 1;
+  }
+
   .storefront-card-evidence {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -15739,6 +15859,44 @@ html[data-sidebar-collapsed="true"] .app-shell .profile-row {
   background-repeat: no-repeat;
   background-size: 300% auto;
 }
+
+.algorithm-demo-canvas.has-image {
+  display: grid;
+  place-items: center;
+  background: #222522;
+}
+
+.algorithm-demo-canvas.has-image .algorithm-demo-backdrop {
+  background-image: linear-gradient(rgb(17 18 16 / 0.08), rgb(17 18 16 / 0.28)), var(--algorithm-demo-image);
+  filter: blur(18px) saturate(0.68);
+  opacity: 0.84;
+}
+
+.algorithm-demo-image-frame {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: 50%;
+  overflow: visible;
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.16), 0 18px 50px rgb(0 0 0 / 0.24);
+  transition: width 160ms ease, height 160ms ease, transform 180ms ease;
+}
+
+.algorithm-demo-image-frame.is-legacy {
+  overflow: hidden;
+  background-color: #dfe0dc;
+  background-image: linear-gradient(rgb(17 18 16 / 0.02), rgb(17 18 16 / 0.08)), url("/catalog-vision-samples.png");
+  background-repeat: no-repeat;
+  background-size: 300% auto;
+  box-shadow: none;
+}
+
+.algorithm-demo-image-frame.is-legacy.scene-ppe { background-position: 0 14%; }
+.algorithm-demo-image-frame.is-legacy.scene-fire { background-position: 50% 14%; }
+.algorithm-demo-image-frame.is-legacy.scene-traffic { background-position: 100% 14%; }
+.algorithm-demo-image-frame.is-legacy.scene-defect { background-position: 0 86%; }
+.algorithm-demo-image-frame.is-legacy.scene-parcel { background-position: 50% 86%; }
+.algorithm-demo-image-frame.is-legacy.scene-shelf { background-position: 100% 86%; }
 
 .algorithm-demo-canvas.scene-ppe { background-position: 0 14%; }
 .algorithm-demo-canvas.scene-fire { background-position: 50% 14%; }

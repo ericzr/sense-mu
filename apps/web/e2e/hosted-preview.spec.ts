@@ -82,6 +82,36 @@ test.describe("托管演示站", () => {
     await expect(page.getByRole("link", { name: "查看果园果实计数数据集" })).toBeVisible();
   });
 
+  test("市场图片默认完整显示并提供有限缩放", async ({ page }) => {
+    await page.goto("/data-market");
+    await page.getByPlaceholder("搜索数据集或类别").fill("路面病害");
+
+    const preview = page.getByRole("link", { name: "查看路面病害识别数据集" }).locator(".catalog-preview");
+    await expect(preview.locator(".catalog-preview-backdrop")).toBeVisible();
+    const containment = await preview.evaluate((element) => {
+      const frame = element.getBoundingClientRect();
+      const image = element.querySelector(".catalog-preview-media.is-contained")?.getBoundingClientRect();
+      return image ? {
+        fitsWidth: image.width <= frame.width + 1,
+        fitsHeight: image.height <= frame.height + 1,
+      } : null;
+    });
+    expect(containment).toEqual({ fitsWidth: true, fitsHeight: true });
+
+    await page.goto("/data-market/mock-data-road-surface");
+    const dataZoom = page.getByLabel("示例图片缩放");
+    await expect(dataZoom).toHaveValue("1");
+    await dataZoom.press("End");
+    await expect(page.locator(".catalog-zoom-controls output")).toHaveText("140%");
+    await page.getByRole("button", { name: "恢复图片为完整显示" }).click();
+    await expect(dataZoom).toHaveValue("1");
+
+    await page.goto("/marketplace/mock-alg-urban-municipal");
+    const algorithmZoom = page.getByLabel("体验图片缩放");
+    await algorithmZoom.press("End");
+    await expect(page.locator(".algorithm-demo-confidence").filter({ hasText: "图像缩放" })).toContainText("140%");
+  });
+
   test("我的页面提供真实资产上架入口并保留演示写入边界", async ({ page }) => {
     await page.goto("/me?view=producer");
     await expect(page.getByRole("heading", { name: "上架", exact: true })).toBeVisible();

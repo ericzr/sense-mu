@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable @next/next/no-img-element -- The demo supports local data URL uploads that cannot use the optimized image pipeline. */
+
 import {
   Check,
   Image as ImageIcon,
@@ -9,11 +11,16 @@ import {
   ShieldCheck,
   UploadCloud,
 } from "lucide-react";
-import { type ChangeEvent, useMemo, useState } from "react";
-import { getCatalogSceneImage, getCoverBoxStyle } from "../../components/catalog-preview";
+import { type ChangeEvent, type CSSProperties, type SyntheticEvent, useMemo, useState } from "react";
+import { getCatalogSceneImage, getContainedFrameStyle, getCoverBoxStyle } from "../../components/catalog-preview";
 import type { AlgorithmCatalogItem } from "../../../lib/catalog-mock-data";
 
 type DemoSource = "sample" | "upload";
+type DemoCanvasStyle = CSSProperties & { "--algorithm-demo-image"?: string };
+
+function directBoxStyle(box: AlgorithmCatalogItem["preview"]["boxes"][number]): CSSProperties {
+  return { left: `${box.x}%`, top: `${box.y}%`, width: `${box.width}%`, height: `${box.height}%` };
+}
 
 export function AlgorithmLiveDemo({ listing }: { listing: AlgorithmCatalogItem }) {
   const [source, setSource] = useState<DemoSource>("sample");
@@ -23,6 +30,8 @@ export function AlgorithmLiveDemo({ listing }: { listing: AlgorithmCatalogItem }
   const [running, setRunning] = useState(false);
   const [hasResult, setHasResult] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [zoom, setZoom] = useState(1);
+  const [uploadedAspectRatio, setUploadedAspectRatio] = useState<number | null>(null);
 
   const visibleBoxes = useMemo(
     () => listing.preview.boxes.filter((box) => Number(box.confidence ?? 1) >= confidence),
@@ -31,6 +40,12 @@ export function AlgorithmLiveDemo({ listing }: { listing: AlgorithmCatalogItem }
   const sceneImage = getCatalogSceneImage(listing.preview.scene);
   const sampleSourceRatio = Math.min(4, Math.max(0.25, listing.preview.aspect_ratio ?? sceneImage?.aspectRatio ?? 1));
   const demoFrameRatio = 16 / 10;
+  const directSampleImage = listing.preview.image_url ?? sceneImage?.url;
+  const activeImage = uploadedImage ?? directSampleImage;
+  const activeSourceRatio = uploadedImage ? (uploadedAspectRatio ?? sampleSourceRatio) : sampleSourceRatio;
+  const canvasStyle: DemoCanvasStyle | undefined = activeImage
+    ? { "--algorithm-demo-image": `url("${activeImage}")` }
+    : undefined;
 
   function chooseSample() {
     setSource("sample");
@@ -38,6 +53,7 @@ export function AlgorithmLiveDemo({ listing }: { listing: AlgorithmCatalogItem }
     setUploadedName("");
     setHasResult(false);
     setMessage(null);
+    setZoom(1);
   }
 
   function chooseUpload(event: ChangeEvent<HTMLInputElement>) {
@@ -56,8 +72,10 @@ export function AlgorithmLiveDemo({ listing }: { listing: AlgorithmCatalogItem }
       setSource("upload");
       setUploadedImage(String(reader.result));
       setUploadedName(file.name);
+      setUploadedAspectRatio(null);
       setHasResult(false);
       setMessage(null);
+      setZoom(1);
     };
     reader.readAsDataURL(file);
     event.target.value = "";
@@ -79,6 +97,14 @@ export function AlgorithmLiveDemo({ listing }: { listing: AlgorithmCatalogItem }
     setMessage(null);
   }
 
+  function captureUploadedRatio(event: SyntheticEvent<HTMLImageElement>) {
+    if (!uploadedImage) return;
+    const image = event.currentTarget;
+    if (image.naturalWidth && image.naturalHeight) {
+      setUploadedAspectRatio(image.naturalWidth / image.naturalHeight);
+    }
+  }
+
   return (
     <section className="algorithm-live-demo" aria-labelledby="algorithm-live-demo-title">
       <div className="algorithm-demo-heading">
@@ -98,25 +124,43 @@ export function AlgorithmLiveDemo({ listing }: { listing: AlgorithmCatalogItem }
           </div>
 
           <div
-            className={`algorithm-demo-canvas scene-${listing.preview.scene}${source === "upload" ? " is-upload" : ""}`}
-            style={uploadedImage
-              ? { backgroundImage: `url(${uploadedImage})` }
-              : { backgroundImage: `url(${listing.preview.image_url ?? sceneImage?.url ?? "/catalog-vision-samples.png"})`, backgroundPosition: "center", backgroundSize: "cover" }}
+            className={`algorithm-demo-canvas scene-${listing.preview.scene}${source === "upload" ? " is-upload" : ""}${activeImage ? " has-image" : ""}`}
+            style={canvasStyle}
             role="img"
             aria-label={source === "sample" ? listing.preview.alt : `待识别图片 ${uploadedName}`}
           >
+            {activeImage ? (
+              <>
+                <span className="algorithm-demo-backdrop" aria-hidden="true" />
+                <div className="algorithm-demo-image-frame" style={getContainedFrameStyle(activeSourceRatio, demoFrameRatio, zoom)} aria-hidden="true">
+                  <img src={activeImage} alt="" onLoad={captureUploadedRatio} />
+                  {hasResult ? visibleBoxes.map((box, index) => (
+                    <span className="algorithm-demo-box" key={`${box.label}-${index}`} style={directBoxStyle(box)}>
+                      <small>{box.label} {box.confidence}</small>
+                    </span>
+                  )) : null}
+                </div>
+              </>
+            ) : (
+              <div
+                className={`algorithm-demo-image-frame is-legacy scene-${listing.preview.scene}`}
+                style={getContainedFrameStyle(demoFrameRatio, demoFrameRatio, zoom)}
+                aria-hidden="true"
+              >
+                {hasResult ? visibleBoxes.map((box, index) => (
+                  <span
+                    className="algorithm-demo-box"
+                    key={`${box.label}-${index}`}
+                    style={getCoverBoxStyle(box, sampleSourceRatio, demoFrameRatio)}
+                  >
+                    <small>{box.label} {box.confidence}</small>
+                  </span>
+                )) : null}
+              </div>
+            )}
             {running ? (
               <span className="algorithm-demo-running"><LoaderCircle size={21} className="spinner" />正在识别</span>
             ) : null}
-            {hasResult ? visibleBoxes.map((box, index) => (
-              <span
-                className="algorithm-demo-box"
-                key={`${box.label}-${index}`}
-                style={getCoverBoxStyle(box, sampleSourceRatio, demoFrameRatio)}
-              >
-                <small>{box.label} {box.confidence}</small>
-              </span>
-            )) : null}
             {!hasResult && !running ? <span className="algorithm-demo-ready">点击“运行识别”查看效果</span> : null}
           </div>
 
@@ -148,6 +192,12 @@ export function AlgorithmLiveDemo({ listing }: { listing: AlgorithmCatalogItem }
               <span><strong>上传图片</strong><small>仅在本地预览</small></span>
             </label>
           </div>
+
+          <label className="algorithm-demo-confidence">
+            <span><strong>图像缩放</strong><b>{Math.round(zoom * 100)}%</b></span>
+            <input aria-label="体验图片缩放" type="range" min="1" max="1.4" step="0.05" value={zoom} onChange={(event) => setZoom(Number(event.target.value))} />
+            <small>100% 完整显示；放大时可查看局部细节。</small>
+          </label>
 
           <label className="algorithm-demo-confidence">
             <span><strong>置信度</strong><b>{confidence.toFixed(2)}</b></span>

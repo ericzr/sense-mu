@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { dataTaskLabels, getDatasetListingCounts, licenseLabels } from "../data-market-workbench";
 import { decorateDataListing, findMockData, type DataCatalogItem } from "../../../lib/catalog-mock-data";
 import { catalogApi } from "../../../lib/catalog-api";
+import { CatalogZoomPreview } from "../../components/catalog-zoom-preview";
 
 export function DataDetailWorkbench({ listingId, previewMode }: { listingId: string; previewMode: boolean }) {
   const initialListing = previewMode ? findMockData(listingId) : null;
@@ -65,6 +66,8 @@ export function DataDetailWorkbench({ listingId, previewMode }: { listingId: str
       </section>
 
       {error ? <p className="inline-notice is-error" role="alert">{error}</p> : null}
+
+      {listing.is_mock && previewMode ? <CatalogZoomPreview preview={listing.preview} kind="data" /> : null}
 
       <div className="catalog-detail-layout">
         <div className="catalog-detail-main">
