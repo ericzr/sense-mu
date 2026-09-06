@@ -11,6 +11,7 @@ SenseMu 是一个面向视觉 AI 的端到端工作平台：在同一个可追�
 - 服务器上线前验收门禁：[`docs/PRE_SERVER_ACCEPTANCE.md`](docs/PRE_SERVER_ACCEPTANCE.md)
 - 当前状态与优先级：[`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md)
 - OIDC/BFF 登录边界：[`docs/adr/0037-oidc-bff-session-boundary.md`](docs/adr/0037-oidc-bff-session-boundary.md)
+- 公开视觉数据集目录与后续接入门禁：[`docs/OPEN_DATASET_HARVEST.md`](docs/OPEN_DATASET_HARVEST.md)
 
 正式地址：
 

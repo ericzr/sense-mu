@@ -1,4 +1,4 @@
-.PHONY: web-dev web-build web-test web-typecheck web-lint web-api-types-check api-dev api-test api-lint api-openapi api-openapi-check db-migrate local-db local-api local-worker seed-demo worker-dev gateway-dev runtime-dev training-image-local python-check infra-up infra-down check
+.PHONY: web-dev web-build web-test web-typecheck web-lint web-api-types-check api-dev api-test api-lint api-openapi api-openapi-check db-migrate local-db local-api local-worker seed-demo worker-dev gateway-dev runtime-dev training-image-local harvest-open-datasets refresh-open-datasets python-check infra-up infra-down check
 
 LOCAL_DATABASE_URL := sqlite+pysqlite:///$(CURDIR)/.local-data/sensemu.db
 LOCAL_OBJECT_STORAGE_PATH := $(CURDIR)/.local-data/objects
@@ -80,6 +80,12 @@ runtime-dev:
 training-image-local:
 	docker build --pull=false -t sensemu-ultralytics:local-cpu \
 		-f infra/training-runtime/Dockerfile.cpu infra/training-runtime
+
+harvest-open-datasets:
+	PYTHONPATH='apps/api/src' .venv/bin/python apps/api/scripts/harvest_open_vision_datasets.py
+
+refresh-open-datasets:
+	PYTHONPATH='apps/api/src' .venv/bin/python apps/api/scripts/harvest_open_vision_datasets.py --refresh-huggingface
 
 python-check:
 	.venv/bin/python -m compileall -q apps/api/src apps/api/scripts apps/worker/src apps/inference-gateway/src apps/inference-runtime/src
