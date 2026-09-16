@@ -81,13 +81,21 @@ const datasetTaskTypes = [
   { id: "ocr", label: "文字识别", description: "定位并转写图像文字", support: "可导入" },
 ] as const;
 
+const projectTaskTypes = [
+  { id: "object-detection", label: "目标检测" },
+  { id: "classification", label: "图像分类" },
+  { id: "segmentation", label: "实例分割" },
+  { id: "pose", label: "姿态估计" },
+  { id: "ocr", label: "文字识别" },
+] as const;
+
 function taskUsesClasses(taskType: string): boolean {
   return taskType !== "depth-estimation";
 }
 
 function TaskTypeIcon({ taskType, size = 18 }: { taskType: string; size?: number }) {
   if (taskType === "object-detection") return <Box size={size} />;
-  if (taskType === "instance-segmentation" || taskType === "semantic-segmentation") return <Layers3 size={size} />;
+  if (taskType === "segmentation" || taskType === "instance-segmentation" || taskType === "semantic-segmentation") return <Layers3 size={size} />;
   if (taskType === "classification") return <Tag size={size} />;
   if (taskType === "pose") return <PersonStanding size={size} />;
   if (taskType === "oriented-bounding-box") return <RotateCw size={size} />;
@@ -266,6 +274,11 @@ export function DataWorkbench() {
   const [qualityLoading, setQualityLoading] = useState(false);
   const [workspaceName, setWorkspaceName] = useState("SenseMu 实验室");
   const [projectName, setProjectName] = useState("PPE 安全检测");
+  const [projectSlug, setProjectSlug] = useState("ppe-safety-detection");
+  const [projectSlugTouched, setProjectSlugTouched] = useState(false);
+  const [projectDescription, setProjectDescription] = useState("");
+  const [projectTaskType, setProjectTaskType] = useState("object-detection");
+  const [projectModelFile, setProjectModelFile] = useState<File | null>(null);
   const [datasetName, setDatasetName] = useState("ppe_site_a");
   const [datasetDescription, setDatasetDescription] = useState("");
   const [newDatasetTaskType, setNewDatasetTaskType] = useState("object-detection");
@@ -506,12 +519,14 @@ export function DataWorkbench() {
     try {
       const created = await catalogApi.createProject(workspace.id, {
         name: projectName,
-        slug: slugify(projectName) || "vision-project",
-        task_type: "object-detection",
+        slug: projectSlug || slugify(projectName) || "vision-project",
+        task_type: projectTaskType,
+        description: projectDescription.trim() || undefined,
       });
       setProjects([created, ...projects]);
       setProject(created);
       setProjectCreationOpen(false);
+      setProjectModelFile(null);
       setNotice("项目已创建");
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "项目创建失败");
@@ -1020,13 +1035,23 @@ export function DataWorkbench() {
             busy={busy}
           />
         ) : !project || projectCreationOpen ? (
-          <SetupForm
-            eyebrow="首个项目"
-            title="创建视觉项目"
-            description="首个纵向切片聚焦目标检测，后续再扩展任务类型。"
-            label="项目名称"
-            value={projectName}
-            onChange={setProjectName}
+          <ProjectSetupForm
+            name={projectName}
+            onNameChange={(value) => {
+              setProjectName(value);
+              if (!projectSlugTouched) setProjectSlug(slugify(value) || "vision-project");
+            }}
+            slug={projectSlug}
+            onSlugChange={(value) => {
+              setProjectSlugTouched(true);
+              setProjectSlug(slugify(value));
+            }}
+            description={projectDescription}
+            onDescriptionChange={setProjectDescription}
+            taskType={projectTaskType}
+            onTaskTypeChange={setProjectTaskType}
+            modelFile={projectModelFile}
+            onModelFileChange={setProjectModelFile}
             onSubmit={createProject}
             busy={busy}
           />
@@ -1659,6 +1684,114 @@ function DatasetSetupForm({
           </button>
         </div>
         {sourceMode !== "upload" ? <p className="dataset-create-footer-note">切换回“上传”后即可创建；其他数据源会在连接器上线后开放。</p> : null}
+      </form>
+    </article>
+  );
+}
+
+function ProjectSetupForm({
+  name,
+  onNameChange,
+  slug,
+  onSlugChange,
+  description,
+  onDescriptionChange,
+  taskType,
+  onTaskTypeChange,
+  modelFile,
+  onModelFileChange,
+  onSubmit,
+  busy,
+}: {
+  name: string;
+  onNameChange: (value: string) => void;
+  slug: string;
+  onSlugChange: (value: string) => void;
+  description: string;
+  onDescriptionChange: (value: string) => void;
+  taskType: string;
+  onTaskTypeChange: (value: string) => void;
+  modelFile: File | null;
+  onModelFileChange: (file: File | null) => void;
+  onSubmit: (event: FormEvent) => Promise<void>;
+  busy: boolean;
+}) {
+  return (
+    <article className="panel setup-card project-create-surface">
+      <div className="project-create-header">
+        <div>
+          <span className="eyebrow">工作台项目</span>
+          <h2>创建视觉项目</h2>
+          <p>项目用于组织数据集、训练实验和已发布的视觉能力。</p>
+        </div>
+      </div>
+
+      <form onSubmit={(event) => void onSubmit(event)}>
+        <label
+          className="project-model-dropzone"
+          htmlFor="project-model-input"
+          onDragOver={(event) => event.preventDefault()}
+          onDrop={(event) => {
+            event.preventDefault();
+            onModelFileChange(event.dataTransfer.files?.[0] ?? null);
+          }}
+        >
+          <input
+            id="project-model-input"
+            type="file"
+            accept=".pt,.onnx,application/octet-stream"
+            onChange={(event) => onModelFileChange(event.target.files?.[0] ?? null)}
+            disabled={busy}
+          />
+          <span className="project-model-dropzone-icon"><UploadCloud size={22} /></span>
+          <strong>{modelFile ? modelFile.name : "拖放模型文件到这里"}</strong>
+          <small>{modelFile ? "模型文件已选择；模型上传接口接入后可继续导入" : "可选，支持 .pt 和 .onnx；也可以先创建空项目"}</small>
+        </label>
+
+        <div className="project-create-fields">
+          <label className="dataset-create-field">
+            <span>项目名称</span>
+            <input value={name} onChange={(event) => onNameChange(event.target.value)} placeholder="例如：道路病害识别" required />
+          </label>
+          <label className="dataset-create-field">
+            <span>项目 URL</span>
+            <div className="project-slug-input"><span>/</span><input value={slug} onChange={(event) => onSlugChange(event.target.value)} placeholder="road-defects" required /></div>
+            <small>仅支持小写字母、数字和连字符。</small>
+          </label>
+        </div>
+
+        <label className="dataset-create-field">
+          <span>项目描述 <em>可选</em></span>
+          <textarea value={description} onChange={(event) => onDescriptionChange(event.target.value)} placeholder="说明项目目标、数据范围或协作边界" rows={3} maxLength={2_000} />
+        </label>
+
+        <fieldset className="project-task-types">
+          <legend>默认任务类型</legend>
+          <p className="dataset-create-section-hint">创建数据集时仍可选择更具体的标注结构。</p>
+          <div className="project-task-type-grid">
+            {projectTaskTypes.map((item) => (
+              <button
+                type="button"
+                key={item.id}
+                className={taskType === item.id ? "is-active" : ""}
+                aria-pressed={taskType === item.id}
+                onClick={() => onTaskTypeChange(item.id)}
+                disabled={busy}
+              >
+                <TaskTypeIcon taskType={item.id} size={15} />
+                <span>{item.label}</span>
+              </button>
+            ))}
+          </div>
+        </fieldset>
+
+        <div className="project-create-footer">
+          <span>项目创建后可继续添加数据集和协作者。</span>
+          <button className="primary-button" type="submit" disabled={busy}>
+            {busy ? <LoaderCircle size={14} className="spinner" /> : <Plus size={14} />}
+            {busy ? "正在创建" : "创建项目"}
+          </button>
+        </div>
       </form>
     </article>
   );

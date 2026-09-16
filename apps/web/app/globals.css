@@ -3400,6 +3400,198 @@ html[data-sidebar-collapsed="true"] .app-shell .profile-row {
   box-shadow: 0 0 0 3px rgb(17 18 16 / 0.05);
 }
 
+.project-create-surface {
+  width: min(100%, 760px);
+  min-height: 0;
+  align-items: stretch;
+  justify-content: flex-start;
+  margin: 0 auto;
+  padding: clamp(24px, 4vw, 38px);
+  text-align: left;
+}
+
+.project-create-header {
+  margin-bottom: 26px;
+}
+
+.project-create-header h2 {
+  margin: 5px 0 6px;
+}
+
+.project-create-header p {
+  max-width: 500px;
+  margin: 0;
+}
+
+.project-create-surface form {
+  display: flex;
+  width: 100%;
+  align-items: stretch;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.project-model-dropzone {
+  display: flex;
+  min-height: 132px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 7px;
+  padding: 22px 18px;
+  border: 1px dashed #bfc3bb;
+  border-radius: 11px;
+  color: #5f625c;
+  background: #fbfbfa;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 140ms ease, background 140ms ease;
+}
+
+.project-model-dropzone:hover,
+.project-model-dropzone:focus-within {
+  border-color: #788476;
+  background: #f5f8f4;
+}
+
+.project-model-dropzone input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.project-model-dropzone-icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid #dce2da;
+  border-radius: 11px;
+  color: #627264;
+  background: #edf3ed;
+}
+
+.project-model-dropzone strong {
+  color: #2b2e29;
+  font-size: 11px;
+  font-weight: 640;
+}
+
+.project-model-dropzone small {
+  color: #8b8e88;
+  font-size: 8px;
+  line-height: 1.5;
+}
+
+.project-create-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(220px, 0.95fr);
+  gap: 12px;
+}
+
+.project-slug-input {
+  display: flex;
+  height: 37px;
+  align-items: center;
+  padding-left: 11px;
+  border: 1px solid var(--border-strong);
+  border-radius: 9px;
+  background: #fff;
+}
+
+.project-slug-input > span {
+  color: #9a9d96;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 10px;
+}
+
+.project-slug-input input {
+  width: 100%;
+  height: 35px;
+  padding: 0 10px 0 3px;
+  border: 0;
+  border-radius: 0;
+  outline: 0;
+  background: transparent;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 9px;
+}
+
+.project-slug-input:focus-within {
+  border-color: rgb(17 18 16 / 0.38);
+  box-shadow: 0 0 0 3px rgb(17 18 16 / 0.05);
+}
+
+.project-task-types {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.project-task-types legend {
+  margin-bottom: 8px;
+  color: #5d6059;
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.project-task-type-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.project-task-type-grid button {
+  display: flex;
+  min-width: 0;
+  min-height: 52px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 6px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  color: #777a73;
+  background: #fafaf8;
+  font-size: 9px;
+  font-weight: 610;
+}
+
+.project-task-type-grid button:hover,
+.project-task-type-grid button.is-active {
+  border-color: #9da99e;
+  color: #354439;
+  background: #f0f6f1;
+}
+
+.project-task-type-grid button.is-active {
+  box-shadow: inset 0 0 0 1px #9da99e;
+}
+
+.project-create-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+
+.project-create-footer > span {
+  color: #92958e;
+  font-size: 8px;
+  line-height: 1.45;
+}
+
+.project-create-footer .primary-button {
+  min-width: 108px;
+  justify-content: center;
+}
+
 .dataset-setup-card {
   min-height: 610px;
 }
@@ -9126,6 +9318,23 @@ html[data-sidebar-collapsed="true"] .app-shell .profile-row {
   .setup-card form {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .project-create-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .project-task-type-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .project-create-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .project-create-footer .primary-button {
+    width: 100%;
   }
 
   .dataset-overview-heading {

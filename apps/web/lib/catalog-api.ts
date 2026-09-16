@@ -1056,7 +1056,7 @@ export const catalogApi = {
     request<Project[]>("/api/v1/projects", { workspaceId }),
   createProject: (
     workspaceId: string,
-    payload: { slug: string; name: string; task_type: string },
+    payload: { slug: string; name: string; task_type: string; description?: string },
   ) =>
     request<Project>("/api/v1/projects", {
       method: "POST",
