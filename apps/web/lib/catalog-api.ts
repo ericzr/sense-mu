@@ -267,6 +267,7 @@ export type DatasetVersion = {
   status: string;
   manifest_uri: string;
   asset_count: number;
+  task_type: string;
   class_map: Record<string, string>;
   frozen_at: string | null;
   created_at: string;
@@ -1079,11 +1080,25 @@ export const catalogApi = {
     }),
   listDatasets: (workspaceId: string, projectId: string) =>
     request<Dataset[]>(`/api/v1/projects/${projectId}/datasets`, { workspaceId }),
-  createDataset: (workspaceId: string, projectId: string, payload: { name: string }) =>
+  createDataset: (
+    workspaceId: string,
+    projectId: string,
+    payload: { name: string; task_type: string; description?: string },
+  ) =>
     request<Dataset>(`/api/v1/projects/${projectId}/datasets`, {
       method: "POST",
       workspaceId,
       body: JSON.stringify(payload),
+    }),
+  updateDatasetDefinition: (
+    workspaceId: string,
+    datasetId: string,
+    taskType: string,
+  ) =>
+    request<Dataset>(`/api/v1/datasets/${datasetId}/definition`, {
+      method: "PATCH",
+      workspaceId,
+      body: JSON.stringify({ task_type: taskType }),
     }),
   deleteDataset: (workspaceId: string, datasetId: string) =>
     request<void>(`/api/v1/datasets/${datasetId}`, {

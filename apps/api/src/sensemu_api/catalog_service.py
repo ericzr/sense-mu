@@ -16,6 +16,7 @@ from sensemu_api.catalog_schemas import (
     AssetRegister,
     DatasetClassMapUpdate,
     DatasetCreate,
+    DatasetDefinitionUpdate,
     DatasetItemUpdate,
     DatasetResponse,
     FreezeDatasetVersion,
@@ -42,6 +43,15 @@ from sensemu_api.db.models import (
 )
 from sensemu_api.identity_service import add_workspace_owner, list_user_workspaces
 from sensemu_api.storage import Storage
+
+CLASS_BASED_DATASET_TASK_TYPES = {
+    "object-detection",
+    "instance-segmentation",
+    "semantic-segmentation",
+    "classification",
+    "pose",
+    "oriented-bounding-box",
+}
 
 
 def conflict(message: str) -> HTTPException:
@@ -221,13 +231,15 @@ def create_dataset(
     project_id: UUID,
     payload: DatasetCreate,
 ) -> Dataset:
-    require_project(session, workspace_id, project_id)
+    project = require_project(session, workspace_id, project_id)
     existing = session.scalar(
         select(Dataset).where(Dataset.project_id == project_id, Dataset.name == payload.name)
     )
     if existing:
         raise conflict("Dataset name already exists in this project")
-    dataset = Dataset(project_id=project_id, **payload.model_dump())
+    values = payload.model_dump()
+    values["task_type"] = payload.task_type or project.task_type
+    dataset = Dataset(project_id=project_id, **values)
     session.add(dataset)
     session.flush()
     return dataset
@@ -281,6 +293,8 @@ def update_dataset_class_map(
     payload: DatasetClassMapUpdate,
 ) -> Dataset:
     dataset = require_dataset(session, workspace_id, dataset_id)
+    if dataset.task_type == "depth-estimation" and payload.class_map:
+        raise conflict("深度估计按像素输出深度值，不使用类别定义")
     if dataset.class_map == payload.class_map:
         return dataset
     has_annotations = session.scalar(
@@ -296,6 +310,37 @@ def update_dataset_class_map(
     if has_annotations or has_tasks:
         raise conflict("已有标注或标注任务，不能修改类别；请创建新的数据集继续标注")
     dataset.class_map = payload.class_map
+    session.flush()
+    return dataset
+
+
+def update_dataset_definition(
+    session: Session,
+    workspace_id: UUID,
+    dataset_id: UUID,
+    payload: DatasetDefinitionUpdate,
+) -> Dataset:
+    dataset = require_dataset(session, workspace_id, dataset_id)
+    if dataset.task_type == payload.task_type:
+        return dataset
+    has_annotations = session.scalar(
+        select(DatasetItem.id).where(
+            DatasetItem.dataset_id == dataset_id,
+            DatasetItem.item_role == "training_asset",
+            DatasetItem.annotation_uri.is_not(None),
+        ).limit(1)
+    )
+    has_tasks = session.scalar(
+        select(AnnotationTask.id).where(AnnotationTask.dataset_id == dataset_id).limit(1)
+    )
+    has_versions = session.scalar(
+        select(DatasetVersion.id).where(DatasetVersion.dataset_id == dataset_id).limit(1)
+    )
+    if has_annotations or has_tasks or has_versions:
+        raise conflict("已有标注、标注任务或固定版本，不能修改任务类型；请新建数据集")
+    dataset.task_type = payload.task_type
+    if payload.task_type == "depth-estimation":
+        dataset.class_map = {}
     session.flush()
     return dataset
 
@@ -779,10 +824,9 @@ def freeze_dataset(
     if not rows:
         raise conflict("Dataset must contain at least one asset before freezing")
 
-    project = session.get(Project, dataset.project_id)
-    if project is None:
-        raise not_found("Project")
-    if project.task_type == "object-detection":
+    if dataset.task_type in CLASS_BASED_DATASET_TASK_TYPES and not class_map:
+        raise conflict("当前任务类型至少需要定义一个类别")
+    if dataset.task_type == "object-detection":
         validate_detection_dataset(storage, rows, class_map)
 
     current_version = session.scalar(
@@ -812,6 +856,7 @@ def freeze_dataset(
         "workspace_id": str(workspace_id),
         "project_id": str(dataset.project_id),
         "dataset_id": str(dataset_id),
+        "task_type": dataset.task_type,
         "version": version_number,
         "created_at": datetime.now(UTC).isoformat(),
         "class_map": class_map,
@@ -829,6 +874,7 @@ def freeze_dataset(
         status="frozen",
         manifest_uri=manifest_uri,
         asset_count=len(assets),
+        task_type=dataset.task_type,
         class_map=class_map,
         frozen_at=datetime.now(UTC),
     )

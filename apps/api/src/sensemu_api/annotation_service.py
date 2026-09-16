@@ -28,7 +28,6 @@ from sensemu_api.db.models import (
     AnnotationTaskItem,
     Asset,
     DatasetItem,
-    Project,
     VideoExtractionJob,
     VideoExtractionOutput,
 )
@@ -121,8 +120,11 @@ def create_task(
         dataset,
         payload.class_map,
     )
-    project = session.get(Project, dataset.project_id)
-    if project is not None and project.task_type == "object-detection" and not class_map:
+    if dataset.task_type != "object-detection":
+        raise catalog_service.conflict(
+            "当前内置标注器仅支持目标检测；其他任务类型请导入兼容标注"
+        )
+    if not class_map:
         raise catalog_service.conflict("请先为数据集定义类别，再创建目标检测标注任务")
     if payload.method == "smart":
         raise HTTPException(
@@ -216,8 +218,11 @@ def create_task_from_video_extraction(
         dataset,
         payload.class_map,
     )
-    project = session.get(Project, dataset.project_id)
-    if project is not None and project.task_type == "object-detection" and not class_map:
+    if dataset.task_type != "object-detection":
+        raise catalog_service.conflict(
+            "当前内置标注器仅支持目标检测；其他任务类型请导入兼容标注"
+        )
+    if not class_map:
         raise catalog_service.conflict("请先为数据集定义类别，再创建目标检测标注任务")
 
     asset_ids = list(

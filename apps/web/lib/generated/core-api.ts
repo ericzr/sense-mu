@@ -296,6 +296,23 @@ export interface paths {
         patch: operations["update_dataset_class_map_api_v1_datasets__dataset_id__classes_patch"];
         trace?: never;
     };
+    "/api/v1/datasets/{dataset_id}/definition": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Dataset Definition */
+        patch: operations["update_dataset_definition_api_v1_datasets__dataset_id__definition_patch"];
+        trace?: never;
+    };
     "/api/v1/datasets/{dataset_id}/items/{asset_id}": {
         parameters: {
             query?: never;
@@ -2144,6 +2161,16 @@ export interface components {
             description?: string | null;
             /** Name */
             name: string;
+            /** Task Type */
+            task_type?: ("object-detection" | "instance-segmentation" | "semantic-segmentation" | "classification" | "pose" | "oriented-bounding-box" | "depth-estimation" | "ocr") | null;
+        };
+        /** DatasetDefinitionUpdate */
+        DatasetDefinitionUpdate: {
+            /**
+             * Task Type
+             * @enum {string}
+             */
+            task_type: "object-detection" | "instance-segmentation" | "semantic-segmentation" | "classification" | "pose" | "oriented-bounding-box" | "depth-estimation" | "ocr";
         };
         /** DatasetItemUpdate */
         DatasetItemUpdate: {
@@ -2183,6 +2210,8 @@ export interface components {
              * Format: uuid
              */
             project_id: string;
+            /** Task Type */
+            task_type: string;
             /**
              * Version Count
              * @default 0
@@ -2274,6 +2303,8 @@ export interface components {
             manifest_uri: string;
             /** Status */
             status: string;
+            /** Task Type */
+            task_type: string;
             /** Version Number */
             version_number: number;
         };
@@ -5058,6 +5089,44 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["DatasetClassMapUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DatasetResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_dataset_definition_api_v1_datasets__dataset_id__definition_patch: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Workspace-ID": string;
+                Authorization?: string | null;
+            };
+            path: {
+                dataset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DatasetDefinitionUpdate"];
             };
         };
         responses: {

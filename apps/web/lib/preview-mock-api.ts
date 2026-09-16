@@ -95,6 +95,7 @@ export const previewDatasets: Dataset[] = [
     project_id: "demo-project-ppe",
     name: "工地安全穿戴数据",
     description: "固定监控视角下的安全帽与反光衣样本。",
+    task_type: "object-detection",
     class_map: { "0": "人员", "1": "安全帽", "2": "反光衣" },
     created_at: "2026-08-06T03:20:00Z",
     asset_count: 12,
@@ -105,6 +106,7 @@ export const previewDatasets: Dataset[] = [
     project_id: "demo-project-defect",
     name: "金属表面缺陷数据",
     description: "产线相机采集的金属表面缺陷样本。",
+    task_type: "object-detection",
     class_map: { "0": "划痕", "1": "凹坑", "2": "脏污" },
     created_at: "2026-08-02T06:30:00Z",
     asset_count: 8,
@@ -148,6 +150,7 @@ const previewVersions: Record<string, DatasetVersion[]> = {
       status: "frozen",
       manifest_uri: "s3://sensemu-demo/ppe/versions/v3/manifest.json",
       asset_count: 12,
+      task_type: "object-detection",
       class_map: { "0": "人员", "1": "安全帽", "2": "反光衣" },
       frozen_at: "2026-08-16T08:30:00Z",
       created_at: "2026-08-16T08:30:00Z",
@@ -158,6 +161,7 @@ const previewVersions: Record<string, DatasetVersion[]> = {
       status: "frozen",
       manifest_uri: "s3://sensemu-demo/ppe/versions/v2/manifest.json",
       asset_count: 10,
+      task_type: "object-detection",
       class_map: { "0": "人员", "1": "安全帽", "2": "反光衣" },
       frozen_at: "2026-08-12T07:20:00Z",
       created_at: "2026-08-12T07:20:00Z",
@@ -168,6 +172,7 @@ const previewVersions: Record<string, DatasetVersion[]> = {
       status: "frozen",
       manifest_uri: "s3://sensemu-demo/ppe/versions/v1/manifest.json",
       asset_count: 8,
+      task_type: "object-detection",
       class_map: { "0": "人员", "1": "安全帽", "2": "反光衣" },
       frozen_at: "2026-08-08T06:10:00Z",
       created_at: "2026-08-08T06:10:00Z",
@@ -180,6 +185,7 @@ const previewVersions: Record<string, DatasetVersion[]> = {
       status: "frozen",
       manifest_uri: "s3://sensemu-demo/defect/versions/v2/manifest.json",
       asset_count: 8,
+      task_type: "object-detection",
       class_map: { "0": "划痕", "1": "凹坑", "2": "脏污" },
       frozen_at: "2026-08-13T05:30:00Z",
       created_at: "2026-08-13T05:30:00Z",
@@ -190,6 +196,7 @@ const previewVersions: Record<string, DatasetVersion[]> = {
       status: "frozen",
       manifest_uri: "s3://sensemu-demo/defect/versions/v1/manifest.json",
       asset_count: 6,
+      task_type: "object-detection",
       class_map: { "0": "划痕", "1": "凹坑", "2": "脏污" },
       frozen_at: "2026-08-06T04:20:00Z",
       created_at: "2026-08-06T04:20:00Z",
@@ -660,6 +667,23 @@ export function getPreviewMockResult(path: string, init: RequestInit = {}): Prev
   const method = (init.method ?? "GET").toUpperCase();
 
   if (method !== "GET") {
+    const datasetClasses = pathname.match(/^\/api\/v1\/datasets\/([^/]+)\/classes$/);
+    if (method === "PATCH" && datasetClasses) {
+      const dataset = previewDatasets.find((item) => item.id === datasetClasses[1]);
+      if (!dataset) return { handled: true, value: null };
+      const payload = typeof init.body === "string" ? JSON.parse(init.body) as { class_map?: Record<string, string> } : {};
+      dataset.class_map = payload.class_map ?? {};
+      return { handled: true, value: dataset };
+    }
+    const datasetDefinition = pathname.match(/^\/api\/v1\/datasets\/([^/]+)\/definition$/);
+    if (method === "PATCH" && datasetDefinition) {
+      const dataset = previewDatasets.find((item) => item.id === datasetDefinition[1]);
+      if (!dataset) return { handled: true, value: null };
+      const payload = typeof init.body === "string" ? JSON.parse(init.body) as { task_type?: string } : {};
+      if (payload.task_type) dataset.task_type = payload.task_type;
+      if (dataset.task_type === "depth-estimation") dataset.class_map = {};
+      return { handled: true, value: dataset };
+    }
     const projectStatusMatch = pathname.match(/^\/api\/v1\/projects\/([^/]+):(pause|resume)$/);
     if (projectStatusMatch) {
       const project = previewProjects.find((item) => item.id === projectStatusMatch[1]);

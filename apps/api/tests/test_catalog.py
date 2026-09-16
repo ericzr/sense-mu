@@ -1852,6 +1852,88 @@ def test_training_run_submission_is_persisted_idempotent_and_cancellable() -> No
     assert stale_acceptance_deployment.status_code == 409
 
 
+def test_dataset_task_type_is_explicit_versionable_and_locked_by_annotation_work() -> None:
+    workspace = client.post(
+        "/api/v1/workspaces",
+        json={"slug": "dataset-task-types", "name": "Dataset Task Types"},
+    ).json()
+    headers = {"X-Workspace-ID": workspace["id"]}
+    project = client.post(
+        "/api/v1/projects",
+        headers=headers,
+        json={
+            "slug": "dataset-task-type-project",
+            "name": "Dataset Task Type Project",
+            "task_type": "object-detection",
+        },
+    ).json()
+
+    segmentation = client.post(
+        f"/api/v1/projects/{project['id']}/datasets",
+        headers=headers,
+        json={"name": "segmentation", "task_type": "instance-segmentation"},
+    )
+    assert segmentation.status_code == 201
+    assert segmentation.json()["task_type"] == "instance-segmentation"
+    changed = client.patch(
+        f"/api/v1/datasets/{segmentation.json()['id']}/definition",
+        headers=headers,
+        json={"task_type": "semantic-segmentation"},
+    )
+    assert changed.status_code == 200
+    assert changed.json()["task_type"] == "semantic-segmentation"
+
+    detection = client.post(
+        f"/api/v1/projects/{project['id']}/datasets",
+        headers=headers,
+        json={"name": "detection"},
+    ).json()
+    assert detection["task_type"] == "object-detection"
+    saved_classes = client.patch(
+        f"/api/v1/datasets/{detection['id']}/classes",
+        headers=headers,
+        json={"class_map": {"0": "helmet"}},
+    )
+    assert saved_classes.status_code == 200
+    register_image(detection["id"], headers, checksum="9" * 64, filename="task-type.png")
+    task = client.post(
+        f"/api/v1/datasets/{detection['id']}/annotation-tasks",
+        headers=headers,
+        json={
+            "name": "Lock definition",
+            "method": "manual",
+            "asset_scope": "all",
+            "class_map": {"0": "helmet"},
+        },
+    )
+    assert task.status_code == 201
+    locked = client.patch(
+        f"/api/v1/datasets/{detection['id']}/definition",
+        headers=headers,
+        json={"task_type": "classification"},
+    )
+    assert locked.status_code == 409
+    assert "不能修改任务类型" in locked.json()["detail"]
+
+    depth = client.post(
+        f"/api/v1/projects/{project['id']}/datasets",
+        headers=headers,
+        json={"name": "depth"},
+    ).json()
+    client.patch(
+        f"/api/v1/datasets/{depth['id']}/classes",
+        headers=headers,
+        json={"class_map": {"0": "foreground"}},
+    )
+    depth_changed = client.patch(
+        f"/api/v1/datasets/{depth['id']}/definition",
+        headers=headers,
+        json={"task_type": "depth-estimation"},
+    )
+    assert depth_changed.status_code == 200
+    assert depth_changed.json()["class_map"] == {}
+
+
 def test_annotation_task_persists_asset_snapshot_and_progress() -> None:
     workspace_response = client.post(
         "/api/v1/workspaces",

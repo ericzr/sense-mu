@@ -1546,12 +1546,56 @@
             "minLength": 1,
             "title": "Name",
             "type": "string"
+          },
+          "task_type": {
+            "anyOf": [
+              {
+                "enum": [
+                  "object-detection",
+                  "instance-segmentation",
+                  "semantic-segmentation",
+                  "classification",
+                  "pose",
+                  "oriented-bounding-box",
+                  "depth-estimation",
+                  "ocr"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Type"
           }
         },
         "required": [
           "name"
         ],
         "title": "DatasetCreate",
+        "type": "object"
+      },
+      "DatasetDefinitionUpdate": {
+        "properties": {
+          "task_type": {
+            "enum": [
+              "object-detection",
+              "instance-segmentation",
+              "semantic-segmentation",
+              "classification",
+              "pose",
+              "oriented-bounding-box",
+              "depth-estimation",
+              "ocr"
+            ],
+            "title": "Task Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "task_type"
+        ],
+        "title": "DatasetDefinitionUpdate",
         "type": "object"
       },
       "DatasetItemUpdate": {
@@ -1616,6 +1660,10 @@
             "title": "Project Id",
             "type": "string"
           },
+          "task_type": {
+            "title": "Task Type",
+            "type": "string"
+          },
           "version_count": {
             "default": 0,
             "title": "Version Count",
@@ -1627,6 +1675,7 @@
           "project_id",
           "name",
           "description",
+          "task_type",
           "class_map",
           "created_at"
         ],
@@ -1853,6 +1902,10 @@
             "title": "Status",
             "type": "string"
           },
+          "task_type": {
+            "title": "Task Type",
+            "type": "string"
+          },
           "version_number": {
             "title": "Version Number",
             "type": "integer"
@@ -1865,6 +1918,7 @@
           "status",
           "manifest_uri",
           "asset_count",
+          "task_type",
           "class_map",
           "frozen_at",
           "created_at"
@@ -8537,6 +8591,85 @@
           }
         },
         "summary": "Update Dataset Class Map",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/api/v1/datasets/{dataset_id}/definition": {
+      "patch": {
+        "operationId": "update_dataset_definition_api_v1_datasets__dataset_id__definition_patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "dataset_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Dataset Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Workspace-ID",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "X-Workspace-Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DatasetDefinitionUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DatasetResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Dataset Definition",
         "tags": [
           "catalog"
         ]

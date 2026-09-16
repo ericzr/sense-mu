@@ -9,6 +9,18 @@ class ORMModel(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+DatasetTaskType = Literal[
+    "object-detection",
+    "instance-segmentation",
+    "semantic-segmentation",
+    "classification",
+    "pose",
+    "oriented-bounding-box",
+    "depth-estimation",
+    "ocr",
+]
+
+
 class WorkspaceCreate(BaseModel):
     slug: str = Field(pattern=r"^[a-z0-9][a-z0-9-]{2,79}$")
     name: str = Field(min_length=1, max_length=160)
@@ -49,6 +61,11 @@ class ProjectResponse(ORMModel):
 class DatasetCreate(BaseModel):
     name: str = Field(min_length=1, max_length=180)
     description: str | None = Field(default=None, max_length=2_000)
+    task_type: DatasetTaskType | None = None
+
+
+class DatasetDefinitionUpdate(BaseModel):
+    task_type: DatasetTaskType
 
 
 class DatasetResponse(ORMModel):
@@ -56,6 +73,7 @@ class DatasetResponse(ORMModel):
     project_id: UUID
     name: str
     description: str | None
+    task_type: str
     class_map: dict[str, str]
     created_at: datetime
     asset_count: int = 0
@@ -343,6 +361,7 @@ class DatasetVersionResponse(ORMModel):
     status: str
     manifest_uri: str
     asset_count: int
+    task_type: str
     class_map: dict[str, str]
     frozen_at: datetime | None
     created_at: datetime

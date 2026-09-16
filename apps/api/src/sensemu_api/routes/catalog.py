@@ -19,6 +19,7 @@ from sensemu_api.catalog_schemas import (
     AssetResponse,
     DatasetClassMapUpdate,
     DatasetCreate,
+    DatasetDefinitionUpdate,
     DatasetItemUpdate,
     DatasetResponse,
     DatasetVersionQualityReport,
@@ -179,6 +180,23 @@ def update_dataset_class_map(
 ) -> DatasetResponse:
     return DatasetResponse.model_validate(
         catalog_service.update_dataset_class_map(
+            session,
+            workspace_id,
+            dataset_id,
+            payload,
+        )
+    )
+
+
+@router.patch("/datasets/{dataset_id}/definition", response_model=DatasetResponse)
+def update_dataset_definition(
+    dataset_id: UUID,
+    payload: DatasetDefinitionUpdate,
+    workspace_id: WorkspaceId,
+    session: SessionDep,
+) -> DatasetResponse:
+    return DatasetResponse.model_validate(
+        catalog_service.update_dataset_definition(
             session,
             workspace_id,
             dataset_id,

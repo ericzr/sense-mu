@@ -120,7 +120,8 @@ def create_training_run(
         project_id,
         payload.dataset_version_id,
     )
-    if project.task_type == "object-detection":
+    task_type = version.task_type
+    if task_type == "object-detection":
         try:
             manifest = storage.get_json(version.manifest_uri)
         except (OSError, ValueError, KeyError) as error:
@@ -142,9 +143,9 @@ def create_training_run(
         raise unprocessable(str(error)) from error
     if payload.executor not in SUPPORTED_EXECUTORS:
         raise unprocessable(f"不支持的执行器：{payload.executor}")
-    if project.task_type not in adapter.descriptor.task_types:
+    if task_type not in adapter.descriptor.task_types:
         raise unprocessable(
-            f"训练引擎 {payload.engine} 不支持项目任务类型 {project.task_type}"
+            f"训练引擎 {payload.engine} 不支持数据版本任务类型 {task_type}"
         )
 
     existing = session.scalar(
@@ -173,12 +174,13 @@ def create_training_run(
         "project_id": str(project_id),
         "project": {
             "name": project.name,
-            "task_type": project.task_type,
+            "task_type": task_type,
         },
         "dataset_version": {
             "id": str(version.id),
             "manifest_uri": version.manifest_uri,
             "asset_count": version.asset_count,
+            "task_type": task_type,
         },
         "engine": payload.engine,
         "executor": payload.executor,
@@ -690,6 +692,8 @@ def complete_training_run(
     project = session.get(Project, run.project_id)
     if project is None:
         raise conflict("训练任务所属项目不存在")
+    dataset_version = session.get(DatasetVersion, run.dataset_version_id)
+    task_type = dataset_version.task_type if dataset_version is not None else project.task_type
     model = session.scalar(
         select(Model)
         .where(Model.project_id == project.id, Model.name == completion.model_name)
@@ -699,7 +703,7 @@ def complete_training_run(
         model = Model(
             project_id=project.id,
             name=completion.model_name,
-            task_type=project.task_type,
+            task_type=task_type,
         )
         session.add(model)
         session.flush()

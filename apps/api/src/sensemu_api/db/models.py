@@ -196,6 +196,12 @@ class Dataset(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
     name: Mapped[str] = mapped_column(String(180), nullable=False)
     description: Mapped[str | None] = mapped_column(Text)
+    task_type: Mapped[str] = mapped_column(
+        String(40),
+        nullable=False,
+        default="object-detection",
+        server_default="object-detection",
+    )
     class_map: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
 
 
@@ -237,6 +243,12 @@ class DatasetVersion(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="draft")
     manifest_uri: Mapped[str] = mapped_column(Text, nullable=False)
     asset_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    task_type: Mapped[str] = mapped_column(
+        String(40),
+        nullable=False,
+        default="object-detection",
+        server_default="object-detection",
+    )
     class_map: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
     frozen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 

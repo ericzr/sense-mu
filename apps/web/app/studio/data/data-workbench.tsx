@@ -4,6 +4,7 @@ import {
   AlertCircle,
   ArrowUpRight,
   BarChart3,
+  Box,
   Check,
   ChevronRight,
   Cpu,
@@ -12,14 +13,22 @@ import {
   FileImage,
   Film,
   Grid2X2,
+  Layers3,
   LoaderCircle,
   LockKeyhole,
   List,
   ListChecks,
+  Mountain,
+  PersonStanding,
   Plus,
   RefreshCw,
+  RotateCw,
+  ScanText,
   Search,
+  Settings2,
   Sparkles,
+  Tag,
+  Trash2,
   Video,
   UploadCloud,
   X,
@@ -47,10 +56,68 @@ type DataView = "assets" | "annotation" | "classes" | "models" | "versions";
 const taskTypeLabels: Record<string, string> = {
   "object-detection": "目标检测",
   classification: "图像分类",
-  segmentation: "图像分割",
+  segmentation: "实例分割",
+  "instance-segmentation": "实例分割",
+  "semantic-segmentation": "语义分割",
   pose: "姿态估计",
+  "oriented-bounding-box": "旋转框检测",
+  "depth-estimation": "深度估计",
   ocr: "文字识别",
 };
+
+const datasetTaskTypes = [
+  { id: "object-detection", label: "目标检测", description: "用矩形框定位对象", support: "内置标注" },
+  { id: "instance-segmentation", label: "实例分割", description: "逐个对象绘制掩码", support: "可导入" },
+  { id: "semantic-segmentation", label: "语义分割", description: "按类别标记每个像素", support: "可导入" },
+  { id: "classification", label: "图像分类", description: "为整张图像分配类别", support: "可导入" },
+  { id: "pose", label: "姿态估计", description: "标注对象关键点", support: "可导入" },
+  { id: "oriented-bounding-box", label: "旋转框检测", description: "用带方向的框定位对象", support: "可导入" },
+  { id: "depth-estimation", label: "深度估计", description: "逐像素估计距离", support: "可导入" },
+  { id: "ocr", label: "文字识别", description: "定位并转写图像文字", support: "可导入" },
+] as const;
+
+function taskUsesClasses(taskType: string): boolean {
+  return taskType !== "depth-estimation";
+}
+
+function TaskTypeIcon({ taskType, size = 18 }: { taskType: string; size?: number }) {
+  if (taskType === "object-detection") return <Box size={size} />;
+  if (taskType === "instance-segmentation" || taskType === "semantic-segmentation") return <Layers3 size={size} />;
+  if (taskType === "classification") return <Tag size={size} />;
+  if (taskType === "pose") return <PersonStanding size={size} />;
+  if (taskType === "oriented-bounding-box") return <RotateCw size={size} />;
+  if (taskType === "depth-estimation") return <Mountain size={size} />;
+  return <ScanText size={size} />;
+}
+
+function TaskTypePicker({
+  value,
+  onChange,
+  disabled = false,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="dataset-task-type-grid">
+      {datasetTaskTypes.map((taskType) => (
+        <button
+          type="button"
+          key={taskType.id}
+          className={value === taskType.id ? "is-active" : ""}
+          aria-pressed={value === taskType.id}
+          disabled={disabled}
+          onClick={() => onChange(taskType.id)}
+        >
+          <span className="dataset-task-type-icon"><TaskTypeIcon taskType={taskType.id} /></span>
+          <span><strong>{taskType.label}</strong><small>{taskType.description}</small></span>
+          <em>{taskType.support}</em>
+        </button>
+      ))}
+    </div>
+  );
+}
 
 const splitLabels: Record<string, string> = {
   train: "训练集",
@@ -195,7 +262,10 @@ export function DataWorkbench() {
   const [workspaceName, setWorkspaceName] = useState("SenseMu 实验室");
   const [projectName, setProjectName] = useState("PPE 安全检测");
   const [datasetName, setDatasetName] = useState("ppe_site_a");
-  const [classNames, setClassNames] = useState("");
+  const [newDatasetTaskType, setNewDatasetTaskType] = useState("object-detection");
+  const [pendingTaskType, setPendingTaskType] = useState("object-detection");
+  const [taskTypeDialogOpen, setTaskTypeDialogOpen] = useState(false);
+  const [classRows, setClassRows] = useState<Array<{ id: string; name: string }>>([]);
   const [projectCreationOpen, setProjectCreationOpen] = useState(requestedProjectCreation);
   const [datasetCreationOpen, setDatasetCreationOpen] = useState(requestedDatasetCreation);
   const [activeView, setActiveView] = useState<DataView>(initialView);
@@ -302,12 +372,12 @@ export function DataWorkbench() {
     setDatasets(nextDatasets);
     const refreshedDataset = nextDatasets.find((item) => item.id === selected.id) ?? selected;
     setDataset(refreshedDataset);
-    setClassNames(
+    setClassRows(
       Object.entries(refreshedDataset.class_map ?? {})
         .sort(([left], [right]) => Number(left) - Number(right))
-        .map(([, name]) => name)
-        .join("\n"),
+        .map(([id, name]) => ({ id, name })),
     );
+    setPendingTaskType(refreshedDataset.task_type);
     setSourceVideos(nextSourceVideos);
     setExtractionJobs(nextExtractions);
   }
@@ -340,13 +410,16 @@ export function DataWorkbench() {
   }, [datasetId, requestedVersionId, workspaceId]);
 
   useEffect(() => {
-    setClassNames(
+    setClassRows(
       Object.entries(datasetClassMap ?? {})
         .sort(([left], [right]) => Number(left) - Number(right))
-        .map(([, name]) => name)
-        .join("\n"),
+        .map(([id, name]) => ({ id, name })),
     );
   }, [datasetClassMap]);
+
+  useEffect(() => {
+    if (dataset?.task_type) setPendingTaskType(dataset.task_type);
+  }, [dataset?.task_type]);
 
   useEffect(() => {
     if (!workspaceId || !datasetId) return;
@@ -443,6 +516,7 @@ export function DataWorkbench() {
     try {
       const created = await catalogApi.createDataset(workspace.id, project.id, {
         name: datasetName,
+        task_type: newDatasetTaskType,
       });
       setDatasets([created, ...datasets]);
       setDataset(created);
@@ -559,7 +633,7 @@ export function DataWorkbench() {
   async function createAnnotationTask(event: FormEvent) {
     event.preventDefault();
     if (!workspace || !dataset) return;
-    if (requiresYolo && classMapChanged) {
+    if (usesClasses && (classMapChanged || hasInvalidClassName)) {
       setError("请先保存类别定义，再创建标注任务");
       return;
     }
@@ -604,7 +678,7 @@ export function DataWorkbench() {
 
   async function createAnnotationTaskFromExtraction(job: VideoExtractionJob) {
     if (!workspace || !dataset || job.status !== "succeeded") return;
-    if (requiresYolo && classMapChanged) {
+    if (usesClasses && (classMapChanged || hasInvalidClassName)) {
       setError("请先保存类别定义，再创建标注任务");
       return;
     }
@@ -631,7 +705,7 @@ export function DataWorkbench() {
 
   async function freezeVersion() {
     if (!workspace || !dataset) return;
-    if (requiresYolo && classMapChanged) {
+    if (usesClasses && (classMapChanged || hasInvalidClassName)) {
       setError("请先保存类别定义，再生成数据版本");
       return;
     }
@@ -650,7 +724,7 @@ export function DataWorkbench() {
   }
 
   async function saveClassMap() {
-    if (!workspace || !dataset || !classMapChanged) return;
+    if (!workspace || !dataset || !classMapChanged || hasInvalidClassName) return;
     setBusy(true);
     setError(null);
     try {
@@ -663,6 +737,51 @@ export function DataWorkbench() {
     } finally {
       setBusy(false);
     }
+  }
+
+  async function saveDatasetTaskType() {
+    if (!workspace || !dataset || pendingTaskType === dataset.task_type) {
+      setTaskTypeDialogOpen(false);
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      const updated = await catalogApi.updateDatasetDefinition(
+        workspace.id,
+        dataset.id,
+        pendingTaskType,
+      );
+      const merged = {
+        ...dataset,
+        ...updated,
+        asset_count: dataset.asset_count,
+        version_count: dataset.version_count,
+      };
+      setDataset(merged);
+      setDatasets((current) => current.map((item) => (item.id === merged.id ? merged : item)));
+      if (!taskUsesClasses(merged.task_type)) setClassRows([]);
+      setTaskTypeDialogOpen(false);
+      setNotice(`任务类型已更新为${taskTypeLabels[merged.task_type] ?? merged.task_type}`);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "任务类型更新失败");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function addClassRow() {
+    setClassRows((current) => [...current, { id: String(current.length), name: "" }]);
+  }
+
+  function updateClassRow(index: number, name: string) {
+    setClassRows((current) => current.map((item, rowIndex) => rowIndex === index ? { ...item, name } : item));
+  }
+
+  function removeClassRow(index: number) {
+    setClassRows((current) => current
+      .filter((_, rowIndex) => rowIndex !== index)
+      .map((item, rowIndex) => ({ ...item, id: String(rowIndex) })));
   }
 
   async function updateSplit(asset: Asset, split: "train" | "valid" | "test") {
@@ -729,11 +848,9 @@ export function DataWorkbench() {
     }
   }
 
-  const parsedClassNames = classNames
-    .split(/[\n,，]/)
-    .map((name) => name.trim())
-    .filter(Boolean);
-  const classMap = Object.fromEntries(parsedClassNames.map((name, index) => [String(index), name]));
+  const parsedClassNames = classRows.map((item) => item.name.trim()).filter(Boolean);
+  const hasInvalidClassName = classRows.some((item) => !item.name.trim());
+  const classMap = Object.fromEntries(classRows.map((item, index) => [String(index), item.name.trim()]));
   const classMapChanged = !classMapsEqual(classMap, dataset?.class_map ?? {});
   const annotatedCount = assets.filter((item) => item.annotation_uri).length;
   const totalBytes = assets.reduce((sum, item) => sum + item.byte_size, 0);
@@ -766,7 +883,11 @@ export function DataWorkbench() {
   const assignedCount = assets.filter((item) => item.split).length;
   const hasTrain = assets.some((item) => item.split === "train");
   const hasValid = assets.some((item) => item.split === "valid");
-  const requiresYolo = project?.task_type === "object-detection";
+  const activeTaskType = dataset?.task_type ?? project?.task_type ?? "object-detection";
+  const requiresYolo = activeTaskType === "object-detection";
+  const supportsBuiltInAnnotation = activeTaskType === "object-detection";
+  const usesClasses = taskUsesClasses(activeTaskType);
+  const datasetDefinitionLocked = annotatedCount > 0 || annotationTasks.length > 0 || versions.length > 0;
   const pendingAnnotationTasks = annotationTasks.filter((item) => item.status !== "done");
   const trainingHref = project
     ? selectedVersion
@@ -775,8 +896,8 @@ export function DataWorkbench() {
     : "/studio/training";
   const freezeBlockers = [
     assets.length === 0 ? "请先导入图片" : null,
-    requiresYolo && parsedClassNames.length === 0 ? "请定义类别" : null,
-    requiresYolo && classMapChanged ? "请先保存类别" : null,
+    usesClasses && parsedClassNames.length === 0 ? "请定义类别" : null,
+    usesClasses && (classMapChanged || hasInvalidClassName) ? "请先保存类别" : null,
     requiresYolo && assignedCount !== assets.length ? "仍有图片未划分" : null,
     requiresYolo && !hasTrain ? "缺少训练集" : null,
     requiresYolo && !hasValid ? "缺少验证集" : null,
@@ -856,13 +977,11 @@ export function DataWorkbench() {
             busy={busy}
           />
         ) : !dataset || datasetCreationOpen ? (
-          <SetupForm
-            eyebrow="首个数据集"
-            title="创建数据集"
-            description="数据集首先是可变草稿，冻结后才会形成不可变训练版本。"
-            label="数据集名称"
-            value={datasetName}
-            onChange={setDatasetName}
+          <DatasetSetupForm
+            name={datasetName}
+            onNameChange={setDatasetName}
+            taskType={newDatasetTaskType}
+            onTaskTypeChange={setNewDatasetTaskType}
             onSubmit={createDataset}
             busy={busy}
           />
@@ -881,10 +1000,21 @@ export function DataWorkbench() {
               <div className="dataset-object-copy">
                 <div className="dataset-object-title-row">
                   <h1>{dataset.name}</h1>
-                  <span className="dataset-task-type">{taskTypeLabels[project.task_type] ?? project.task_type}</span>
+                  <button
+                    type="button"
+                    className="dataset-task-type dataset-task-type-button"
+                    onClick={() => {
+                      setPendingTaskType(activeTaskType);
+                      setTaskTypeDialogOpen(true);
+                    }}
+                  >
+                    <TaskTypeIcon taskType={activeTaskType} size={13} />
+                    {taskTypeLabels[activeTaskType] ?? activeTaskType}
+                    <Settings2 size={12} aria-hidden="true" />
+                  </button>
                   <span className={`dataset-object-state${versions.length ? " is-ready" : ""}`}><i />{versions.length ? "已就绪" : "草稿"}</span>
                 </div>
-                <p>{dataset.description || `${project.name} 的${taskTypeLabels[project.task_type] ?? project.task_type}数据集`}</p>
+                <p>{dataset.description || `${project.name} 的${taskTypeLabels[activeTaskType] ?? activeTaskType}数据集`}</p>
                 <div className="dataset-object-meta" aria-label="数据集统计">
                   <span><FileImage size={13} />{assets.length.toLocaleString("zh-CN")} 个素材</span>
                   <span><FileCheck2 size={13} />{annotatedCount.toLocaleString("zh-CN")} 个已标注</span>
@@ -913,7 +1043,7 @@ export function DataWorkbench() {
             <nav className="dataset-view-tabs" aria-label="数据集视图">
               <button type="button" className={activeView === "assets" ? "is-active" : ""} onClick={() => setActiveView("assets")}>素材 <span>{assets.length}</span></button>
               <button type="button" className={activeView === "annotation" ? "is-active" : ""} onClick={() => setActiveView("annotation")}>标注任务 <span>{annotationTasks.length}</span></button>
-              <button type="button" className={activeView === "classes" ? "is-active" : ""} onClick={() => setActiveView("classes")}>类别与统计 <span>{parsedClassNames.length}</span></button>
+              <button type="button" className={activeView === "classes" ? "is-active" : ""} onClick={() => setActiveView("classes")}>类别 <span>{parsedClassNames.length}</span></button>
               <button type="button" className={activeView === "models" ? "is-active" : ""} onClick={() => setActiveView("models")}>模型 <span>{modelVersions.length}</span></button>
               <button type="button" className={activeView === "versions" ? "is-active" : ""} onClick={() => setActiveView("versions")}>版本 <span>{versions.length}</span></button>
             </nav>
@@ -1040,9 +1170,15 @@ export function DataWorkbench() {
             {activeView === "annotation" ? (
               <article className="panel annotation-tasks-card">
                 <div className="annotation-tasks-heading">
-                  <div><h3>标注任务</h3><p>把一批素材分给手动标注或智能预标注，再统一检查。</p></div>
-                  <button className="primary-button" type="button" onClick={openAnnotationTaskDialog}><Plus size={14} />新建任务</button>
+                  <div><h3>标注任务</h3><p>任务沿用数据集的任务类型和类别定义，创建后保持固定。</p></div>
+                  <button className="primary-button" type="button" disabled={!supportsBuiltInAnnotation} title={supportsBuiltInAnnotation ? undefined : "当前内置标注器仅支持目标检测"} onClick={openAnnotationTaskDialog}><Plus size={14} />新建任务</button>
                 </div>
+                {!supportsBuiltInAnnotation ? (
+                  <div className="annotation-compatibility-note">
+                    <AlertCircle size={15} />
+                    <span><strong>{taskTypeLabels[activeTaskType] ?? activeTaskType}暂未接入内置编辑器</strong><small>当前先维护数据契约和类别；标注格式适配完成后开放创建任务。</small></span>
+                  </div>
+                ) : null}
                 <div className="annotation-summary-strip">
                   <div><span>标注中</span><strong>{annotationSummary.annotating}</strong></div>
                   <div><span>待检查</span><strong>{annotationSummary.review}</strong></div>
@@ -1071,16 +1207,41 @@ export function DataWorkbench() {
                   <div><span className="dataset-insights-icon"><BarChart3 size={17} /></span><span><h3>类别与标注统计</h3><p>快速判断类别分布和标注覆盖是否适合训练。</p></span></div>
                   {selectedVersion ? <span className="immutable-chip"><LockKeyhole size={12} />版本 {selectedVersion.version_number}</span> : <span className="immutable-chip">当前草稿</span>}
                 </div>
-                {requiresYolo ? (
-                  <div className="dataset-class-editor">
-                    <label className="class-map-field">
+                {usesClasses ? (
+                  <div className="dataset-class-editor is-structured">
+                    <div className="dataset-class-editor-heading">
                       <span className="readiness-icon"><ListChecks size={15} /></span>
-                      <span className="class-map-copy"><strong>类别定义</strong><small>{classMapChanged ? "有未保存改动" : "已保存，编号从 0 开始"}</small></span>
-                      <textarea value={classNames} onChange={(event) => setClassNames(event.target.value)} placeholder={"安全帽\n反光衣"} rows={3} disabled={busy} />
-                    </label>
-                    <button className="secondary-button" type="button" disabled={busy || !classMapChanged} onClick={() => void saveClassMap()}><Check size={13} />保存类别</button>
+                      <span><strong>类别定义</strong><small>类别编号写入标注文件，创建任务后不再改变。</small></span>
+                      <span className={classMapChanged ? "class-state is-dirty" : "class-state"}>{classMapChanged ? "未保存" : "已同步"}</span>
+                    </div>
+                    {datasetDefinitionLocked ? (
+                      <div className="dataset-definition-lock-note"><LockKeyhole size={14} /><span><strong>类别已锁定</strong><small>已有标注任务、标注内容或固定版本。新类别请在新数据集中定义，避免历史编号错位。</small></span></div>
+                    ) : null}
+                    <div className="dataset-class-editor-list">
+                      {classRows.map((item, index) => (
+                        <div className="dataset-class-editor-row" key={item.id}>
+                          <span className={`class-color color-${index % 3}`} aria-hidden="true" />
+                          <span className="class-id">{index}</span>
+                          <input
+                            value={item.name}
+                            aria-label={`类别 ${index} 名称`}
+                            placeholder={index === 0 ? "例如：安全帽" : "类别名称"}
+                            disabled={busy || datasetDefinitionLocked}
+                            onChange={(event) => updateClassRow(index, event.target.value)}
+                          />
+                          <button type="button" aria-label={`删除类别 ${index}`} disabled={busy || datasetDefinitionLocked} onClick={() => removeClassRow(index)}><Trash2 size={14} /></button>
+                        </div>
+                      ))}
+                      {!classRows.length ? <div className="dataset-class-editor-empty"><Tag size={16} /><span>还没有类别。先添加业务中需要识别的对象。</span></div> : null}
+                    </div>
+                    <div className="dataset-class-editor-actions">
+                      <button className="secondary-button" type="button" disabled={busy || datasetDefinitionLocked} onClick={addClassRow}><Plus size={13} />添加类别</button>
+                      <button className="primary-button" type="button" disabled={busy || datasetDefinitionLocked || !classMapChanged || hasInvalidClassName} onClick={() => void saveClassMap()}><Check size={13} />保存类别</button>
+                    </div>
                   </div>
-                ) : null}
+                ) : (
+                  <div className="dataset-classless-note"><Mountain size={17} /><span><strong>深度估计不使用类别</strong><small>该任务输出每个像素的深度值，数据版本只固定深度标注规范。</small></span></div>
+                )}
                 <div className="dataset-insight-summary">
                   <div><span>标注覆盖</span><strong>{visibleQualityReport ? `${visibleQualityReport.annotation_coverage_percent}%` : assets.length ? `${Math.round((annotatedCount / assets.length) * 100)}%` : "—"}</strong></div>
                   <div><span>类别</span><strong>{visibleQualityReport?.class_distribution.length ?? parsedClassNames.length}</strong></div>
@@ -1134,7 +1295,7 @@ export function DataWorkbench() {
 
             {activeView === "versions" ? (
               <>
-                {requiresYolo ? (
+                {usesClasses ? (
                   <div className="dataset-readiness-grid version-readiness-grid">
                     <div className="class-map-saved-state"><span className="readiness-icon"><ListChecks size={15} /></span><span><strong>类别</strong><small>{dataset?.class_map && Object.keys(dataset.class_map).length ? `${Object.keys(dataset.class_map).length} 个类别已保存` : "尚未定义类别"}</small></span></div>
                     <div className={`freeze-readiness ${freezeBlockers.length ? "is-blocked" : "is-ready"}`}>
@@ -1182,16 +1343,36 @@ export function DataWorkbench() {
         </div>
       ) : null}
 
+      {taskTypeDialogOpen && dataset ? (
+        <div className="workbench-dialog-backdrop" role="presentation">
+          <div className="workbench-dialog dataset-task-type-dialog" role="dialog" aria-modal="true" aria-labelledby="dataset-task-type-title">
+            <div className="dialog-heading"><div><span className="dialog-icon"><Settings2 size={18} /></span><span><h2 id="dataset-task-type-title">数据集任务类型</h2><p>任务类型决定标注结构、质量检查和可用训练引擎。</p></span></div><button type="button" onClick={() => setTaskTypeDialogOpen(false)} aria-label="关闭">×</button></div>
+            {datasetDefinitionLocked ? (
+              <div className="dataset-task-type-warning"><AlertCircle size={16} /><span><strong>当前任务类型已锁定</strong><small>已有标注任务、标注内容或固定版本。为保护历史数据，请新建数据集后选择其他类型。</small></span></div>
+            ) : (
+              <div className="dataset-task-type-warning is-neutral"><AlertCircle size={16} /><span><strong>修改前请确认标注格式</strong><small>不同任务类型的标注互不兼容；保存后会以数据集定义为准。</small></span></div>
+            )}
+            <TaskTypePicker value={pendingTaskType} onChange={setPendingTaskType} disabled={datasetDefinitionLocked || busy} />
+            <div className="dialog-actions"><button className="secondary-button" type="button" onClick={() => setTaskTypeDialogOpen(false)}>取消</button><button className="primary-button" type="button" disabled={busy || datasetDefinitionLocked || pendingTaskType === dataset.task_type} onClick={() => void saveDatasetTaskType()}>保存任务类型</button></div>
+          </div>
+        </div>
+      ) : null}
+
       {taskDialogOpen ? (
         <div className="workbench-dialog-backdrop" role="presentation">
           <form className="workbench-dialog annotation-task-dialog" role="dialog" aria-modal="true" aria-labelledby="task-dialog-title" onSubmit={createAnnotationTask}>
             <div className="dialog-heading"><div><span className="dialog-icon"><FileCheck2 size={18} /></span><span><h2 id="task-dialog-title">新建标注任务</h2><p>创建后，素材会固定在任务中。</p></span></div><button type="button" onClick={() => setTaskDialogOpen(false)} aria-label="关闭">×</button></div>
+            <div className="annotation-task-definition">
+              <span className="dataset-task-type-icon"><TaskTypeIcon taskType={activeTaskType} /></span>
+              <span><strong>{taskTypeLabels[activeTaskType] ?? activeTaskType}</strong><small>{parsedClassNames.length ? `${parsedClassNames.length} 个类别：${parsedClassNames.slice(0, 3).join("、")}${parsedClassNames.length > 3 ? "…" : ""}` : "尚未定义类别"}</small></span>
+              <button type="button" onClick={() => { setTaskDialogOpen(false); setActiveView("classes"); }}>管理类别</button>
+            </div>
             <div className="dialog-fields">
               <label><span>任务名称</span><input value={taskName} onChange={(event) => setTaskName(event.target.value)} required /></label>
               <label><span>素材范围</span><select value={taskAssetScope} onChange={(event) => setTaskAssetScope(event.target.value as "unlabeled" | "all")}><option value="unlabeled">全部未标注素材</option><option value="all">全部素材</option></select></label>
             </div>
             <fieldset className="annotation-method-picker"><legend>标注方式</legend><button type="button" className="is-active" onClick={() => setTaskMethod("manual")}><FileCheck2 size={17} /><span><strong>手动标注</strong><small>逐张绘制并确认标注</small></span></button><button type="button" className="is-disabled" disabled><Sparkles size={17} /><span><strong>智能预标注</strong><small>尚未接入真实模型</small></span></button></fieldset>
-            <div className="dialog-actions"><button className="secondary-button" type="button" onClick={() => setTaskDialogOpen(false)}>取消</button><button className="primary-button" type="submit">创建任务</button></div>
+            <div className="dialog-actions"><button className="secondary-button" type="button" onClick={() => setTaskDialogOpen(false)}>取消</button><button className="primary-button" type="submit" disabled={!parsedClassNames.length || classMapChanged}>创建任务</button></div>
           </form>
         </div>
       ) : null}
@@ -1248,6 +1429,45 @@ function DatasetQualityCard({
           {report.advisories.length ? <div className="quality-advisories"><AlertCircle size={15} aria-hidden="true" /><div>{report.advisories.map((advisory) => <p key={advisory}>{advisory}</p>)}</div></div> : null}
         </div>
       )}
+    </article>
+  );
+}
+
+function DatasetSetupForm({
+  name,
+  onNameChange,
+  taskType,
+  onTaskTypeChange,
+  onSubmit,
+  busy,
+}: {
+  name: string;
+  onNameChange: (value: string) => void;
+  taskType: string;
+  onTaskTypeChange: (value: string) => void;
+  onSubmit: (event: FormEvent) => Promise<void>;
+  busy: boolean;
+}) {
+  return (
+    <article className="panel setup-card dataset-setup-card">
+      <span className="setup-icon"><Database size={19} /></span>
+      <span className="eyebrow">首个数据集</span>
+      <h2>创建数据集</h2>
+      <p>先确定任务类型和标注结构；冻结版本后，这些定义会随版本保持不变。</p>
+      <form onSubmit={(event) => void onSubmit(event)}>
+        <label>
+          <span>数据集名称</span>
+          <input value={name} onChange={(event) => onNameChange(event.target.value)} required />
+        </label>
+        <fieldset className="dataset-setup-task-types">
+          <legend>任务类型</legend>
+          <TaskTypePicker value={taskType} onChange={onTaskTypeChange} disabled={busy} />
+        </fieldset>
+        <button className="primary-button" type="submit" disabled={busy}>
+          {busy ? <LoaderCircle size={14} className="spinner" /> : <Plus size={14} />}
+          创建并继续
+        </button>
+      </form>
     </article>
   );
 }
