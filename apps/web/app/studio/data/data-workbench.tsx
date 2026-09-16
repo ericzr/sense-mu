@@ -5,6 +5,7 @@ import {
   ArrowUpRight,
   BarChart3,
   Box,
+  Cloud,
   Check,
   ChevronRight,
   Cpu,
@@ -13,6 +14,9 @@ import {
   FileImage,
   Film,
   Grid2X2,
+  Globe2,
+  HardDrive,
+  Link2,
   Layers3,
   LoaderCircle,
   LockKeyhole,
@@ -33,7 +37,7 @@ import {
   UploadCloud,
   X,
 } from "lucide-react";
-import { type ChangeEvent, type FormEvent, useEffect, useState } from "react";
+import { type ChangeEvent, type DragEvent, type FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { DynamicAssetImage } from "../../components/dynamic-asset-image";
@@ -52,6 +56,7 @@ import {
 
 type ConnectionState = "loading" | "online" | "offline";
 type DataView = "assets" | "annotation" | "classes" | "models" | "versions";
+type DatasetSourceMode = "upload" | "url" | "cloud" | "on-premise";
 
 const taskTypeLabels: Record<string, string> = {
   "object-detection": "目标检测",
@@ -262,7 +267,11 @@ export function DataWorkbench() {
   const [workspaceName, setWorkspaceName] = useState("SenseMu 实验室");
   const [projectName, setProjectName] = useState("PPE 安全检测");
   const [datasetName, setDatasetName] = useState("ppe_site_a");
+  const [datasetDescription, setDatasetDescription] = useState("");
   const [newDatasetTaskType, setNewDatasetTaskType] = useState("object-detection");
+  const [datasetSourceMode, setDatasetSourceMode] = useState<DatasetSourceMode>("upload");
+  const [datasetSourceFiles, setDatasetSourceFiles] = useState<File[]>([]);
+  const [datasetSourceUrl, setDatasetSourceUrl] = useState("");
   const [pendingTaskType, setPendingTaskType] = useState("object-detection");
   const [taskTypeDialogOpen, setTaskTypeDialogOpen] = useState(false);
   const [classRows, setClassRows] = useState<Array<{ id: string; name: string }>>([]);
@@ -271,6 +280,7 @@ export function DataWorkbench() {
   const [activeView, setActiveView] = useState<DataView>(initialView);
   const [videoDialogOpen, setVideoDialogOpen] = useState(false);
   const [pendingVideo, setPendingVideo] = useState<File | null>(null);
+  const [pendingVideos, setPendingVideos] = useState<File[]>([]);
   const [frameInterval, setFrameInterval] = useState(1);
   const [sourceVideos, setSourceVideos] = useState<Asset[]>([]);
   const [extractionJobs, setExtractionJobs] = useState<VideoExtractionJob[]>([]);
@@ -511,17 +521,33 @@ export function DataWorkbench() {
   async function createDataset(event: FormEvent) {
     event.preventDefault();
     if (!workspace || !project) return;
+    if (datasetSourceMode !== "upload") {
+      setError("当前数据源尚未接入，请先选择上传素材");
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
       const created = await catalogApi.createDataset(workspace.id, project.id, {
         name: datasetName,
         task_type: newDatasetTaskType,
+        description: datasetDescription.trim() || undefined,
       });
       setDatasets([created, ...datasets]);
       setDataset(created);
       setDatasetCreationOpen(false);
-      setNotice("数据集已创建");
+      const imageFiles = datasetSourceFiles.filter((file) => file.type.startsWith("image/"));
+      const videoFiles = datasetSourceFiles.filter((file) => file.type.startsWith("video/"));
+      setDatasetSourceFiles([]);
+      setDatasetDescription("");
+      setNotice(imageFiles.length ? "数据集已创建，正在导入素材" : "数据集已创建");
+      if (imageFiles.length) await uploadImageFiles(imageFiles, created);
+      if (videoFiles.length) {
+        setPendingVideos(videoFiles);
+        setPendingVideo(videoFiles[0]);
+        setVideoDialogOpen(true);
+        setNotice(`数据集已创建，请配置第 1 / ${videoFiles.length} 个视频的抽帧`);
+      }
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "数据集创建失败");
     } finally {
@@ -529,8 +555,8 @@ export function DataWorkbench() {
     }
   }
 
-  async function uploadImageFiles(files: File[]) {
-    if (!workspace || !dataset || files.length === 0) return;
+  async function uploadImageFiles(files: File[], targetDataset: Dataset | null = dataset) {
+    if (!workspace || !targetDataset || files.length === 0) return;
     setBusy(true);
     setError(null);
     try {
@@ -538,7 +564,7 @@ export function DataWorkbench() {
         setNotice(`正在上传 ${index + 1} / ${files.length}：${file.name}`);
         const checksum = await sha256(file);
         const dimensions = await imageDimensions(file);
-        const intent = await catalogApi.createUploadIntent(workspace.id, dataset.id, {
+        const intent = await catalogApi.createUploadIntent(workspace.id, targetDataset.id, {
           filename: file.name,
           content_type: file.type,
           byte_size: file.size,
@@ -550,7 +576,7 @@ export function DataWorkbench() {
           body: file,
         });
         if (!upload.ok) throw new Error(`对象存储上传失败 (${upload.status})`);
-        await catalogApi.registerAsset(workspace.id, dataset.id, {
+        await catalogApi.registerAsset(workspace.id, targetDataset.id, {
           object_key: intent.object_key,
           media_type: file.type,
           checksum_sha256: checksum,
@@ -559,7 +585,7 @@ export function DataWorkbench() {
           height: dimensions.height,
         });
       }
-      await refreshDataset(dataset);
+      await refreshDataset(targetDataset);
       setNotice(`${files.length} 个资产已导入`);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "上传失败");
@@ -578,6 +604,23 @@ export function DataWorkbench() {
       setVideoDialogOpen(true);
     }
     if (imageFiles.length) void uploadImageFiles(imageFiles);
+    event.target.value = "";
+  }
+
+  function stageDatasetSourceFiles(files: File[]) {
+    const supportedFiles = files.filter(
+      (file) => file.type.startsWith("image/") || file.type.startsWith("video/"),
+    );
+    if (!supportedFiles.length) {
+      setError("请选择图片或视频文件");
+      return;
+    }
+    setDatasetSourceFiles((current) => [...current, ...supportedFiles].slice(0, 100));
+    setError(null);
+  }
+
+  function selectDatasetSourceFiles(event: ChangeEvent<HTMLInputElement>) {
+    stageDatasetSourceFiles(Array.from(event.target.files ?? []));
     event.target.value = "";
   }
 
@@ -620,9 +663,18 @@ export function DataWorkbench() {
       );
       setSourceVideos((current) => [sourceAsset, ...current.filter((item) => item.id !== sourceAsset.id)]);
       setExtractionJobs((current) => [job, ...current.filter((item) => item.id !== job.id)]);
-      setVideoDialogOpen(false);
-      setActiveView("assets");
-      setNotice(`抽帧任务已创建：${pendingVideo.name}`);
+      const remainingVideos = pendingVideos.slice(1);
+      if (remainingVideos.length) {
+        setPendingVideos(remainingVideos);
+        setPendingVideo(remainingVideos[0]);
+        setNotice(`抽帧任务已创建：${pendingVideo.name}，请配置下一个视频`);
+      } else {
+        setPendingVideos([]);
+        setPendingVideo(null);
+        setVideoDialogOpen(false);
+        setActiveView("assets");
+        setNotice(`抽帧任务已创建：${pendingVideo.name}`);
+      }
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "抽帧任务创建失败");
     } finally {
@@ -980,9 +1032,20 @@ export function DataWorkbench() {
           <DatasetSetupForm
             name={datasetName}
             onNameChange={setDatasetName}
+            description={datasetDescription}
+            onDescriptionChange={setDatasetDescription}
             taskType={newDatasetTaskType}
             onTaskTypeChange={setNewDatasetTaskType}
+            sourceMode={datasetSourceMode}
+            onSourceModeChange={setDatasetSourceMode}
+            sourceFiles={datasetSourceFiles}
+            onFilesSelected={selectDatasetSourceFiles}
+            onFilesDropped={stageDatasetSourceFiles}
+            sourceUrl={datasetSourceUrl}
+            onSourceUrlChange={setDatasetSourceUrl}
             onSubmit={createDataset}
+            onCancel={() => setDatasetCreationOpen(false)}
+            canCancel={Boolean(dataset)}
             busy={busy}
           />
         ) : (
@@ -1332,13 +1395,13 @@ export function DataWorkbench() {
       {videoDialogOpen ? (
         <div className="workbench-dialog-backdrop" role="presentation">
           <form className="workbench-dialog video-import-dialog" role="dialog" aria-modal="true" aria-labelledby="video-dialog-title" onSubmit={createExtractionJob}>
-            <div className="dialog-heading"><div><span className="dialog-icon"><Film size={18} /></span><span><h2 id="video-dialog-title">从视频生成素材</h2><p>抽取的画面会进入当前数据集。</p></span></div><button type="button" onClick={() => setVideoDialogOpen(false)} aria-label="关闭">×</button></div>
+            <div className="dialog-heading"><div><span className="dialog-icon"><Film size={18} /></span><span><h2 id="video-dialog-title">从视频生成素材</h2><p>抽取的画面会进入当前数据集。{pendingVideos.length > 1 ? `还剩 ${pendingVideos.length - 1} 个视频待配置。` : ""}</p></span></div><button type="button" onClick={() => { setVideoDialogOpen(false); setPendingVideos([]); setPendingVideo(null); }} aria-label="关闭">×</button></div>
             <div className="selected-video-file"><Film size={17} /><span><strong>{pendingVideo?.name ?? "尚未选择视频"}</strong><small>{pendingVideo ? formatBytes(pendingVideo.size) : "请返回素材页选择 MP4、MOV 或 WebM"}</small></span></div>
             <section className="video-purpose-panel"><div><strong>抽取图片用于训练</strong><small>按固定间隔生成独立图片，适合检测、分类和分割。</small></div><span>当前阶段</span></section>
             <div className="frame-interval-field"><span><strong>抽帧间隔</strong><small>间隔越小，生成的连续画面越多。</small></span><span className="number-input-wrap"><input aria-label="抽帧间隔" type="number" min="0.1" step="0.1" value={frameInterval} onChange={(event) => setFrameInterval(Number(event.target.value) || 1)} /><b>秒 / 帧</b></span></div>
             <div className="extraction-options"><label><input type="checkbox" checked={deduplicateFrames} onChange={(event) => setDeduplicateFrames(event.target.checked)} />去除重复帧</label></div>
             <div className="dialog-callout"><span>处理方式</span><strong>后台生成图片</strong><small>完成后自动写入当前数据集，可直接创建标注任务。</small></div>
-            <div className="dialog-actions"><button className="secondary-button" type="button" onClick={() => setVideoDialogOpen(false)}>取消</button><button className="primary-button" type="submit" disabled={!pendingVideo || busy}>{busy ? "正在上传" : "创建抽帧任务"}</button></div>
+            <div className="dialog-actions"><button className="secondary-button" type="button" onClick={() => { setVideoDialogOpen(false); setPendingVideos([]); setPendingVideo(null); }}>取消</button><button className="primary-button" type="submit" disabled={!pendingVideo || busy}>{busy ? "正在上传" : pendingVideos.length > 1 ? "保存并配置下一个" : "创建抽帧任务"}</button></div>
           </form>
         </div>
       ) : null}
@@ -1436,37 +1499,164 @@ function DatasetQualityCard({
 function DatasetSetupForm({
   name,
   onNameChange,
+  description,
+  onDescriptionChange,
   taskType,
   onTaskTypeChange,
+  sourceMode,
+  onSourceModeChange,
+  sourceFiles,
+  onFilesSelected,
+  onFilesDropped,
+  sourceUrl,
+  onSourceUrlChange,
   onSubmit,
+  onCancel,
+  canCancel,
   busy,
 }: {
   name: string;
   onNameChange: (value: string) => void;
+  description: string;
+  onDescriptionChange: (value: string) => void;
   taskType: string;
   onTaskTypeChange: (value: string) => void;
+  sourceMode: DatasetSourceMode;
+  onSourceModeChange: (value: DatasetSourceMode) => void;
+  sourceFiles: File[];
+  onFilesSelected: (event: ChangeEvent<HTMLInputElement>) => void;
+  onFilesDropped: (files: File[]) => void;
+  sourceUrl: string;
+  onSourceUrlChange: (value: string) => void;
   onSubmit: (event: FormEvent) => Promise<void>;
+  onCancel: () => void;
+  canCancel: boolean;
   busy: boolean;
 }) {
+  const sourceOptions: Array<{ id: DatasetSourceMode; label: string; icon: typeof UploadCloud }> = [
+    { id: "upload", label: "上传", icon: UploadCloud },
+    { id: "url", label: "URL", icon: Link2 },
+    { id: "cloud", label: "云端存储", icon: Cloud },
+    { id: "on-premise", label: "本地服务器", icon: HardDrive },
+  ];
+  const unavailableCopy: Record<Exclude<DatasetSourceMode, "upload">, { title: string; description: string }> = {
+    url: { title: "URL 导入待接入", description: "后端连接器上线后，可以从公开地址导入图像、视频和标注包。" },
+    cloud: { title: "云端存储连接待接入", description: "首期先使用本地上传；对象存储连接器会沿用同一套导入校验。" },
+    "on-premise": { title: "本地服务器连接待接入", description: "算力与存储服务器上线后，可在这里绑定内部数据源。" },
+  };
+
+  function handleDrop(event: DragEvent<HTMLLabelElement>) {
+    event.preventDefault();
+    if (sourceMode !== "upload" || busy) return;
+    onFilesDropped(Array.from(event.dataTransfer.files));
+  }
+
   return (
-    <article className="panel setup-card dataset-setup-card">
-      <span className="setup-icon"><Database size={19} /></span>
-      <span className="eyebrow">首个数据集</span>
-      <h2>创建数据集</h2>
-      <p>先确定任务类型和标注结构；冻结版本后，这些定义会随版本保持不变。</p>
+    <article className="panel setup-card dataset-create-surface">
+      <div className="dataset-create-header">
+        <span className="setup-icon"><Database size={19} /></span>
+        <div>
+          <span className="eyebrow">数据与标注</span>
+          <h2>新建数据集</h2>
+          <p>创建用于训练的图像、视频和标注数据集。</p>
+        </div>
+        {canCancel ? <button className="dataset-create-close" type="button" onClick={onCancel} aria-label="关闭新建数据集"><X size={16} /></button> : null}
+      </div>
+
       <form onSubmit={(event) => void onSubmit(event)}>
-        <label>
-          <span>数据集名称</span>
-          <input value={name} onChange={(event) => onNameChange(event.target.value)} required />
+        <fieldset className="dataset-source-section">
+          <legend>数据源</legend>
+          <div className="dataset-source-tabs" role="tablist" aria-label="数据源类型">
+            {sourceOptions.map(({ id, label, icon: Icon }) => (
+              <button
+                type="button"
+                key={id}
+                className={`dataset-source-tab${sourceMode === id ? " is-active" : ""}`}
+                role="tab"
+                aria-selected={sourceMode === id}
+                onClick={() => onSourceModeChange(id)}
+                disabled={busy}
+              >
+                <Icon size={14} />
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {sourceMode === "upload" ? (
+            <>
+              <label
+                className={`dataset-source-dropzone${sourceFiles.length ? " has-files" : ""}`}
+                htmlFor="dataset-source-file-input"
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={handleDrop}
+              >
+                <input
+                  id="dataset-source-file-input"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm"
+                  multiple
+                  onChange={onFilesSelected}
+                  disabled={busy}
+                />
+                <span className="dataset-source-dropzone-icon"><UploadCloud size={21} /></span>
+                <strong>{sourceFiles.length ? "继续添加素材" : "拖放图像或视频到这里"}</strong>
+                <small>或点击选择文件，支持 JPG、PNG、WebP、MP4、MOV 和 WebM；图片自动导入，视频会逐个配置抽帧</small>
+              </label>
+              {sourceFiles.length ? (
+                <div className="dataset-source-file-list" aria-live="polite">
+                  <div className="dataset-source-file-summary"><strong>已选择 {sourceFiles.length} 个文件</strong><span>创建后自动导入</span></div>
+                  {sourceFiles.slice(0, 4).map((file, index) => (
+                    <div className="dataset-source-file" key={`${file.name}-${file.lastModified}-${index}`}>
+                      {file.type.startsWith("video/") ? <Film size={14} /> : <FileImage size={14} />}
+                      <span>{file.name}</span>
+                      <small>{formatBytes(file.size)}</small>
+                    </div>
+                  ))}
+                  {sourceFiles.length > 4 ? <small className="dataset-source-more">还有 {sourceFiles.length - 4} 个文件将在创建后导入</small> : null}
+                </div>
+              ) : <p className="dataset-source-hint">也可以先创建空数据集，稍后在素材页继续导入。</p>}
+            </>
+          ) : (
+            <div className="dataset-source-unavailable">
+              <span className="dataset-source-unavailable-icon">{sourceMode === "url" ? <Globe2 size={18} /> : sourceMode === "cloud" ? <Cloud size={18} /> : <HardDrive size={18} />}</span>
+              <div><strong>{unavailableCopy[sourceMode].title}</strong><p>{unavailableCopy[sourceMode].description}</p></div>
+              {sourceMode === "url" ? <input value={sourceUrl} onChange={(event) => onSourceUrlChange(event.target.value)} placeholder="https://example.com/dataset.zip" disabled={busy} aria-label="数据集 URL" /> : null}
+            </div>
+          )}
+        </fieldset>
+
+        <div className="dataset-create-fields">
+          <label className="dataset-create-field">
+            <span>数据集名称</span>
+            <input value={name} onChange={(event) => onNameChange(event.target.value)} placeholder="例如：道路病害巡检" required />
+            <small>名称用于工作区内识别数据集。</small>
+          </label>
+          <div className="dataset-create-field">
+            <span>标识预览</span>
+            <div className="dataset-create-slug"><Link2 size={13} /><code>{slugify(name) || "dataset"}</code></div>
+            <small>由名称生成，当前仅作为可读预览。</small>
+          </div>
+        </div>
+        <label className="dataset-create-field">
+          <span>描述 <em>可选</em></span>
+          <textarea value={description} onChange={(event) => onDescriptionChange(event.target.value)} placeholder="补充数据来源、采集范围或使用限制" rows={3} maxLength={500} />
         </label>
+
         <fieldset className="dataset-setup-task-types">
-          <legend>任务类型</legend>
+          <legend>任务类型与标注结构</legend>
+          <p className="dataset-create-section-hint">创建后仍可调整；一旦开始标注或生成版本，任务类型将被锁定。</p>
           <TaskTypePicker value={taskType} onChange={onTaskTypeChange} disabled={busy} />
         </fieldset>
-        <button className="primary-button" type="submit" disabled={busy}>
-          {busy ? <LoaderCircle size={14} className="spinner" /> : <Plus size={14} />}
-          创建并继续
-        </button>
+
+        <div className="dataset-create-footer">
+          {canCancel ? <button className="secondary-button" type="button" onClick={onCancel}>取消</button> : <span />}
+          <button className="primary-button" type="submit" disabled={busy || sourceMode !== "upload"}>
+            {busy ? <LoaderCircle size={14} className="spinner" /> : <Plus size={14} />}
+            {busy ? "正在创建" : "创建数据集"}
+          </button>
+        </div>
+        {sourceMode !== "upload" ? <p className="dataset-create-footer-note">切换回“上传”后即可创建；其他数据源会在连接器上线后开放。</p> : null}
       </form>
     </article>
   );
