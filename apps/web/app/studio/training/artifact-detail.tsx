@@ -8,6 +8,8 @@ import {
   Clock3,
   Cpu,
   Database,
+  Download,
+  ExternalLink,
   FileCheck2,
   FlaskConical,
   LoaderCircle,
@@ -82,6 +84,16 @@ const modelStatusLabels: Record<string, string> = {
   approved: "已通过",
   rejected: "未通过",
   archived: "已归档",
+  ready: "可用",
+};
+
+const modelTaskTypeLabels: Record<string, string> = {
+  "object-detection": "目标检测",
+  classification: "图像分类",
+  segmentation: "图像分割",
+  "instance-segmentation": "实例分割",
+  pose: "姿态估计",
+  ocr: "文字识别",
 };
 
 const metricLabels: Record<string, string> = {
@@ -261,7 +273,9 @@ function TrainingClassMetricsPanel({ metrics }: { metrics: TrainingClassMetrics 
 }
 
 export function TrainingArtifactDetail({ artifactId, kind }: ArtifactDetailProps) {
-  const requestedProjectId = useSearchParams().get("project");
+  const searchParams = useSearchParams();
+  const requestedProjectId = searchParams.get("project");
+  const requestedTab = searchParams.get("tab") ?? "overview";
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [project, setProject] = useState<Project | null>(null);
@@ -363,13 +377,21 @@ export function TrainingArtifactDetail({ artifactId, kind }: ArtifactDetailProps
   const relatedRun = run ?? runs.find((item) => item.id === model?.run_id) ?? null;
   const relatedModel = model ?? models.find((item) => item.run_id === run?.id) ?? null;
   const datasetVersion = versions.find((item) => item.version.id === relatedRun?.dataset_version_id) ?? null;
-  const evaluation = useMemo(
-    () => evaluations.find((item) => item.model_version_id === relatedModel?.id) ?? null,
-    [evaluations, relatedModel?.id],
-  );
-  const deployment = deployments.find((item) => item.model_version_id === relatedModel?.id) ?? null;
+  const evaluation = useMemo(() => evaluations
+    .filter((item) => item.model_version_id === relatedModel?.id)
+    .sort((left, right) => Date.parse(right.evaluated_at) - Date.parse(left.evaluated_at))[0] ?? null,
+  [evaluations, relatedModel?.id]);
+  const deployment = useMemo(() => deployments
+    .filter((item) => item.model_version_id === relatedModel?.id)
+    .sort((left, right) => Date.parse(right.updated_at) - Date.parse(left.updated_at))[0] ?? null,
+  [deployments, relatedModel?.id]);
   const projectQuery = project ? `?project=${project.id}` : "";
   const trainingHref = `/studio/training${projectQuery}`;
+  const modelTaskType = datasetVersion?.version.task_type ?? project?.task_type ?? "object-detection";
+  const modelTab = ["overview", "train", "predict", "export", "deploy"].includes(requestedTab)
+    ? requestedTab
+    : "overview";
+  const modelTabHref = (tab: string) => `/studio/training/models/${artifactId}?project=${project?.id ?? requestedProjectId ?? ""}&tab=${tab}`;
 
   if (loading) {
     return (
@@ -525,8 +547,65 @@ export function TrainingArtifactDetail({ artifactId, kind }: ArtifactDetailProps
           <div><span>精确率</span><strong>{formatScore(precision)}</strong></div>
           <div><span>召回率</span><strong>{formatScore(recall)}</strong></div>
         </div>
+        <div className="model-detail-meta" aria-label="模型元数据">
+          <span>{modelTaskTypeLabels[modelTaskType] ?? modelTaskType}</span>
+          <span>训练引擎 {relatedRun?.engine ?? "—"}</span>
+          <span>数据版本 {datasetVersion ? `ds_v${datasetVersion.version.version_number}` : "—"}</span>
+          <span>产物 {model.artifact_uri.split("/").pop() ?? "—"}</span>
+        </div>
+        <nav className="model-detail-tabs" aria-label="模型工作区">
+          {[
+            ["overview", "概览"],
+            ["train", "训练"],
+            ["predict", "预测"],
+            ["export", "导出"],
+            ["deploy", "发布"],
+          ].map(([tab, label]) => (
+            <Link className={modelTab === tab ? "is-active" : ""} href={modelTabHref(tab)} key={tab}>{label}</Link>
+          ))}
+        </nav>
       </article>
 
+      {modelTab === "train" ? (
+        <article className="panel model-detail-tab-panel">
+          <div className="training-detail-section-heading"><FlaskConical size={16} /><h3>训练配置</h3></div>
+          <p>这是一份由训练任务生成的不可变模型版本。需要复现时，请从原训练任务复制配置。</p>
+          <div className="model-detail-action-row">
+            {relatedRun ? <Link className="secondary-button" href={`/studio/training/runs/${relatedRun.id}${projectQuery}`}>查看训练任务<ArrowUpRight size={13} /></Link> : null}
+            <Link className="primary-button" href={`${trainingHref}#new-training`}>复制配置重新训练<FlaskConical size={13} /></Link>
+          </div>
+        </article>
+      ) : null}
+
+      {modelTab === "predict" ? (
+        <article className="panel model-detail-tab-panel">
+          <div className="training-detail-section-heading"><Cpu size={16} /><h3>预测工作区</h3></div>
+          <p>使用已发布端点测试图像或视频流。当前模型还没有独立的本地预测会话。</p>
+          <div className="model-detail-action-row">
+            <Link className="primary-button" href={`/services${projectQuery}&view=live&model=${model.id}`}>打开在线预测<ExternalLink size={13} /></Link>
+          </div>
+        </article>
+      ) : null}
+
+      {modelTab === "export" ? (
+        <article className="panel model-detail-tab-panel">
+          <div className="training-detail-section-heading"><Download size={16} /><h3>导出模型</h3></div>
+          <p>模型产物已登记，但签名下载和格式转换接口尚未接入。接入存储服务后，这里会提供受权限控制的下载。</p>
+          <div className="model-detail-unavailable"><Download size={15} />导出接口待接入</div>
+        </article>
+      ) : null}
+
+      {modelTab === "deploy" ? (
+        <article className="panel model-detail-tab-panel">
+          <div className="training-detail-section-heading"><Rocket size={16} /><h3>发布模型</h3></div>
+          <p>{evaluation?.verdict === "approved" ? "模型已通过当前发布检查，可以创建在线服务。" : "发布前需要先用独立数据完成检查并通过门禁。"}</p>
+          <div className="model-detail-action-row">
+            <Link className="primary-button" href={`/services${projectQuery}&view=publish&model=${model.id}`}>前往发布<ArrowUpRight size={13} /></Link>
+          </div>
+        </article>
+      ) : null}
+
+      {modelTab === "overview" ? <>
       <div className="training-detail-grid">
         <article className="panel training-detail-section">
           <div className="training-detail-section-heading"><Database size={16} /><h3>模型来源</h3></div>
@@ -606,6 +685,7 @@ export function TrainingArtifactDetail({ artifactId, kind }: ArtifactDetailProps
           )}
         </article>
       ) : null}
+      </> : null}
     </section>
   );
 }

@@ -93,6 +93,10 @@ function taskUsesClasses(taskType: string): boolean {
   return taskType !== "depth-estimation";
 }
 
+function datasetTaskTypeForProject(taskType: string): string {
+  return taskType === "segmentation" ? "instance-segmentation" : taskType;
+}
+
 function TaskTypeIcon({ taskType, size = 18 }: { taskType: string; size?: number }) {
   if (taskType === "object-detection") return <Box size={size} />;
   if (taskType === "segmentation" || taskType === "instance-segmentation" || taskType === "semantic-segmentation") return <Layers3 size={size} />;
@@ -445,6 +449,10 @@ export function DataWorkbench() {
   useEffect(() => {
     if (dataset?.task_type) setPendingTaskType(dataset.task_type);
   }, [dataset?.task_type]);
+
+  useEffect(() => {
+    if (project?.task_type) setNewDatasetTaskType(datasetTaskTypeForProject(project.task_type));
+  }, [project?.id, project?.task_type]);
 
   useEffect(() => {
     if (!workspaceId || !datasetId) return;

@@ -182,9 +182,15 @@ export function TrainingWorkbench() {
   const idempotencyKey = useRef<string | null>(null);
   const acceptanceIdempotencyKey = useRef<string | null>(null);
 
+  const selectedVersion = versionOptions.find(({ version }) => version.id === datasetVersionId) ?? null;
+  const selectedTaskType = selectedVersion?.version.task_type ?? project?.task_type ?? "object-detection";
+  const compatibleEngines = useMemo(
+    () => engines.filter((engine) => engine.task_types.includes(selectedTaskType)),
+    [engines, selectedTaskType],
+  );
   const selectedEngine = useMemo(
-    () => engines.find((engine) => engine.key === engineKey) ?? engines[0],
-    [engineKey, engines],
+    () => compatibleEngines.find((engine) => engine.key === engineKey) ?? compatibleEngines[0],
+    [compatibleEngines, engineKey],
   );
 
   const acceptanceOptions = useMemo(() => {
@@ -292,6 +298,13 @@ export function TrainingWorkbench() {
     );
   }, [acceptanceOptions]);
 
+  useEffect(() => {
+    if (!compatibleEngines.length || compatibleEngines.some((engine) => engine.key === engineKey)) return;
+    const nextEngine = compatibleEngines[0];
+    setEngineKey(nextEngine.key);
+    setModel(nextEngine.defaults.model);
+  }, [compatibleEngines, engineKey]);
+
   async function submitTraining(event: FormEvent) {
     event.preventDefault();
     if (!workspace || !project || !datasetVersionId || !selectedEngine) return;
@@ -310,7 +323,7 @@ export function TrainingWorkbench() {
           executor: selectedEngine.executor,
           recipe: {
             model,
-            task: "detect",
+            task: selectedEngine.defaults.task,
             epochs,
             image_size: imageSize,
             batch_size: batchSize,
@@ -453,7 +466,7 @@ export function TrainingWorkbench() {
             </div>
           </div>
 
-          {versionOptions.length ? (
+          {versionOptions.length && compatibleEngines.length ? (
             <div className="training-form-grid">
               <label className="training-field training-field-wide">
                 <span>数据集版本</span>
@@ -470,12 +483,12 @@ export function TrainingWorkbench() {
                 <select
                   value={engineKey}
                   onChange={(event) => {
-                    const nextEngine = engines.find((engine) => engine.key === event.target.value);
+                    const nextEngine = compatibleEngines.find((engine) => engine.key === event.target.value);
                     setEngineKey(event.target.value);
                     if (nextEngine) setModel(nextEngine.defaults.model);
                   }}
                 >
-                  {engines.map((engine) => <option value={engine.key} key={engine.key}>{engine.label}</option>)}
+                  {compatibleEngines.map((engine) => <option value={engine.key} key={engine.key}>{engine.label}</option>)}
                 </select>
               </label>
               <label className="training-field">
@@ -492,7 +505,7 @@ export function TrainingWorkbench() {
           ) : (
             <div className="training-inline-empty">
               <Database size={18} />
-              <div><strong>尚无可训练的数据版本</strong><span>先导入资产并冻结数据版本。</span></div>
+              <div><strong>{versionOptions.length ? "当前任务类型暂未接入训练引擎" : "尚无可训练的数据版本"}</strong><span>{versionOptions.length ? `当前为${selectedTaskType}，请先接入匹配的训练引擎。` : "先导入资产并冻结数据版本。"}</span></div>
               <Link href={`/studio/data?project=${project.id}`}>前往数据</Link>
             </div>
           )}
