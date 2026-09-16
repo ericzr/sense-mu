@@ -359,14 +359,16 @@ export function DataWorkbench() {
         setDatasets(result);
         setModelVersions(nextModels);
         setDataset((current) =>
-          result.find((item) => item.id === requestedDatasetId)
-          ?? result.find((item) => item.id === current?.id)
-          ?? result[0]
-          ?? null,
+          requestedDatasetCreation
+            ? null
+            : result.find((item) => item.id === requestedDatasetId)
+              ?? result.find((item) => item.id === current?.id)
+              ?? result[0]
+              ?? null,
         );
       })
       .catch((reason) => setError(reason instanceof Error ? reason.message : "数据集加载失败"));
-  }, [workspace, project, requestedDatasetId]);
+  }, [workspace, project, requestedDatasetCreation, requestedDatasetId]);
 
   async function refreshDataset(selected = dataset) {
     if (!workspace || !project || !selected) return;

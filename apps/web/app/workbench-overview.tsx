@@ -94,6 +94,9 @@ export function WorkbenchOverview({
     month: "numeric",
     day: "numeric",
   }).format(new Date(value));
+  const createDatasetHref = projects[0]
+    ? `/studio/data?project=${encodeURIComponent(projects[0].id)}&createDataset=1`
+    : "/studio/data?createProject=1";
 
   return (
     <>
@@ -103,7 +106,7 @@ export function WorkbenchOverview({
           <p>继续最近的数据和训练工作。</p>
         </div>
         <div className="workbench-home-actions">
-          <Link className="secondary-button" href="/studio/data"><Database size={14} />新建数据集</Link>
+          <Link className="secondary-button" href={createDatasetHref}><Database size={14} />新建数据集</Link>
           <Link className="primary-button" href="/studio/data?createProject=1"><Plus size={14} />新建项目</Link>
         </div>
       </header>
