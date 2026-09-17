@@ -1,10 +1,10 @@
 # SenseMu 后端协同开发手册
 
-- 更新日期：2026-08-25
+- 更新日期：2026-09-17
 - 适用对象：后端、Worker、推理、基础设施、前端和测试协作者
 - 当前阶段：公开演示 + 后端真实闭环开发
 
-这份文档是新协作者的单一入口。产品范围看 `PRODUCT_FUNCTIONS.md`，字段级接口以 `apps/api/openapi.json` 为准，架构取舍看 `docs/adr/`，当前优先级看 `PROJECT_STATUS.md`。
+这份文档是新协作者的单一入口。核心对象和业务边界先看 `DOMAIN_MODEL.md`，产品范围看 `PRODUCT_FUNCTIONS.md`，字段级接口以 `apps/api/openapi.json` 为准，架构取舍看 `docs/adr/`，当前优先级看 `PROJECT_STATUS.md`。
 
 ## 1. 正式地址
 
@@ -29,6 +29,8 @@ Workspace → Project → Dataset → Asset → AnnotationTask → DatasetVersio
 → TrainingRun → ModelVersion → AcceptanceRun → Deployment
 → CapabilitySpec → MarketplaceListing → Entitlement → UsageRecord
 ```
+
+每个对象的权威定义、可变性、关系和页面归属见 `docs/DOMAIN_MODEL.md`。尤其要区分可变的 `Dataset` 与不可变的 `DatasetVersion`、一次执行的 `TrainingRun` 与可交付的 `ModelVersion`、运行中的 `Deployment` 与对外承诺的 `CapabilitySpec`。
 
 四个一级产品页面：
 

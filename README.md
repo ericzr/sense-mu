@@ -5,6 +5,7 @@ SenseMu 是一个面向视觉 AI 的端到端工作平台：在同一个可追�
 项目交接入口：
 
 - 后端协同开发手册与正式地址：[`docs/DEVELOPER_HANDOFF.md`](docs/DEVELOPER_HANDOFF.md)
+- 核心对象与业务边界：[`docs/DOMAIN_MODEL.md`](docs/DOMAIN_MODEL.md)
 - 产品功能与边界：[`docs/PRODUCT_FUNCTIONS.md`](docs/PRODUCT_FUNCTIONS.md)
 - 后端接口与鉴权：[`docs/API_GUIDE.md`](docs/API_GUIDE.md)
 - 架构与代码审计：[`docs/CODE_AUDIT_2026-08-16.md`](docs/CODE_AUDIT_2026-08-16.md)

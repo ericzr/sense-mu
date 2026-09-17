@@ -1,6 +1,6 @@
 # SenseMu 产品功能地图
 
-- 更新日期：2026-08-25
+- 更新日期：2026-09-17
 - 面向读者：产品、前端、后端、算法与测试同事
 - 当前阶段：公开演示 + 后端真实闭环开发；公开站点仍为只读演示环境
 
@@ -140,6 +140,7 @@
 
 ## 8. 相关文档
 
+- 核心对象与业务边界：`docs/DOMAIN_MODEL.md`
 - 接口与鉴权：`docs/API_GUIDE.md`
 - 当前进度与优先级：`docs/PROJECT_STATUS.md`
 - 页面范围与术语：`docs/PRODUCT_SURFACE_BASELINE.md`
