@@ -29,6 +29,7 @@ class FakeStorage:
     def __init__(self) -> None:
         self.manifests: dict[str, dict] = {}
         self.objects: dict[str, bytes] = {}
+        self.verify_ok = True
 
     def presign_put(
         self,
@@ -49,7 +50,7 @@ class FakeStorage:
 
     def verify_object(self, key: str, byte_size: int, checksum_sha256: str) -> bool:
         del key, byte_size, checksum_sha256
-        return True
+        return self.verify_ok
 
     def put_json(self, key: str, payload: dict) -> str:
         self.manifests[key] = payload
@@ -1014,6 +1015,16 @@ def test_training_run_submission_is_persisted_idempotent_and_cancellable() -> No
     assert artifact_download.status_code == 200
     assert artifact_download.headers["content-type"] == "application/octet-stream"
     assert artifact_download.headers["content-disposition"] == 'attachment; filename="best.pt"'
+    fake_storage.verify_ok = False
+    invalid_artifact_download = client.get(
+        (
+            f"/api/v1/projects/{project['id']}/model-versions/"
+            f"{completion.json()['id']}/artifact"
+        ),
+        headers=workspace_headers,
+    )
+    assert invalid_artifact_download.status_code == 409
+    fake_storage.verify_ok = True
     wrong_project_detail = client.get(
         (
             f"/api/v1/projects/{uuid4()}/model-versions/"

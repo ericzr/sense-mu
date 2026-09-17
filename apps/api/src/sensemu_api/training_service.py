@@ -842,6 +842,15 @@ def prepare_model_artifact_download(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="未找到模型版本")
 
     version, _model = record
+    if version.artifact_size_bytes is None or version.checksum_sha256 is None:
+        raise conflict("模型产物缺少完整性元数据")
+    artifact_key = _artifact_key(version.artifact_uri)
+    if not artifact_key or not storage.verify_object(
+        artifact_key,
+        version.artifact_size_bytes,
+        version.checksum_sha256,
+    ):
+        raise conflict("模型产物完整性校验失败")
     raw_name = version.artifact_uri.rsplit("/", 1)[-1]
     filename = raw_name if re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,179}", raw_name) else "model.pt"
     try:
@@ -855,9 +864,9 @@ def prepare_model_artifact_download(
         payload = storage.get_bytes(version.artifact_uri)
     except (FileNotFoundError, KeyError, OSError, ValueError) as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="模型产物暂不可用") from error
-    if version.artifact_size_bytes is not None and len(payload) != version.artifact_size_bytes:
+    if len(payload) != version.artifact_size_bytes:
         raise conflict("模型产物完整性校验失败")
-    if version.checksum_sha256 is not None and sha256(payload).hexdigest() != version.checksum_sha256:
+    if sha256(payload).hexdigest() != version.checksum_sha256:
         raise conflict("模型产物完整性校验失败")
     return ModelArtifactDownload(filename=filename, signed_url=None, payload=payload)
 
