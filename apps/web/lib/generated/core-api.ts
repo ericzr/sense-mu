@@ -986,6 +986,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{project_id}/model-versions/{model_version_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Model Version */
+        get: operations["get_model_version_api_v1_projects__project_id__model_versions__model_version_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects/{project_id}/model-versions/{model_version_id}/acceptance-runs": {
         parameters: {
             query?: never;
@@ -3128,18 +3145,45 @@ export interface components {
         };
         /** ModelVersionResponse */
         ModelVersionResponse: {
+            /** Artifact Name */
+            artifact_name: string | null;
+            /** Artifact Size Bytes */
+            artifact_size_bytes: number | null;
             /** Artifact Uri */
             artifact_uri: string;
+            /** Checksum Sha256 */
+            checksum_sha256: string | null;
+            /** Class Map */
+            class_map: {
+                [key: string]: string;
+            };
+            /** Command */
+            command: string | null;
             /**
              * Created At
              * Format: date-time
              */
             created_at: string;
             /**
+             * Dataset Version Id
+             * Format: uuid
+             */
+            dataset_version_id: string;
+            /** Dataset Version Number */
+            dataset_version_number: number;
+            /** Executor */
+            executor: string;
+            /** Framework */
+            framework: string;
+            /** Framework Version */
+            framework_version: string | null;
+            /**
              * Id
              * Format: uuid
              */
             id: string;
+            /** License */
+            license: string | null;
             /** Metrics */
             metrics: {
                 [key: string]: unknown;
@@ -3151,13 +3195,29 @@ export interface components {
             model_id: string;
             /** Model Name */
             model_name: string;
+            /** Notes */
+            notes: string | null;
+            /** Parent Model */
+            parent_model: string | null;
+            /** Recipe */
+            recipe: {
+                [key: string]: unknown;
+            };
             /**
              * Run Id
              * Format: uuid
              */
             run_id: string;
+            /** Runtime */
+            runtime: {
+                [key: string]: unknown;
+            };
             /** Status */
             status: string;
+            /** Tags */
+            tags: string[];
+            /** Task Type */
+            task_type: string;
             /** Version Number */
             version_number: number;
         };
@@ -6728,6 +6788,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ModelVersionResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_model_version_api_v1_projects__project_id__model_versions__model_version_id__get: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Workspace-ID": string;
+                Authorization?: string | null;
+            };
+            path: {
+                project_id: string;
+                model_version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelVersionResponse"];
                 };
             };
             /** @description Validation Error */

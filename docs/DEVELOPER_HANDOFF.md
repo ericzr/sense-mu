@@ -129,7 +129,7 @@ cd apps/web && npm run typecheck && npm run lint && npm test
 
 ## 7. 接口协作规则
 
-1. 字段级请求和响应以 `apps/api/openapi.json` 为准；后端 schema 变化后先运行 `make api-openapi`，再更新 Web 生成类型。
+1. 字段级请求和响应以 `apps/api/openapi.json` 为准；后端 schema 变化后先运行 `make api-openapi`，再更新 Web 生成类型。模型详情使用 `GET /api/v1/projects/{project_id}/model-versions/{model_version_id}`，不要由前端拼接训练、数据版本和模型元数据。
 2. 所有工作区对象在服务端校验归属，不能只相信 URL 中的 ID 或浏览器传入的工作区头。
 3. 创建训练、验收、批推理、视频抽帧和支付意图必须支持 `Idempotency-Key`，重试必须复用原值。
 4. 写操作按角色限制：viewer 只读，member 执行日常生产操作，admin/owner 管理发布、购买、密钥和成员。

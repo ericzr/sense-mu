@@ -763,25 +763,81 @@ def list_model_versions(
 ) -> list[ModelVersionResponse]:
     require_project(session, workspace_id, project_id)
     statement = (
-        select(ModelVersion, Model)
+        select(ModelVersion, Model, Run, DatasetVersion)
         .join(Model, Model.id == ModelVersion.model_id)
+        .join(Run, Run.id == ModelVersion.run_id)
+        .join(DatasetVersion, DatasetVersion.id == Run.dataset_version_id)
         .where(Model.project_id == project_id)
         .order_by(ModelVersion.created_at.desc())
     )
     return [
-        ModelVersionResponse(
-            id=version.id,
-            model_id=version.model_id,
-            model_name=model.name,
-            run_id=version.run_id,
-            version_number=version.version_number,
-            status=version.status,
-            artifact_uri=version.artifact_uri,
-            metrics=version.metrics,
-            created_at=version.created_at,
-        )
-        for version, model in session.execute(statement)
+        model_version_response(version, model, run, dataset_version)
+        for version, model, run, dataset_version in session.execute(statement)
     ]
+
+
+def require_model_version(
+    session: Session,
+    workspace_id: UUID,
+    model_version_id: UUID,
+    *,
+    project_id: UUID | None = None,
+) -> ModelVersionResponse:
+    statement = (
+        select(ModelVersion, Model, Run, DatasetVersion)
+        .join(Model, Model.id == ModelVersion.model_id)
+        .join(Project, Project.id == Model.project_id)
+        .join(Run, Run.id == ModelVersion.run_id)
+        .join(DatasetVersion, DatasetVersion.id == Run.dataset_version_id)
+        .where(
+            ModelVersion.id == model_version_id,
+            Project.workspace_id == workspace_id,
+            *([Project.id == project_id] if project_id is not None else []),
+        )
+    )
+    record = session.execute(statement).first()
+    if record is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="未找到模型版本")
+    version, model, run, dataset_version = record
+    return model_version_response(version, model, run, dataset_version)
+
+
+def model_version_response(
+    version: ModelVersion,
+    model: Model,
+    run: Run,
+    dataset_version: DatasetVersion,
+) -> ModelVersionResponse:
+    artifact_name = version.artifact_uri.rsplit("/", 1)[-1] or None
+    parent_model = run.recipe.get("model") if isinstance(run.recipe, dict) else None
+    return ModelVersionResponse(
+        id=version.id,
+        model_id=version.model_id,
+        model_name=model.name,
+        run_id=version.run_id,
+        version_number=version.version_number,
+        status=version.status,
+        artifact_uri=version.artifact_uri,
+        metrics=version.metrics,
+        created_at=version.created_at,
+        task_type=dataset_version.task_type or model.task_type,
+        dataset_version_id=dataset_version.id,
+        dataset_version_number=dataset_version.version_number,
+        class_map=dataset_version.class_map,
+        framework=run.engine,
+        framework_version=None,
+        executor=run.executor,
+        recipe=run.recipe,
+        parent_model=parent_model if isinstance(parent_model, str) else None,
+        command=None,
+        runtime={"executor": run.executor},
+        artifact_name=artifact_name,
+        artifact_size_bytes=None,
+        checksum_sha256=None,
+        license=None,
+        notes=None,
+        tags=[],
+    )
 
 
 def training_engines() -> list[TrainingEngineResponse]:

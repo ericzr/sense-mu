@@ -352,6 +352,23 @@ export const previewModels: ModelVersion[] = [
     artifact_uri: "s3://sensemu-demo/models/ppe/v1/model.pt",
     metrics: { precision: 0.86, recall: 0.81, map50: 0.871, map50_95: 0.621 },
     created_at: "2026-08-08T06:50:00Z",
+    task_type: "object-detection",
+    dataset_version_id: "demo-version-ppe-v1",
+    dataset_version_number: 1,
+    class_map: { "0": "人员", "1": "安全帽", "2": "反光衣" },
+    framework: "ultralytics",
+    framework_version: null,
+    executor: "docker",
+    recipe: { model: "yolo11n.pt", task: "detect", epochs: 40, image_size: 640, batch_size: 16 },
+    parent_model: "yolo11n.pt",
+    command: null,
+    runtime: { executor: "docker" },
+    artifact_name: "model.pt",
+    artifact_size_bytes: null,
+    checksum_sha256: null,
+    license: null,
+    notes: null,
+    tags: [],
   },
   {
     id: "demo-model-ppe-v2",
@@ -363,6 +380,23 @@ export const previewModels: ModelVersion[] = [
     artifact_uri: "s3://sensemu-demo/models/ppe/v2/model.pt",
     metrics: { precision: 0.91, recall: 0.87, map50: 0.923, map50_95: 0.681 },
     created_at: "2026-08-16T09:10:00Z",
+    task_type: "object-detection",
+    dataset_version_id: "demo-version-ppe-v3",
+    dataset_version_number: 3,
+    class_map: { "0": "人员", "1": "安全帽", "2": "反光衣" },
+    framework: "ultralytics",
+    framework_version: null,
+    executor: "docker",
+    recipe: { model: "yolo11s.pt", task: "detect", epochs: 60, image_size: 640, batch_size: 16 },
+    parent_model: "yolo11s.pt",
+    command: null,
+    runtime: { executor: "docker" },
+    artifact_name: "model.pt",
+    artifact_size_bytes: null,
+    checksum_sha256: null,
+    license: null,
+    notes: null,
+    tags: [],
   },
   {
     id: "demo-model-defect-v2",
@@ -374,6 +408,23 @@ export const previewModels: ModelVersion[] = [
     artifact_uri: "s3://sensemu-demo/models/defect/v2/model.pt",
     metrics: { precision: 0.88, recall: 0.84, map50: 0.897, map50_95: 0.642 },
     created_at: "2026-08-13T06:45:00Z",
+    task_type: "object-detection",
+    dataset_version_id: "demo-version-defect-v2",
+    dataset_version_number: 2,
+    class_map: { "0": "划痕", "1": "凹坑", "2": "脏污" },
+    framework: "ultralytics",
+    framework_version: null,
+    executor: "docker",
+    recipe: { model: "yolo11n.pt", task: "detect", epochs: 50, image_size: 640, batch_size: 16 },
+    parent_model: "yolo11n.pt",
+    command: null,
+    runtime: { executor: "docker" },
+    artifact_name: "model.pt",
+    artifact_size_bytes: null,
+    checksum_sha256: null,
+    license: null,
+    notes: null,
+    tags: [],
   },
 ];
 
@@ -715,6 +766,20 @@ export function getPreviewMockResult(path: string, init: RequestInit = {}): Prev
   if (projectModels) {
     const runIds = previewRuns.filter((item) => item.project_id === projectModels[1]).map((item) => item.id);
     return { handled: true, value: previewModels.filter((item) => runIds.includes(item.run_id)) };
+  }
+  const modelVersion = pathname.match(
+    /^\/api\/v1\/projects\/([^/]+)\/model-versions\/([^/]+)$/,
+  );
+  if (modelVersion) {
+    const runIds = previewRuns
+      .filter((item) => item.project_id === modelVersion[1])
+      .map((item) => item.id);
+    return {
+      handled: true,
+      value: previewModels.find(
+        (item) => item.id === modelVersion[2] && runIds.includes(item.run_id),
+      ) ?? null,
+    };
   }
   const projectPolicies = pathname.match(/^\/api\/v1\/projects\/([^/]+)\/evaluation-policies$/);
   if (projectPolicies) return { handled: true, value: projectPolicies[1] === "demo-project-ppe" ? previewPolicies : [] };

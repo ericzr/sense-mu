@@ -88,6 +88,23 @@ class ModelVersionResponse(BaseModel):
     artifact_uri: str
     metrics: dict[str, Any]
     created_at: datetime
+    task_type: str
+    dataset_version_id: UUID
+    dataset_version_number: int
+    class_map: dict[str, str]
+    framework: str
+    framework_version: str | None
+    executor: str
+    recipe: dict[str, Any]
+    parent_model: str | None
+    command: str | None
+    runtime: dict[str, Any]
+    artifact_name: str | None
+    artifact_size_bytes: int | None
+    checksum_sha256: str | None
+    license: str | None
+    notes: str | None
+    tags: list[str]
 
 
 class TrainingEngineResponse(EngineDescriptor):

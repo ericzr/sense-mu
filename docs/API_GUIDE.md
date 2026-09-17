@@ -186,6 +186,9 @@ Core API 当前遵循 FastAPI 默认格式：
 | GET | `/api/v1/training-runs/{run_id}/class-metrics` | 读取类别指标 |
 | GET | `/api/v1/training-runs/{run_id}/visualizations/{visualization}` | 读取白名单 PNG 可视化 |
 | GET | `/api/v1/projects/{project_id}/model-versions` | 列出不可变模型版本 |
+| GET | `/api/v1/projects/{project_id}/model-versions/{model_version_id}` | 获取单个模型版本及可追溯训练契约 |
+
+模型版本响应统一返回 `task_type`、冻结 `dataset_version_id`/版本号、`class_map`、训练框架、执行器、recipe、基础模型和产物文件名。尚未由产物服务登记的框架版本、文件大小、SHA-256、许可证、命令和备注返回 `null`，不得由 API 或前端猜测。`artifact_uri` 是内部事实字段，不是浏览器下载地址；正式下载必须另走有权限和有效期的签名接口。
 
 ### 3.6 评测、验收和发布
 

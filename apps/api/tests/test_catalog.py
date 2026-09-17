@@ -977,6 +977,33 @@ def test_training_run_submission_is_persisted_idempotent_and_cancellable() -> No
     ).json()
     assert model_versions[0]["run_id"] == worker_run["id"]
     assert model_versions[0]["status"] == "validation_passed"
+    assert model_versions[0]["task_type"] == "object-detection"
+    assert model_versions[0]["dataset_version_id"] == version["id"]
+    assert model_versions[0]["dataset_version_number"] == version["version_number"]
+    assert model_versions[0]["class_map"] == {"0": "helmet"}
+    assert model_versions[0]["framework"] == "ultralytics"
+    assert model_versions[0]["executor"] == "docker"
+    assert model_versions[0]["parent_model"] == payload["recipe"]["model"]
+    assert model_versions[0]["artifact_name"] == "best.pt"
+    assert model_versions[0]["checksum_sha256"] is None
+
+    model_detail = client.get(
+        (
+            f"/api/v1/projects/{project['id']}/model-versions/"
+            f"{completion.json()['id']}"
+        ),
+        headers=workspace_headers,
+    )
+    assert model_detail.status_code == 200
+    assert model_detail.json() == model_versions[0]
+    wrong_project_detail = client.get(
+        (
+            f"/api/v1/projects/{uuid4()}/model-versions/"
+            f"{completion.json()['id']}"
+        ),
+        headers=workspace_headers,
+    )
+    assert wrong_project_detail.status_code == 404
 
     evaluations = client.get(
         f"/api/v1/projects/{project['id']}/evaluations",

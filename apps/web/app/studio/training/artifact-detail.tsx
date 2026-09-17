@@ -305,16 +305,19 @@ export function TrainingArtifactDetail({ artifactId, kind }: ArtifactDetailProps
         setProject(selectedProject);
         if (!selectedProject) return;
 
-        const [nextRuns, nextModels, datasets, nextEvaluations, nextDeployments] = await Promise.all([
+        const [nextRuns, nextModels, selectedModel, datasets, nextEvaluations, nextDeployments] = await Promise.all([
           catalogApi.listTrainingRuns(workspace.id, selectedProject.id),
           catalogApi.listModelVersions(workspace.id, selectedProject.id),
+          kind === "model"
+            ? catalogApi.getModelVersion(workspace.id, selectedProject.id, artifactId).catch(() => null)
+            : Promise.resolve(null),
           catalogApi.listDatasets(workspace.id, selectedProject.id),
           catalogApi.listEvaluations(workspace.id, selectedProject.id),
           catalogApi.listDeployments(workspace.id, selectedProject.id),
         ]);
         const eventRunId = kind === "run"
           ? artifactId
-          : nextModels.find((item) => item.id === artifactId)?.run_id ?? null;
+          : selectedModel?.run_id ?? nextModels.find((item) => item.id === artifactId)?.run_id ?? null;
         const reportRun = nextRuns.find((item) => item.id === eventRunId) ?? null;
         const [nextRunEvents, nextTrainingReport, nextTrainingClassMetrics] = await Promise.all([
           eventRunId ? catalogApi.listRunEvents(workspace.id, eventRunId) : Promise.resolve([]),
@@ -353,7 +356,9 @@ export function TrainingArtifactDetail({ artifactId, kind }: ArtifactDetailProps
         setTrainingVisualizations(
           Object.fromEntries(visualizationEntries.flatMap((entry) => entry ? [entry] : [])) as TrainingVisualizationUrls,
         );
-        setModels(nextModels);
+        setModels(selectedModel
+          ? [...nextModels.filter((item) => item.id !== selectedModel.id), selectedModel]
+          : nextModels);
         setVersions(versionGroups.flatMap(({ dataset, versions: items }) =>
           items.map((version) => ({ dataset, version })),
         ));
@@ -376,7 +381,8 @@ export function TrainingArtifactDetail({ artifactId, kind }: ArtifactDetailProps
   const model = kind === "model" ? models.find((item) => item.id === artifactId) ?? null : null;
   const relatedRun = run ?? runs.find((item) => item.id === model?.run_id) ?? null;
   const relatedModel = model ?? models.find((item) => item.run_id === run?.id) ?? null;
-  const datasetVersion = versions.find((item) => item.version.id === relatedRun?.dataset_version_id) ?? null;
+  const datasetVersionId = model?.dataset_version_id ?? relatedRun?.dataset_version_id;
+  const datasetVersion = versions.find((item) => item.version.id === datasetVersionId) ?? null;
   const evaluation = useMemo(() => evaluations
     .filter((item) => item.model_version_id === relatedModel?.id)
     .sort((left, right) => Date.parse(right.evaluated_at) - Date.parse(left.evaluated_at))[0] ?? null,
@@ -387,7 +393,10 @@ export function TrainingArtifactDetail({ artifactId, kind }: ArtifactDetailProps
   [deployments, relatedModel?.id]);
   const projectQuery = project ? `?project=${project.id}` : "";
   const trainingHref = `/studio/training${projectQuery}`;
-  const modelTaskType = datasetVersion?.version.task_type ?? project?.task_type ?? "object-detection";
+  const modelTaskType = model?.task_type ?? datasetVersion?.version.task_type ?? project?.task_type ?? "object-detection";
+  const modelRecipe = model?.recipe ?? relatedRun?.recipe ?? {};
+  const modelFramework = model?.framework ?? relatedRun?.engine ?? "—";
+  const modelArtifactName = model?.artifact_name ?? model?.artifact_uri.split("/").pop() ?? "—";
   const modelTab = ["overview", "train", "predict", "export", "deploy"].includes(requestedTab)
     ? requestedTab
     : "overview";
@@ -549,9 +558,9 @@ export function TrainingArtifactDetail({ artifactId, kind }: ArtifactDetailProps
         </div>
         <div className="model-detail-meta" aria-label="模型元数据">
           <span>{modelTaskTypeLabels[modelTaskType] ?? modelTaskType}</span>
-          <span>训练引擎 {relatedRun?.engine ?? "—"}</span>
-          <span>数据版本 {datasetVersion ? `ds_v${datasetVersion.version.version_number}` : "—"}</span>
-          <span>产物 {model.artifact_uri.split("/").pop() ?? "—"}</span>
+          <span>训练引擎 {modelFramework}{model?.framework_version ? ` ${model.framework_version}` : ""}</span>
+          <span>数据版本 {model?.dataset_version_number ? `ds_v${model.dataset_version_number}` : datasetVersion ? `ds_v${datasetVersion.version.version_number}` : "—"}</span>
+          <span>产物 {modelArtifactName}</span>
         </div>
         <nav className="model-detail-tabs" aria-label="模型工作区">
           {[
@@ -611,9 +620,12 @@ export function TrainingArtifactDetail({ artifactId, kind }: ArtifactDetailProps
           <div className="training-detail-section-heading"><Database size={16} /><h3>模型来源</h3></div>
           <dl className="training-detail-spec-list">
             <div><dt>数据版本</dt><dd>{datasetVersion ? `${datasetVersion.dataset.name} · v${datasetVersion.version.version_number}` : "—"}</dd></div>
-            <div><dt>基础模型</dt><dd>{String(relatedRun?.recipe.model ?? "—")}</dd></div>
-            <div><dt>训练轮次</dt><dd>{String(relatedRun?.recipe.epochs ?? "—")}</dd></div>
-            <div><dt>图像尺寸</dt><dd>{relatedRun?.recipe.image_size ? `${String(relatedRun.recipe.image_size)} px` : "—"}</dd></div>
+            <div><dt>基础模型</dt><dd>{String(modelRecipe.model ?? "—")}</dd></div>
+            <div><dt>训练轮次</dt><dd>{String(modelRecipe.epochs ?? "—")}</dd></div>
+            <div><dt>图像尺寸</dt><dd>{modelRecipe.image_size ? `${String(modelRecipe.image_size)} px` : "—"}</dd></div>
+            <div><dt>类别</dt><dd>{Object.values(model?.class_map ?? {}).join("、") || "—"}</dd></div>
+            <div><dt>执行器</dt><dd>{model?.executor ?? relatedRun?.executor ?? "—"}</dd></div>
+            <div><dt>产物校验</dt><dd>{model?.checksum_sha256 ? model.checksum_sha256.slice(0, 12) : "待产物服务提供"}</dd></div>
           </dl>
           {relatedRun ? <Link className="training-detail-inline-link" href={`/studio/training/runs/${relatedRun.id}${projectQuery}`}>查看训练任务<ArrowUpRight size={13} /></Link> : null}
         </article>

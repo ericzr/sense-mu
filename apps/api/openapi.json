@@ -4074,19 +4074,109 @@
       },
       "ModelVersionResponse": {
         "properties": {
+          "artifact_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Artifact Name"
+          },
+          "artifact_size_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Artifact Size Bytes"
+          },
           "artifact_uri": {
             "title": "Artifact Uri",
             "type": "string"
+          },
+          "checksum_sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checksum Sha256"
+          },
+          "class_map": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Class Map",
+            "type": "object"
+          },
+          "command": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Command"
           },
           "created_at": {
             "format": "date-time",
             "title": "Created At",
             "type": "string"
           },
+          "dataset_version_id": {
+            "format": "uuid",
+            "title": "Dataset Version Id",
+            "type": "string"
+          },
+          "dataset_version_number": {
+            "title": "Dataset Version Number",
+            "type": "integer"
+          },
+          "executor": {
+            "title": "Executor",
+            "type": "string"
+          },
+          "framework": {
+            "title": "Framework",
+            "type": "string"
+          },
+          "framework_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Framework Version"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
             "type": "string"
+          },
+          "license": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "License"
           },
           "metrics": {
             "additionalProperties": true,
@@ -4102,13 +4192,56 @@
             "title": "Model Name",
             "type": "string"
           },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "parent_model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Model"
+          },
+          "recipe": {
+            "additionalProperties": true,
+            "title": "Recipe",
+            "type": "object"
+          },
           "run_id": {
             "format": "uuid",
             "title": "Run Id",
             "type": "string"
           },
+          "runtime": {
+            "additionalProperties": true,
+            "title": "Runtime",
+            "type": "object"
+          },
           "status": {
             "title": "Status",
+            "type": "string"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Tags",
+            "type": "array"
+          },
+          "task_type": {
+            "title": "Task Type",
             "type": "string"
           },
           "version_number": {
@@ -4125,7 +4258,24 @@
           "status",
           "artifact_uri",
           "metrics",
-          "created_at"
+          "created_at",
+          "task_type",
+          "dataset_version_id",
+          "dataset_version_number",
+          "class_map",
+          "framework",
+          "framework_version",
+          "executor",
+          "recipe",
+          "parent_model",
+          "command",
+          "runtime",
+          "artifact_name",
+          "artifact_size_bytes",
+          "checksum_sha256",
+          "license",
+          "notes",
+          "tags"
         ],
         "title": "ModelVersionResponse",
         "type": "object"
@@ -11883,6 +12033,85 @@
           }
         },
         "summary": "List Model Versions",
+        "tags": [
+          "training"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/model-versions/{model_version_id}": {
+      "get": {
+        "operationId": "get_model_version_api_v1_projects__project_id__model_versions__model_version_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "model_version_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Model Version Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Workspace-ID",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "X-Workspace-Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelVersionResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Model Version",
         "tags": [
           "training"
         ]

@@ -201,6 +201,24 @@ def list_model_versions(
     return training_service.list_model_versions(session, workspace_id, project_id)
 
 
+@router.get(
+    "/projects/{project_id}/model-versions/{model_version_id}",
+    response_model=ModelVersionResponse,
+)
+def get_model_version(
+    project_id: UUID,
+    model_version_id: UUID,
+    workspace_id: WorkspaceId,
+    session: SessionDep,
+) -> ModelVersionResponse:
+    return training_service.require_model_version(
+        session,
+        workspace_id,
+        model_version_id,
+        project_id=project_id,
+    )
+
+
 @router.post(
     "/internal/training-runs/{run_id}/execution:claim",
     response_model=WorkerExecutionResponse,
@@ -326,14 +344,4 @@ def receive_worker_completion(
         run_id,
         payload,
     )
-    return ModelVersionResponse(
-        id=version.id,
-        model_id=version.model_id,
-        model_name=payload.model_name,
-        run_id=version.run_id,
-        version_number=version.version_number,
-        status=version.status,
-        artifact_uri=version.artifact_uri,
-        metrics=version.metrics,
-        created_at=version.created_at,
-    )
+    return training_service.require_model_version(session, workspace_id, version.id)

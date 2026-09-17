@@ -409,6 +409,23 @@ export type ModelVersion = {
   artifact_uri: string;
   metrics: Record<string, number>;
   created_at: string;
+  task_type: string;
+  dataset_version_id: string;
+  dataset_version_number: number;
+  class_map: Record<string, string>;
+  framework: string;
+  framework_version: string | null;
+  executor: string;
+  recipe: Record<string, string | number | boolean | null>;
+  parent_model: string | null;
+  command: string | null;
+  runtime: Record<string, string | number | boolean | null>;
+  artifact_name: string | null;
+  artifact_size_bytes: number | null;
+  checksum_sha256: string | null;
+  license: string | null;
+  notes: string | null;
+  tags: string[];
 };
 
 export type EvaluationRule = {
@@ -1454,6 +1471,11 @@ export const catalogApi = {
     }),
   listModelVersions: (workspaceId: string, projectId: string) =>
     request<ModelVersion[]>(`/api/v1/projects/${projectId}/model-versions`, { workspaceId }),
+  getModelVersion: (workspaceId: string, projectId: string, modelVersionId: string) =>
+    request<ModelVersion>(
+      `/api/v1/projects/${projectId}/model-versions/${modelVersionId}`,
+      { workspaceId },
+    ),
   listEvaluationPolicies: (workspaceId: string, projectId: string) =>
     request<EvaluationPolicy[]>(`/api/v1/projects/${projectId}/evaluation-policies`, {
       workspaceId,
