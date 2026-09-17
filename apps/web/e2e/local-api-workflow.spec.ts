@@ -269,11 +269,11 @@ test("真实数据写入可完成标注、训练、独立验收与安全发布",
 
   await expect(page.getByRole("heading", { name: "创建视觉项目" })).toBeVisible();
   await page.getByLabel("项目名称").fill("PPE E2E 项目");
-  await page.getByRole("button", { name: "创建并继续" }).click();
+  await page.getByRole("button", { name: "创建项目" }).click();
 
-  await expect(page.getByRole("heading", { name: "创建数据集" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "新建数据集" })).toBeVisible();
   await page.getByLabel("数据集名称").fill("PPE E2E 数据集");
-  await page.getByRole("button", { name: "创建并继续" }).click();
+  await page.getByRole("button", { name: "创建数据集" }).click();
   await expect(page.getByRole("heading", { name: "PPE E2E 数据集" })).toBeVisible();
 
   const image = await readFile(sampleImagePath);
@@ -290,8 +290,9 @@ test("真实数据写入可完成标注、训练、独立验收与安全发布",
   await splitSelectors.nth(1).selectOption("valid");
   await expect(page.getByRole("status")).toContainText("已设为验证集");
 
-  await page.getByRole("button", { name: /类别与统计/ }).click();
-  await page.getByPlaceholder("安全帽\n反光衣").fill("目标");
+  await page.getByRole("button", { name: /^类别 / }).click();
+  await page.getByRole("button", { name: "添加类别" }).click();
+  await page.getByLabel("类别 0 名称").fill("目标");
   await page.getByRole("button", { name: "保存类别" }).click();
   await expect(page.getByRole("status")).toContainText("类别定义已保存");
 
