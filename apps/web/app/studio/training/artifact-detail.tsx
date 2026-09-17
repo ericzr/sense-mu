@@ -399,6 +399,9 @@ export function TrainingArtifactDetail({ artifactId, kind }: ArtifactDetailProps
   const modelRecipe = model?.recipe ?? relatedRun?.recipe ?? {};
   const modelFramework = model?.framework ?? relatedRun?.engine ?? "—";
   const modelArtifactName = model?.artifact_name ?? "—";
+  const modelArtifactReady = Boolean(
+    model?.artifact_name && model.artifact_size_bytes && model.checksum_sha256,
+  );
   const modelTab = ["overview", "train", "predict", "export", "deploy"].includes(requestedTab)
     ? requestedTab
     : "overview";
@@ -602,19 +605,19 @@ export function TrainingArtifactDetail({ artifactId, kind }: ArtifactDetailProps
         <article className="panel model-detail-tab-panel">
           <div className="training-detail-section-heading"><Download size={16} /><h3>导出模型</h3></div>
           <p>下载原始训练产物。下载链接会按当前工作区权限校验，并在短时间内失效。</p>
-          <dl className="training-detail-spec-list">
-            <div><dt>文件名</dt><dd>{modelArtifactName}</dd></div>
-            <div><dt>文件大小</dt><dd>{model?.artifact_size_bytes ? `${(model.artifact_size_bytes / 1024 / 1024).toFixed(2)} MB` : "—"}</dd></div>
-            <div><dt>SHA-256</dt><dd className="training-detail-breakable">{model?.checksum_sha256 ?? "—"}</dd></div>
-          </dl>
+          <div className="model-detail-export-meta">
+            <span>文件名</span><strong>{modelArtifactName}</strong>
+            <span>文件大小</span><strong>{model?.artifact_size_bytes ? `${(model.artifact_size_bytes / 1024 / 1024).toFixed(2)} MB` : "—"}</strong>
+            <span>SHA-256</span><code title={model?.checksum_sha256 ?? undefined}>{model?.checksum_sha256 ?? "—"}</code>
+          </div>
           <div className="model-detail-action-row">
             <button
               className="primary-button"
               type="button"
-              disabled={!workspaceId}
-              onClick={() => workspaceId && catalogApi.downloadModelArtifact(workspaceId, project?.id ?? requestedProjectId ?? "", model.id)}
+              disabled={!workspaceId || !modelArtifactReady}
+              onClick={() => workspaceId && modelArtifactReady && void catalogApi.downloadModelArtifact(workspaceId, project?.id ?? requestedProjectId ?? "", model.id)}
             >
-              <Download size={13} />下载原始产物
+              <Download size={13} />{modelArtifactReady ? "下载原始产物" : "演示环境暂无产物"}
             </button>
             <span className="model-detail-unavailable">格式转换待接入</span>
           </div>
