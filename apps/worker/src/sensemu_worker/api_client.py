@@ -172,6 +172,8 @@ class WorkerAPIClient:
         *,
         model_name: str,
         artifact_uri: str,
+        artifact_size_bytes: int,
+        checksum_sha256: str,
         metrics: dict[str, Any],
         event_id: UUID | None = None,
     ) -> dict[str, Any]:
@@ -184,6 +186,8 @@ class WorkerAPIClient:
                 "event_id": str(event_id or uuid4()),
                 "model_name": model_name,
                 "artifact_uri": artifact_uri,
+                "artifact_size_bytes": artifact_size_bytes,
+                "checksum_sha256": checksum_sha256,
                 "metrics": metrics,
                 "occurred_at": datetime.now(UTC).isoformat(),
             },

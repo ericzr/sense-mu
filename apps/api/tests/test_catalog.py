@@ -43,6 +43,10 @@ class FakeStorage:
     def uri_for(self, key: str) -> str:
         return f"s3://{self.bucket}/{key}"
 
+    def presign_get(self, uri: str, filename: str, expires_in: int = 300) -> str | None:
+        del uri, filename, expires_in
+        return None
+
     def verify_object(self, key: str, byte_size: int, checksum_sha256: str) -> bool:
         del key, byte_size, checksum_sha256
         return True
@@ -905,6 +909,8 @@ def test_training_run_submission_is_persisted_idempotent_and_cancellable() -> No
         "event_id": str(uuid4()),
         "model_name": "Helmet detector",
         "artifact_uri": artifact_uri,
+        "artifact_size_bytes": 10,
+        "checksum_sha256": sha256(b"x" * 10).hexdigest(),
         "metrics": {"metrics/mAP50(B)": 0.82},
         "occurred_at": occurred_at,
     }
@@ -915,7 +921,7 @@ def test_training_run_submission_is_persisted_idempotent_and_cancellable() -> No
     )
     assert completion.status_code == 200
     assert completion.json()["version_number"] == 1
-    assert completion.json()["artifact_uri"] == artifact_uri
+    assert completion.json()["artifact_name"] == "best.pt"
     assert completion.json()["status"] == "validation_passed"
     repeated_completion = client.post(
         f"/api/v1/internal/training-runs/{worker_run['id']}/complete",
@@ -985,7 +991,8 @@ def test_training_run_submission_is_persisted_idempotent_and_cancellable() -> No
     assert model_versions[0]["executor"] == "docker"
     assert model_versions[0]["parent_model"] == payload["recipe"]["model"]
     assert model_versions[0]["artifact_name"] == "best.pt"
-    assert model_versions[0]["checksum_sha256"] is None
+    assert model_versions[0]["checksum_sha256"] == sha256(b"x" * 10).hexdigest()
+    assert "artifact_uri" not in model_versions[0]
 
     model_detail = client.get(
         (
@@ -996,6 +1003,17 @@ def test_training_run_submission_is_persisted_idempotent_and_cancellable() -> No
     )
     assert model_detail.status_code == 200
     assert model_detail.json() == model_versions[0]
+    fake_storage.objects[f"{worker_run['artifact_prefix']}/model/best.pt"] = b"x" * 10
+    artifact_download = client.get(
+        (
+            f"/api/v1/projects/{project['id']}/model-versions/"
+            f"{completion.json()['id']}/artifact"
+        ),
+        headers=workspace_headers,
+    )
+    assert artifact_download.status_code == 200
+    assert artifact_download.headers["content-type"] == "application/octet-stream"
+    assert artifact_download.headers["content-disposition"] == 'attachment; filename="best.pt"'
     wrong_project_detail = client.get(
         (
             f"/api/v1/projects/{uuid4()}/model-versions/"

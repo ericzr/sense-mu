@@ -26,6 +26,13 @@ class Storage(Protocol):
 
     def uri_for(self, key: str) -> str: ...
 
+    def presign_get(
+        self,
+        uri: str,
+        filename: str,
+        expires_in: int = 300,
+    ) -> str | None: ...
+
     def verify_object(self, key: str, byte_size: int, checksum_sha256: str) -> bool: ...
 
     def put_json(self, key: str, payload: dict[str, Any]) -> str: ...
@@ -71,6 +78,29 @@ class S3Storage:
 
     def uri_for(self, key: str) -> str:
         return f"s3://{self.bucket}/{key}"
+
+    def presign_get(
+        self,
+        uri: str,
+        filename: str,
+        expires_in: int = 300,
+    ) -> str | None:
+        prefix = f"s3://{self.bucket}/"
+        if not uri.startswith(prefix):
+            raise ValueError("对象地址不属于当前存储桶")
+        key = uri.removeprefix(prefix)
+        if not key:
+            raise ValueError("对象地址缺少对象键")
+        return self.client.generate_presigned_url(
+            "get_object",
+            Params={
+                "Bucket": self.bucket,
+                "Key": key,
+                "ResponseContentType": "application/octet-stream",
+                "ResponseContentDisposition": f'attachment; filename="{filename}"',
+            },
+            ExpiresIn=expires_in,
+        )
 
     def verify_object(self, key: str, byte_size: int, checksum_sha256: str) -> bool:
         try:
@@ -159,6 +189,17 @@ class LocalStorage:
 
     def uri_for(self, key: str) -> str:
         return f"local://{key}"
+
+    def presign_get(
+        self,
+        uri: str,
+        filename: str,
+        expires_in: int = 300,
+    ) -> str | None:
+        del filename, expires_in
+        if not uri.startswith("local://"):
+            raise ValueError("对象地址不是本地存储地址")
+        return None
 
     def verify_object(self, key: str, byte_size: int, checksum_sha256: str) -> bool:
         path = self.path_for(key)

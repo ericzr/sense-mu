@@ -2,6 +2,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Response, status
+from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
 from sensemu_api import training_service
@@ -22,6 +23,7 @@ from sensemu_api.training_schemas import (
     WorkerExecutionClaim,
     WorkerExecutionHeartbeat,
     WorkerExecutionResponse,
+    WorkerModelVersionResponse,
     WorkerRunCompletion,
     WorkerRunEventCreate,
 )
@@ -219,6 +221,34 @@ def get_model_version(
     )
 
 
+@router.get(
+    "/projects/{project_id}/model-versions/{model_version_id}/artifact",
+    response_model=None,
+)
+def download_model_artifact(
+    project_id: UUID,
+    model_version_id: UUID,
+    workspace_id: WorkspaceId,
+    session: SessionDep,
+    storage: StorageDep,
+) -> Response:
+    download = training_service.prepare_model_artifact_download(
+        session,
+        storage,
+        workspace_id,
+        project_id,
+        model_version_id,
+    )
+    headers = {
+        "Cache-Control": "private, no-store",
+        "Content-Disposition": f'attachment; filename="{download.filename}"',
+        "X-Content-Type-Options": "nosniff",
+    }
+    if download.signed_url:
+        return RedirectResponse(download.signed_url, status_code=status.HTTP_307_TEMPORARY_REDIRECT, headers=headers)
+    return Response(content=download.payload, media_type="application/octet-stream", headers=headers)
+
+
 @router.post(
     "/internal/training-runs/{run_id}/execution:claim",
     response_model=WorkerExecutionResponse,
@@ -326,7 +356,7 @@ def receive_worker_event(
 
 @router.post(
     "/internal/training-runs/{run_id}/complete",
-    response_model=ModelVersionResponse,
+    response_model=WorkerModelVersionResponse,
     include_in_schema=False,
 )
 def receive_worker_completion(
@@ -336,7 +366,7 @@ def receive_worker_completion(
     session: SessionDep,
     storage: StorageDep,
     _worker_auth: WorkerAuth,
-) -> ModelVersionResponse:
+) -> WorkerModelVersionResponse:
     _, version, _ = training_service.complete_training_run(
         session,
         storage,
@@ -344,4 +374,8 @@ def receive_worker_completion(
         run_id,
         payload,
     )
-    return training_service.require_model_version(session, workspace_id, version.id)
+    response = training_service.require_model_version(session, workspace_id, version.id)
+    return WorkerModelVersionResponse(
+        **response.model_dump(),
+        artifact_uri=version.artifact_uri,
+    )

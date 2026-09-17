@@ -1,7 +1,10 @@
 import csv
 import io
 import json
+import re
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from hashlib import sha256
 from math import isfinite
 from typing import Any
 from uuid import UUID, uuid4
@@ -49,6 +52,13 @@ TRAINING_VISUALIZATION_ARTIFACTS = {
     "confusion_matrix_normalized": "metrics/confusion_matrix_normalized.png",
 }
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
+
+
+@dataclass(frozen=True)
+class ModelArtifactDownload:
+    filename: str
+    signed_url: str | None
+    payload: bytes | None
 
 
 def unprocessable(message: str) -> HTTPException:
@@ -688,6 +698,13 @@ def complete_training_run(
         f"{run.artifact_prefix}/"
     ):
         raise unprocessable("模型产物地址不属于当前训练任务")
+    artifact_key = _artifact_key(completion.artifact_uri)
+    if not storage.verify_object(
+        artifact_key,
+        completion.artifact_size_bytes,
+        completion.checksum_sha256,
+    ):
+        raise unprocessable("模型产物不存在或完整性校验失败")
 
     project = session.get(Project, run.project_id)
     if project is None:
@@ -721,6 +738,8 @@ def complete_training_run(
         version_number=next_version,
         status="candidate",
         artifact_uri=completion.artifact_uri,
+        artifact_size_bytes=completion.artifact_size_bytes,
+        checksum_sha256=completion.checksum_sha256,
         metrics=completion.metrics,
     )
     session.add(model_version)
@@ -802,6 +821,47 @@ def require_model_version(
     return model_version_response(version, model, run, dataset_version)
 
 
+def prepare_model_artifact_download(
+    session: Session,
+    storage: Storage,
+    workspace_id: UUID,
+    project_id: UUID,
+    model_version_id: UUID,
+) -> ModelArtifactDownload:
+    record = session.execute(
+        select(ModelVersion, Model)
+        .join(Model, Model.id == ModelVersion.model_id)
+        .join(Project, Project.id == Model.project_id)
+        .where(
+            ModelVersion.id == model_version_id,
+            Model.project_id == project_id,
+            Project.workspace_id == workspace_id,
+        )
+    ).first()
+    if record is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="未找到模型版本")
+
+    version, _model = record
+    raw_name = version.artifact_uri.rsplit("/", 1)[-1]
+    filename = raw_name if re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,179}", raw_name) else "model.pt"
+    try:
+        signed_url = storage.presign_get(version.artifact_uri, filename, expires_in=300)
+    except (KeyError, OSError, ValueError) as error:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="模型产物暂不可用") from error
+    if signed_url:
+        return ModelArtifactDownload(filename=filename, signed_url=signed_url, payload=None)
+
+    try:
+        payload = storage.get_bytes(version.artifact_uri)
+    except (FileNotFoundError, KeyError, OSError, ValueError) as error:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="模型产物暂不可用") from error
+    if version.artifact_size_bytes is not None and len(payload) != version.artifact_size_bytes:
+        raise conflict("模型产物完整性校验失败")
+    if version.checksum_sha256 is not None and sha256(payload).hexdigest() != version.checksum_sha256:
+        raise conflict("模型产物完整性校验失败")
+    return ModelArtifactDownload(filename=filename, signed_url=None, payload=payload)
+
+
 def model_version_response(
     version: ModelVersion,
     model: Model,
@@ -817,7 +877,6 @@ def model_version_response(
         run_id=version.run_id,
         version_number=version.version_number,
         status=version.status,
-        artifact_uri=version.artifact_uri,
         metrics=version.metrics,
         created_at=version.created_at,
         task_type=dataset_version.task_type or model.task_type,
@@ -832,8 +891,8 @@ def model_version_response(
         command=None,
         runtime={"executor": run.executor},
         artifact_name=artifact_name,
-        artifact_size_bytes=None,
-        checksum_sha256=None,
+        artifact_size_bytes=version.artifact_size_bytes,
+        checksum_sha256=version.checksum_sha256,
         license=None,
         notes=None,
         tags=[],

@@ -85,7 +85,6 @@ class ModelVersionResponse(BaseModel):
     run_id: UUID
     version_number: int
     status: str
-    artifact_uri: str
     metrics: dict[str, Any]
     created_at: datetime
     task_type: str
@@ -105,6 +104,10 @@ class ModelVersionResponse(BaseModel):
     license: str | None
     notes: str | None
     tags: list[str]
+
+
+class WorkerModelVersionResponse(ModelVersionResponse):
+    artifact_uri: str
 
 
 class TrainingEngineResponse(EngineDescriptor):
@@ -127,6 +130,8 @@ class WorkerRunCompletion(BaseModel):
     event_id: UUID
     model_name: str = Field(min_length=1, max_length=180)
     artifact_uri: str = Field(min_length=1, max_length=2048)
+    artifact_size_bytes: int = Field(gt=0)
+    checksum_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
     metrics: dict[str, Any] = Field(default_factory=dict)
     occurred_at: datetime
 

@@ -2,6 +2,7 @@ import json
 import logging
 import socket
 import tempfile
+from hashlib import sha256
 from ipaddress import ip_address
 from pathlib import Path
 from typing import Any
@@ -66,6 +67,16 @@ def _require_public_webhook_target(target_url: str) -> None:
         raise ValueError("Webhook 域名无法安全解析") from error
     if not addresses or any(not address.is_global for address in addresses):
         raise ValueError("Webhook 域名不能解析到本地、私有或保留网络")
+
+
+def _file_integrity(path: Path) -> tuple[int, str]:
+    digest = sha256()
+    size = 0
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            size += len(chunk)
+            digest.update(chunk)
+    return size, digest.hexdigest()
 
 
 @shared_task(bind=True, name="sensemu.video-extraction.execute", max_retries=3)
@@ -382,6 +393,8 @@ def execute_training(
                 attempt_id,
                 model_name=str(completion["model_name"]),
                 artifact_uri=str(completion["artifact_uri"]),
+                artifact_size_bytes=int(completion["artifact_size_bytes"]),
+                checksum_sha256=str(completion["checksum_sha256"]),
                 metrics=dict(completion.get("metrics", {})),
                 event_id=UUID(str(completion["event_id"])),
             )
@@ -471,6 +484,7 @@ def execute_training(
             )
             artifact_prefix = str(job_spec["artifact_prefix"])
             artifact_uri = store.upload(model_path, f"{artifact_prefix}/model/best.pt")
+            artifact_size_bytes, checksum_sha256 = _file_integrity(model_path)
             if results_path is not None:
                 store.upload(results_path, f"{artifact_prefix}/metrics/results.csv")
             for visualization_path in visualization_paths:
@@ -491,6 +505,8 @@ def execute_training(
             "event_id": str(uuid4()),
             "model_name": str(job_spec.get("project", {}).get("name") or "训练模型"),
             "artifact_uri": artifact_uri,
+            "artifact_size_bytes": artifact_size_bytes,
+            "checksum_sha256": checksum_sha256,
             "metrics": metrics,
         }
         try:
@@ -500,6 +516,8 @@ def execute_training(
                 attempt_id,
                 model_name=str(completion_payload["model_name"]),
                 artifact_uri=artifact_uri,
+                artifact_size_bytes=artifact_size_bytes,
+                checksum_sha256=checksum_sha256,
                 metrics=metrics,
                 event_id=UUID(str(completion_payload["event_id"])),
             )

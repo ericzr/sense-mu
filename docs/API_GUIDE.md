@@ -187,8 +187,9 @@ Core API 当前遵循 FastAPI 默认格式：
 | GET | `/api/v1/training-runs/{run_id}/visualizations/{visualization}` | 读取白名单 PNG 可视化 |
 | GET | `/api/v1/projects/{project_id}/model-versions` | 列出不可变模型版本 |
 | GET | `/api/v1/projects/{project_id}/model-versions/{model_version_id}` | 获取单个模型版本及可追溯训练契约 |
+| GET | `/api/v1/projects/{project_id}/model-versions/{model_version_id}/artifact` | 在工作区权限边界内下载原始模型产物；生产对象存储返回短时签名跳转，本地开发由 API 代理 |
 
-模型版本响应统一返回 `task_type`、冻结 `dataset_version_id`/版本号、`class_map`、训练框架、执行器、recipe、基础模型和产物文件名。尚未由产物服务登记的框架版本、文件大小、SHA-256、许可证、命令和备注返回 `null`，不得由 API 或前端猜测。`artifact_uri` 是内部事实字段，不是浏览器下载地址；正式下载必须另走有权限和有效期的签名接口。
+模型版本响应统一返回 `task_type`、冻结 `dataset_version_id`/版本号、`class_map`、训练框架、执行器、recipe、基础模型、产物文件名、大小和 SHA-256。`artifact_uri` 是内部事实字段，不进入浏览器响应；下载必须通过上面的工作区授权接口，生产环境由对象存储返回短时签名地址，本地开发由 API 受保护地读取并在返回前复核大小和 SHA-256。格式转换不属于当前接口合同。
 
 ### 3.6 评测、验收和发布
 

@@ -278,6 +278,7 @@ export function TrainingArtifactDetail({ artifactId, kind }: ArtifactDetailProps
   const requestedTab = searchParams.get("tab") ?? "overview";
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [workspaceId, setWorkspaceId] = useState<string | null>(null);
   const [project, setProject] = useState<Project | null>(null);
   const [runs, setRuns] = useState<TrainingRun[]>([]);
   const [runEvents, setRunEvents] = useState<RunEvent[]>([]);
@@ -300,6 +301,7 @@ export function TrainingArtifactDetail({ artifactId, kind }: ArtifactDetailProps
       .then(async (workspaces) => {
         const workspace = workspaces[0];
         if (!workspace) return;
+        setWorkspaceId(workspace.id);
         const projects = await catalogApi.listProjects(workspace.id);
         const selectedProject = projects.find((item) => item.id === requestedProjectId) ?? projects[0] ?? null;
         setProject(selectedProject);
@@ -396,7 +398,7 @@ export function TrainingArtifactDetail({ artifactId, kind }: ArtifactDetailProps
   const modelTaskType = model?.task_type ?? datasetVersion?.version.task_type ?? project?.task_type ?? "object-detection";
   const modelRecipe = model?.recipe ?? relatedRun?.recipe ?? {};
   const modelFramework = model?.framework ?? relatedRun?.engine ?? "—";
-  const modelArtifactName = model?.artifact_name ?? model?.artifact_uri.split("/").pop() ?? "—";
+  const modelArtifactName = model?.artifact_name ?? "—";
   const modelTab = ["overview", "train", "predict", "export", "deploy"].includes(requestedTab)
     ? requestedTab
     : "overview";
@@ -599,8 +601,23 @@ export function TrainingArtifactDetail({ artifactId, kind }: ArtifactDetailProps
       {modelTab === "export" ? (
         <article className="panel model-detail-tab-panel">
           <div className="training-detail-section-heading"><Download size={16} /><h3>导出模型</h3></div>
-          <p>模型产物已登记，但签名下载和格式转换接口尚未接入。接入存储服务后，这里会提供受权限控制的下载。</p>
-          <div className="model-detail-unavailable"><Download size={15} />导出接口待接入</div>
+          <p>下载原始训练产物。下载链接会按当前工作区权限校验，并在短时间内失效。</p>
+          <dl className="training-detail-spec-list">
+            <div><dt>文件名</dt><dd>{modelArtifactName}</dd></div>
+            <div><dt>文件大小</dt><dd>{model?.artifact_size_bytes ? `${(model.artifact_size_bytes / 1024 / 1024).toFixed(2)} MB` : "—"}</dd></div>
+            <div><dt>SHA-256</dt><dd className="training-detail-breakable">{model?.checksum_sha256 ?? "—"}</dd></div>
+          </dl>
+          <div className="model-detail-action-row">
+            <button
+              className="primary-button"
+              type="button"
+              disabled={!workspaceId}
+              onClick={() => workspaceId && catalogApi.downloadModelArtifact(workspaceId, project?.id ?? requestedProjectId ?? "", model.id)}
+            >
+              <Download size={13} />下载原始产物
+            </button>
+            <span className="model-detail-unavailable">格式转换待接入</span>
+          </div>
         </article>
       ) : null}
 

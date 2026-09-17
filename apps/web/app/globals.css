@@ -6363,6 +6363,37 @@ html[data-sidebar-collapsed="true"] .app-shell .profile-row {
   font-size: 9px;
 }
 
+.model-detail-export-meta {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: baseline;
+  gap: 8px 14px;
+  max-width: 720px;
+  padding: 12px 14px;
+  border: 1px solid #e3e5df;
+  border-radius: 8px;
+  background: #fafaf8;
+  font-size: 9px;
+}
+
+.model-detail-export-meta span {
+  color: #888c84;
+}
+
+.model-detail-export-meta strong,
+.model-detail-export-meta code {
+  min-width: 0;
+  overflow: hidden;
+  color: #242824;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.model-detail-export-meta code {
+  font-family: var(--font-mono);
+  font-size: 8px;
+}
+
 .training-detail-inline-link {
   display: inline-flex;
   align-items: center;

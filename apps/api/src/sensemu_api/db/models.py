@@ -541,6 +541,8 @@ class ModelVersion(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     version_number: Mapped[int] = mapped_column(Integer, nullable=False)
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="candidate")
     artifact_uri: Mapped[str] = mapped_column(Text, nullable=False)
+    artifact_size_bytes: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    checksum_sha256: Mapped[str | None] = mapped_column(String(64), nullable=True)
     metrics: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
 
 

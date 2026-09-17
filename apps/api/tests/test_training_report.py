@@ -27,6 +27,14 @@ class ReportStorage:
     def uri_for(self, key: str) -> str:
         return f"s3://{self.bucket}/{key}"
 
+    def presign_get(self, uri: str, filename: str, expires_in: int = 300) -> str | None:
+        del uri, filename, expires_in
+        return None
+
+    def verify_object(self, key: str, byte_size: int, checksum_sha256: str) -> bool:
+        del key, byte_size, checksum_sha256
+        return True
+
     def get_bytes(self, uri: str) -> bytes:
         key = uri.removeprefix(f"s3://{self.bucket}/")
         try:

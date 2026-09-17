@@ -406,7 +406,6 @@ export type ModelVersion = {
   run_id: string;
   version_number: number;
   status: string;
-  artifact_uri: string;
   metrics: Record<string, number>;
   created_at: string;
   task_type: string;
@@ -1476,6 +1475,31 @@ export const catalogApi = {
       `/api/v1/projects/${projectId}/model-versions/${modelVersionId}`,
       { workspaceId },
     ),
+  downloadModelArtifact: async (workspaceId: string, projectId: string, modelVersionId: string) => {
+    let response: Response;
+    try {
+      const headers = new Headers({ "X-Workspace-ID": workspaceId });
+      addAccessToken(headers);
+      response = await fetchWithTimeout(
+        `${apiBaseUrl()}/api/v1/projects/${projectId}/model-versions/${modelVersionId}/artifact`,
+        { headers },
+        ARTIFACT_REQUEST_TIMEOUT_MS,
+      );
+    } catch (error) {
+      if (isRequestTimeout(error)) throw new Error("模型下载超时，请稍后重试");
+      throw new Error("无法连接 SenseMu API，请确认本地服务已启动");
+    }
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as { detail?: string } | null;
+      throw apiErrorForResponse(response.status, payload?.detail ?? null);
+    }
+    const objectUrl = URL.createObjectURL(await response.blob());
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = response.headers.get("content-disposition")?.match(/filename="?([^";]+)"?/i)?.[1] ?? "model.pt";
+    link.click();
+    URL.revokeObjectURL(objectUrl);
+  },
   listEvaluationPolicies: (workspaceId: string, projectId: string) =>
     request<EvaluationPolicy[]>(`/api/v1/projects/${projectId}/evaluation-policies`, {
       workspaceId,

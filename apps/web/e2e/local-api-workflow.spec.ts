@@ -183,6 +183,10 @@ async function completeTrainingRun(
   };
   const attemptId = randomUUID();
   const occurredAt = new Date().toISOString();
+  const modelPayload = Buffer.from("sensemu-e2e-model");
+  const artifactKey = `/dev-storage/${run.artifact_prefix}/model/best.pt`;
+  const artifactUpload = await page.request.put(`${coreApiUrl}${artifactKey}`, { data: modelPayload });
+  expect(artifactUpload.status()).toBe(204);
   await coreApi(page, `/internal/training-runs/${run.id}/execution:claim`, {
     method: "POST",
     headers,
@@ -206,6 +210,8 @@ async function completeTrainingRun(
       event_id: randomUUID(),
       model_name: "PPE E2E 模型",
       artifact_uri: `local://${run.artifact_prefix}/model/best.pt`,
+      artifact_size_bytes: modelPayload.byteLength,
+      checksum_sha256: createHash("sha256").update(modelPayload).digest("hex"),
       metrics: { "metrics/mAP50(B)": 0.91 },
       occurred_at: occurredAt,
     },

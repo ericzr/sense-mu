@@ -1020,6 +1020,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{project_id}/model-versions/{model_version_id}/artifact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download Model Artifact */
+        get: operations["download_model_artifact_api_v1_projects__project_id__model_versions__model_version_id__artifact_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects/{project_id}/training-runs": {
         parameters: {
             query?: never;
@@ -3149,8 +3166,6 @@ export interface components {
             artifact_name: string | null;
             /** Artifact Size Bytes */
             artifact_size_bytes: number | null;
-            /** Artifact Uri */
-            artifact_uri: string;
             /** Checksum Sha256 */
             checksum_sha256: string | null;
             /** Class Map */
@@ -6863,6 +6878,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TrainingRunResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    download_model_artifact_api_v1_projects__project_id__model_versions__model_version_id__artifact_get: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Workspace-ID": string;
+                Authorization?: string | null;
+            };
+            path: {
+                project_id: string;
+                model_version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
