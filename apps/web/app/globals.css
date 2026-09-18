@@ -6335,6 +6335,11 @@ html[data-sidebar-collapsed="true"] .app-shell .profile-row {
   padding: 20px;
 }
 
+/* Keep the model workspace hero and its active tab panel visually separated. */
+.model-detail-hero + .model-detail-tab-panel {
+  margin-top: 12px;
+}
+
 .model-detail-tab-panel p {
   max-width: 720px;
   margin: 0;
