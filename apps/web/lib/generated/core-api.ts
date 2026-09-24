@@ -1911,6 +1911,10 @@ export interface components {
             recipe: {
                 [key: string]: unknown;
             };
+            /** Resource Usage */
+            resource_usage?: {
+                [key: string]: unknown;
+            } | null;
             result?: components["schemas"]["BatchInferenceResultResponse"] | null;
             /**
              * Reused
@@ -3763,6 +3767,10 @@ export interface components {
             recipe: {
                 [key: string]: unknown;
             };
+            /** Resource Usage */
+            resource_usage?: {
+                [key: string]: unknown;
+            } | null;
             /**
              * Reused
              * @default false

@@ -37,6 +37,7 @@ class TrainingRunResponse(ORMModel):
     heartbeat_at: datetime | None
     started_at: datetime | None
     finished_at: datetime | None
+    resource_usage: dict[str, Any] | None = None
     created_at: datetime
     updated_at: datetime
     reused: bool = False
@@ -133,6 +134,7 @@ class WorkerRunCompletion(BaseModel):
     artifact_size_bytes: int = Field(gt=0)
     checksum_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
     metrics: dict[str, Any] = Field(default_factory=dict)
+    resource_usage: dict[str, Any] = Field(default_factory=dict)
     occurred_at: datetime
 
 

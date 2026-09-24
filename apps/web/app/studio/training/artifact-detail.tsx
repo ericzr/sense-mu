@@ -482,6 +482,19 @@ export function TrainingArtifactDetail({ artifactId, kind }: ArtifactDetailProps
             </dl>
           </article>
 
+          <article className="panel training-detail-section training-resource-usage">
+            <div className="training-detail-section-heading"><Cpu size={16} /><h3>资源使用</h3></div>
+            {run.resource_usage ? (
+              <dl className="training-detail-spec-list">
+                <div><dt>执行设备</dt><dd>{run.resource_usage.device === "gpu" ? "GPU" : "CPU"}</dd></div>
+                <div><dt>执行时长</dt><dd>{typeof run.resource_usage.duration_seconds === "number" ? (Math.round(run.resource_usage.duration_seconds / 60) + " 分钟") : "—"}</dd></div>
+                <div><dt>训练素材</dt><dd>{run.resource_usage.train_assets ?? "—"}</dd></div>
+                <div><dt>验证素材</dt><dd>{run.resource_usage.validation_assets ?? "—"}</dd></div>
+                <div><dt>运行镜像</dt><dd>{run.resource_usage.runtime_image ?? "—"}</dd></div>
+              </dl>
+            ) : <p className="training-detail-muted">任务完成后由执行 Worker 登记，不使用前端估算。</p>}
+          </article>
+
           <article className="panel training-detail-section">
             <div className="training-detail-section-heading"><Cpu size={16} /><h3>任务结果</h3></div>
             {relatedModel ? (

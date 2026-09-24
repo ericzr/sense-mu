@@ -330,6 +330,14 @@ export type TrainingRun = {
   error_message: string | null;
   started_at: string | null;
   finished_at: string | null;
+  resource_usage: {
+    schema_version?: string;
+    runtime_image?: string;
+    device?: string;
+    duration_seconds?: number;
+    train_assets?: number;
+    validation_assets?: number;
+  } | null;
   created_at: string;
   updated_at: string;
   reused: boolean;

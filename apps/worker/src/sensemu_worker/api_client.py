@@ -175,6 +175,7 @@ class WorkerAPIClient:
         artifact_size_bytes: int,
         checksum_sha256: str,
         metrics: dict[str, Any],
+        resource_usage: dict[str, Any],
         event_id: UUID | None = None,
     ) -> dict[str, Any]:
         return self._request(
@@ -189,6 +190,7 @@ class WorkerAPIClient:
                 "artifact_size_bytes": artifact_size_bytes,
                 "checksum_sha256": checksum_sha256,
                 "metrics": metrics,
+                "resource_usage": resource_usage,
                 "occurred_at": datetime.now(UTC).isoformat(),
             },
         )

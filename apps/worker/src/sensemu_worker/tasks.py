@@ -2,6 +2,7 @@ import json
 import logging
 import socket
 import tempfile
+import time
 from hashlib import sha256
 from ipaddress import ip_address
 from pathlib import Path
@@ -396,6 +397,7 @@ def execute_training(
                 artifact_size_bytes=int(completion["artifact_size_bytes"]),
                 checksum_sha256=str(completion["checksum_sha256"]),
                 metrics=dict(completion.get("metrics", {})),
+                resource_usage=dict(completion.get("resource_usage", {})),
                 event_id=UUID(str(completion["event_id"])),
             )
         except TransientWorkerAPIError as error:
@@ -474,6 +476,7 @@ def execute_training(
                     return False
 
             artifact_directory = workspace / "artifacts"
+            execution_started = time.monotonic()
             model_path, metrics, results_path, visualization_paths, class_metrics_path = executor.run(
                 run_id,
                 prepared,
@@ -485,6 +488,14 @@ def execute_training(
             artifact_prefix = str(job_spec["artifact_prefix"])
             artifact_uri = store.upload(model_path, f"{artifact_prefix}/model/best.pt")
             artifact_size_bytes, checksum_sha256 = _file_integrity(model_path)
+            resource_usage = {
+                "schema_version": "1.0",
+                "runtime_image": resolved_image,
+                "device": "gpu" if executor.use_gpu else "cpu",
+                "duration_seconds": round(max(0.0, time.monotonic() - execution_started), 3),
+                "train_assets": prepared.train_count,
+                "validation_assets": prepared.validation_count,
+            }
             if results_path is not None:
                 store.upload(results_path, f"{artifact_prefix}/metrics/results.csv")
             for visualization_path in visualization_paths:
@@ -508,6 +519,7 @@ def execute_training(
             "artifact_size_bytes": artifact_size_bytes,
             "checksum_sha256": checksum_sha256,
             "metrics": metrics,
+            "resource_usage": resource_usage,
         }
         try:
             api.complete(
@@ -519,6 +531,7 @@ def execute_training(
                 artifact_size_bytes=artifact_size_bytes,
                 checksum_sha256=checksum_sha256,
                 metrics=metrics,
+                resource_usage=resource_usage,
                 event_id=UUID(str(completion_payload["event_id"])),
             )
         except TransientWorkerAPIError as error:

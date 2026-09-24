@@ -802,6 +802,18 @@
             "title": "Recipe",
             "type": "object"
           },
+          "resource_usage": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resource Usage"
+          },
           "result": {
             "anyOf": [
               {
@@ -5558,6 +5570,18 @@
             "additionalProperties": true,
             "title": "Recipe",
             "type": "object"
+          },
+          "resource_usage": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resource Usage"
           },
           "reused": {
             "default": false,

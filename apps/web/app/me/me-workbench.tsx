@@ -296,7 +296,7 @@ export function MeWorkbench({ initialView }: { initialView: View }) {
             {computeView === "training" ? (
               <div className="me-table compute-hosting-table" role="tabpanel">
                 {trainingRuns.map((run) => <article key={run.id}>
-                  <div><strong>{String(run.recipe.model ?? run.engine)}</strong><small>{run.project.name} · {String(run.recipe.epochs ?? "—")} 轮 · {run.progress}%</small></div>
+                  <div><strong>{String(run.recipe.model ?? run.engine)}</strong><small>{run.project.name} · {String(run.recipe.epochs ?? "—")} 轮 · {run.resource_usage?.device === "gpu" ? "GPU" : "CPU"} · {run.resource_usage?.duration_seconds ? (Math.round(run.resource_usage.duration_seconds / 60) + " 分钟") : "执行中"}</small></div>
                   <span>{trainingStatus[run.status] ?? run.status}</span>
                   <Link href={`/studio/training/runs/${run.id}?project=${run.project_id}`}>查看<ArrowRight size={12} /></Link>
                 </article>)}

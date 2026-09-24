@@ -232,6 +232,8 @@ Core API 当前遵循 FastAPI 默认格式：
 | POST | `/api/v1/marketplace/subscriptions/{subscription_id}:claim-key` | 一次性领取密钥 |
 | POST | `/api/v1/marketplace/subscriptions/{subscription_id}:rotate-key` | 轮换买方密钥 |
 | GET | `/api/v1/marketplace/usage-records` | 成功调用记录 |
+
+训练任务响应中的 `resource_usage` 为 Worker 完成时登记的不可变资源快照，包含 `device`、`runtime_image`、`duration_seconds`、`train_assets` 和 `validation_assets`；任务未完成或旧数据无快照时为 `null`。该字段仅描述资源事实，不代表费用。
 | GET | `/api/v1/marketplace/billing` | 订单、支付和收入事实 |
 | POST | `/api/v1/dataset-versions/{dataset_version_id}/data-listing` | 从冻结版本发布数据卡 |
 | GET | `/api/v1/data-market/listings/public` | 无工作区访客列出公开数据卡 |

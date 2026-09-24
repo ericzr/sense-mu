@@ -466,6 +466,8 @@ class Run(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     heartbeat_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Immutable execution facts recorded by the worker on successful completion.
+    resource_usage: Mapped[dict[str, Any] | None] = mapped_column(JSON)
 
 
 class RunEvent(UUIDPrimaryKeyMixin, Base):

@@ -749,6 +749,7 @@ def complete_training_run(
     run.progress = 100
     run.started_at = run.started_at or completion.occurred_at
     run.finished_at = completion.occurred_at
+    run.resource_usage = dict(completion.resource_usage)
     run.heartbeat_at = completion.occurred_at
     run.error_code = None
     run.error_message = None
