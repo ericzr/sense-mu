@@ -2357,6 +2357,12 @@ export interface components {
              */
             environment: "staging" | "production";
             /**
+             * Hosting Mode
+             * @default sensemu_managed
+             * @constant
+             */
+            hosting_mode: "sensemu_managed";
+            /**
              * Model Version Id
              * Format: uuid
              */
@@ -2387,6 +2393,11 @@ export interface components {
             evaluation_id: string | null;
             /** Evaluation Policy Version */
             evaluation_policy_version: number | null;
+            /**
+             * Hosting Mode
+             * @default sensemu_managed
+             */
+            hosting_mode: string;
             /**
              * Id
              * Format: uuid
@@ -2456,6 +2467,11 @@ export interface components {
             evaluation_id: string | null;
             /** Evaluation Policy Version */
             evaluation_policy_version: number | null;
+            /**
+             * Hosting Mode
+             * @default sensemu_managed
+             */
+            hosting_mode: string;
             /**
              * Id
              * Format: uuid

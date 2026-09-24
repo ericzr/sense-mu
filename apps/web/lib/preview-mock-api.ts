@@ -444,6 +444,7 @@ export const previewDeployments: Deployment[] = [
     endpoint_slug: "ppe-safety-demo",
     endpoint_url: "https://api.example.invalid/v1/ppe-safety-demo:predict",
     environment: "staging",
+    hosting_mode: "sensemu_managed",
     status: "published",
     spec_uri: "s3://sensemu-demo/deployments/ppe/spec.json",
     api_key_prefix: "sm_demo_",

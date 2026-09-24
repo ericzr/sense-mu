@@ -620,6 +620,7 @@ class Deployment(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     name: Mapped[str] = mapped_column(String(180), nullable=False)
     endpoint_slug: Mapped[str] = mapped_column(String(120), nullable=False)
     environment: Mapped[str] = mapped_column(String(32), nullable=False, default="production")
+    hosting_mode: Mapped[str] = mapped_column(String(32), nullable=False, default="sensemu_managed")
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="provisioning")
     spec_uri: Mapped[str | None] = mapped_column(Text)
     api_key_prefix: Mapped[str | None] = mapped_column(String(24))

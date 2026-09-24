@@ -305,7 +305,7 @@ export function MeWorkbench({ initialView }: { initialView: View }) {
             ) : (
               <div className="me-table compute-hosting-table" role="tabpanel">
                 {deployments.map((deployment) => <article key={deployment.id}>
-                  <div><strong>{deployment.name}</strong><small>{deployment.model_name} v{deployment.model_version_number} · {deployment.request_count.toLocaleString("zh-CN")} 次调用</small></div>
+                  <div><strong>{deployment.name}</strong><small>{deployment.model_name} v{deployment.model_version_number} · SenseMu 托管 · {deployment.request_count.toLocaleString("zh-CN")} 次调用</small></div>
                   <span>{deploymentStatus[deployment.status] ?? deployment.status}</span>
                   <Link href={`/services?project=${deployment.project_id}`}>查看<ArrowRight size={12} /></Link>
                 </article>)}

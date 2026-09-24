@@ -234,6 +234,8 @@ Core API 当前遵循 FastAPI 默认格式：
 | GET | `/api/v1/marketplace/usage-records` | 成功调用记录 |
 
 训练任务响应中的 `resource_usage` 为 Worker 完成时登记的不可变资源快照，包含 `device`、`runtime_image`、`duration_seconds`、`train_assets` 和 `validation_assets`；任务未完成或旧数据无快照时为 `null`。该字段仅描述资源事实，不代表费用。
+
+在线服务响应中的 `hosting_mode` 当前为 `sensemu_managed`，表示模型运行由 SenseMu 的托管推理网关负责；调用次数和图像量来自成功用量记录，运行健康度仍通过发布与调用页的实时探针读取，不将过期探针结果写成持久事实。
 | GET | `/api/v1/marketplace/billing` | 订单、支付和收入事实 |
 | POST | `/api/v1/dataset-versions/{dataset_version_id}/data-listing` | 从冻结版本发布数据卡 |
 | GET | `/api/v1/data-market/listings/public` | 无工作区访客列出公开数据卡 |

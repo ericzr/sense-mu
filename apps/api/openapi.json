@@ -1954,6 +1954,12 @@
             "title": "Environment",
             "type": "string"
           },
+          "hosting_mode": {
+            "const": "sensemu_managed",
+            "default": "sensemu_managed",
+            "title": "Hosting Mode",
+            "type": "string"
+          },
           "model_version_id": {
             "format": "uuid",
             "title": "Model Version Id",
@@ -2042,6 +2048,11 @@
               }
             ],
             "title": "Evaluation Policy Version"
+          },
+          "hosting_mode": {
+            "default": "sensemu_managed",
+            "title": "Hosting Mode",
+            "type": "string"
           },
           "id": {
             "format": "uuid",
@@ -2220,6 +2231,11 @@
               }
             ],
             "title": "Evaluation Policy Version"
+          },
+          "hosting_mode": {
+            "default": "sensemu_managed",
+            "title": "Hosting Mode",
+            "type": "string"
           },
           "id": {
             "format": "uuid",

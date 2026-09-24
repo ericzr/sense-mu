@@ -161,6 +161,7 @@ def create_deployment(
         name=payload.name,
         endpoint_slug=payload.endpoint_slug,
         environment=payload.environment,
+        hosting_mode=payload.hosting_mode,
         status="published",
         spec_uri=spec_uri,
         api_key_prefix=key_prefix,
@@ -230,6 +231,7 @@ def to_response(
             f"{workspace.slug}/endpoints/{deployment.endpoint_slug}:predict"
         ),
         environment=deployment.environment,
+        hosting_mode=deployment.hosting_mode,
         status=deployment.status,
         spec_uri=deployment.spec_uri,
         api_key_prefix=deployment.api_key_prefix,

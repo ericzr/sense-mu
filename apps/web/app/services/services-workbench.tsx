@@ -1110,7 +1110,7 @@ export function ServicesWorkbench() {
                 <button className="deployment-endpoint" type="button" onClick={() => void copyValue(deployment.endpoint_url, "端点地址")} title="复制端点地址"><code>/{deployment.endpoint_slug}</code><Clipboard size={12} /></button>
                 <div className="deployment-metric"><strong>{deployment.request_count.toLocaleString("zh-CN")}</strong><span>调用</span></div>
                 <div className="deployment-metric"><strong>{deployment.billable_units.toLocaleString("zh-CN")}</strong><span>图像</span></div>
-                <div className="deployment-meta"><span>{deployment.environment === "production" ? "生产" : "预发布"}</span><small>{deployment.status === "published" ? `发布于 ${formatTime(deployment.published_at)}` : `停用于 ${formatTime(deployment.disabled_at)}`}</small></div>
+                <div className="deployment-meta"><span>{deployment.hosting_mode === "sensemu_managed" ? "SenseMu 托管" : "客户托管"} · {deployment.environment === "production" ? "生产" : "预发布"}</span><small>{deployment.status === "published" ? `发布于 ${formatTime(deployment.published_at)}` : `停用于 ${formatTime(deployment.disabled_at)}`}</small></div>
                 <div className="deployment-actions">
                   <button type="button" disabled={busy} title="轮换 API 密钥" onClick={() => void rotateKey(deployment)}><RefreshCw size={13} /></button>
                   <button type="button" disabled={busy} title={deployment.status === "published" ? "停用服务" : "启用服务"} onClick={() => void setEnabled(deployment, deployment.status !== "published")}>

@@ -491,6 +491,7 @@ export type Deployment = {
   endpoint_slug: string;
   endpoint_url: string;
   environment: string;
+  hosting_mode: "sensemu_managed";
   status: string;
   spec_uri: string | null;
   api_key_prefix: string | null;

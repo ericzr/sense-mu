@@ -10,6 +10,7 @@ class DeploymentCreate(BaseModel):
     name: str = Field(min_length=1, max_length=180)
     endpoint_slug: str = Field(pattern=r"^[a-z0-9][a-z0-9-]{2,119}$")
     environment: Literal["staging", "production"] = "production"
+    hosting_mode: Literal["sensemu_managed"] = "sensemu_managed"
 
 
 class DeploymentResponse(BaseModel):
@@ -27,6 +28,7 @@ class DeploymentResponse(BaseModel):
     endpoint_slug: str
     endpoint_url: str
     environment: str
+    hosting_mode: str = "sensemu_managed"
     status: str
     spec_uri: str | None
     api_key_prefix: str | None
