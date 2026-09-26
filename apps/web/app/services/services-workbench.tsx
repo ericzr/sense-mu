@@ -678,6 +678,7 @@ export function ServicesWorkbench() {
   const runtimeCapacity = inferenceHealth?.runtime.capacity;
   const runtimeCache = inferenceHealth?.runtime.cache;
   const runtimeReady = inferenceHealth?.status === "ready";
+  const runtimeAccepting = runtimeReady && inferenceHealth?.runtime.accepting_requests !== false;
   const runtimeNotConfigured = inferenceHealth?.runtime.status === "not_configured";
   const runtimeLabel = healthBusy
     ? "正在检查运行状态"
@@ -695,6 +696,14 @@ export function ServicesWorkbench() {
       : runtimeCapacity && runtimeCache
         ? `可用容量 ${runtimeCapacity.available_slots}/${runtimeCapacity.max_concurrent_requests} · 已缓存 ${runtimeCache.loaded_models}/${runtimeCache.max_cached_models} 个模型`
         : "等待网关返回端到端状态";
+  const publishGateReady = Boolean(activePolicy && eligibleModels.length > 0);
+  const publishGateSummary = publishGateReady
+    ? eligibleModels.length === 1
+      ? "已有 1 个模型版本满足发布检查，可以创建服务。"
+      : `已有 ${eligibleModels.length} 个模型版本满足发布检查，可以创建服务。`
+    : activePolicy
+      ? "还没有模型通过当前发布检查。"
+      : "先配置发布检查，再评估模型是否具备发布资格。";
 
   if (loading) {
     return (
@@ -759,10 +768,15 @@ export function ServicesWorkbench() {
             <span><ShieldCheck size={17} /></span>
             <div><span className="eyebrow">发布条件</span><h2>发布检查</h2></div>
           </div>
+          <div className={`publish-gate-summary ${publishGateReady ? "is-ready" : "is-waiting"}`}>
+            <strong>{publishGateReady ? "可以创建服务" : "等待发布前置条件"}</strong>
+            <span>{publishGateSummary}</span>
+          </div>
           <div className="readiness-list">
             <div className={activePolicy ? "ready" : "waiting"}><span>{activePolicy ? <Check size={12} /> : "1"}</span><div><strong>当前策略</strong><small>{activePolicy ? `${activePolicy.name} · v${activePolicy.version_number}` : "尚未配置"}</small></div></div>
             <div className={eligibleModels.length ? "ready" : "waiting"}><span>{eligibleModels.length ? <Check size={12} /> : "2"}</span><div><strong>通过模型</strong><small>{eligibleModels.length ? `${eligibleModels.length} 个版本可发布` : "等待模型通过检查"}</small></div></div>
-            <div className={deployments.length ? "ready" : "waiting"}><span>{deployments.length ? <Check size={12} /> : "3"}</span><div><strong>在线端点</strong><small>{deployments.length ? `${deployments.length} 个服务已创建` : "等待首次发布"}</small></div></div>
+            <div className={publishedDeployments.length ? "ready" : "waiting"}><span>{publishedDeployments.length ? <Check size={12} /> : "3"}</span><div><strong>已发布服务</strong><small>{publishedDeployments.length ? `${publishedDeployments.length} 个服务正在提供调用` : "等待首次发布"}</small></div></div>
+            <div className={runtimeAccepting ? "ready" : "waiting"}><span>{runtimeAccepting ? <Check size={12} /> : "4"}</span><div><strong>推理运行时</strong><small>{selectedTestDeployment ? runtimeLabel : "发布服务后检查运行时"}</small></div></div>
           </div>
           {showPolicyForm ? (
             <form className="release-check-form" onSubmit={(event) => void createPolicy(event)}>

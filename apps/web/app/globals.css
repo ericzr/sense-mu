@@ -7384,6 +7384,35 @@ html[data-sidebar-collapsed="true"] .app-shell .profile-row {
   margin-top: 19px;
 }
 
+.publish-gate-summary {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 17px;
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: #fafaf8;
+}
+
+.publish-gate-summary.is-ready {
+  border-color: #c7d8ca;
+  background: #f1f7f2;
+}
+
+.publish-gate-summary strong {
+  color: #343631;
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.publish-gate-summary span {
+  color: #858780;
+  font-size: 8px;
+  line-height: 1.5;
+}
+
 .readiness-list > div {
   position: relative;
   display: grid;
