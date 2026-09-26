@@ -232,7 +232,7 @@ function TrainingCurveCard({ curve, groupKey }: { curve: TrainingCurve; groupKey
         <strong>{curve.label}</strong>
         <span>{curve.series.length} 轮</span>
       </div>
-      <div className="training-report-chart" role="img" aria-label={`${curve.label}训练曲线`}>
+      <div className="training-report-chart" role="img" aria-label={`${curve.label}曲线`}>
         <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} preserveAspectRatio="none" aria-hidden="true">
           <line x1={inset} x2={chartWidth - inset} y1={chartHeight / 2} y2={chartHeight / 2} />
           <polyline points={points} />
@@ -253,7 +253,7 @@ function TrainingReportPanel({ report }: { report: TrainingReport }) {
   const lastEpoch = report.rows.at(-1)?.epoch;
 
   return (
-    <article className="panel training-detail-section training-report-section">
+    <article className="panel training-detail-section training-report-section" aria-label="训练曲线">
       <div className="training-detail-section-heading training-report-heading">
         <div><SlidersHorizontal size={16} /><h3>训练曲线</h3></div>
         <span>{report.rows.length} 轮记录</span>
