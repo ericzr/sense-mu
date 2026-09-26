@@ -34,6 +34,7 @@
 ### 身份与入口
 
 - 选定托管 OIDC 供应商和 BFF 部署位置。
+- Web BFF 配置预检达到 `ready`；在供应商专属回调、会话存储和 staging E2E 完成前，保持 `SENSEMU_BFF_IMPLEMENTATION_READY=false`。
 - 实现 Authorization Code + PKCE 的 state/nonce、回调、刷新、退出和撤销。
 - 只在 BFF 保存 refresh token、client secret 和会话 cookie；浏览器不交换 token。
 - 用真实账号验证 `401`、`403`、权限收回、深链返回和跨工作区访问拒绝。
