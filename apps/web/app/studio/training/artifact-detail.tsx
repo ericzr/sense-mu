@@ -6,6 +6,7 @@ import {
   ArrowUpRight,
   Check,
   Clock3,
+  Copy,
   Cpu,
   Database,
   Download,
@@ -147,68 +148,176 @@ function formatMetricValue(value: number | string | boolean | null): string {
   return value ?? "—";
 }
 
-function findTrainingReportMetric(report: TrainingReport): string | null {
-  const preferredMetrics = [
-    "metrics/mAP50(B)",
-    "metrics/mAP50-95(B)",
-    "metrics/precision(B)",
-    "metrics/recall(B)",
-  ];
-  for (const metric of preferredMetrics) {
-    if (report.rows.some((row) => typeof row.metrics[metric] === "number")) return metric;
-  }
-  return Object.keys(report.rows[0]?.metrics ?? {})[0] ?? null;
+function formatCurveMetricName(metric: string): string {
+  if (metricLabels[metric]) return metricLabels[metric];
+  if (metric.startsWith("lr/")) return `学习率 · ${metric.slice(3)}`;
+  return metric.replaceAll("_", " ").replaceAll("/", " · ");
 }
 
-function TrainingReportPanel({ report }: { report: TrainingReport }) {
-  const metric = findTrainingReportMetric(report);
-  if (!metric) return null;
-  const series = report.rows.flatMap((row) => {
-    const value = row.metrics[metric];
-    return typeof value === "number" ? [{ epoch: row.epoch, value }] : [];
-  });
-  if (series.length === 0) return null;
+function formatRecipeKey(key: string): string {
+  return key
+    .replaceAll("_", " ")
+    .replace(/(^| )([a-z])/g, (_, prefix: string, letter: string) => `${prefix}${letter.toUpperCase()}`);
+}
 
-  const values = series.map((item) => item.value);
+function formatRecipeValue(value: string | number | boolean | null): string {
+  if (value === null) return "—";
+  if (typeof value === "boolean") return value ? "是" : "否";
+  return String(value);
+}
+
+type TrainingCurve = {
+  key: string;
+  label: string;
+  series: Array<{ epoch: number; value: number }>;
+};
+
+type TrainingCurveGroup = {
+  key: string;
+  title: string;
+  description: string;
+  curves: TrainingCurve[];
+};
+
+function getTrainingCurveGroups(report: TrainingReport): TrainingCurveGroup[] {
+  const groups = [
+    { key: "metrics", title: "Metrics", description: "验证集指标", matches: (key: string) => key.startsWith("metrics/") || ["mAP50", "mAP50-95", "precision", "recall"].includes(key) },
+    { key: "loss", title: "Loss", description: "训练与验证损失", matches: (key: string) => key.startsWith("train/") || key.startsWith("val/") },
+    { key: "learning-rate", title: "Learning Rate", description: "学习率变化", matches: (key: string) => key.startsWith("lr/") },
+  ];
+  return groups.flatMap((group) => {
+    const curves = Object.keys(report.rows[0]?.metrics ?? {})
+      .filter(group.matches)
+      .map((key) => ({
+        key,
+        label: formatCurveMetricName(key),
+        series: report.rows.flatMap((row) => {
+          const value = row.metrics[key];
+          return typeof value === "number" && Number.isFinite(value) ? [{ epoch: row.epoch, value }] : [];
+        }),
+      }))
+      .filter((curve) => curve.series.length > 0);
+    return curves.length > 0 ? [{ key: group.key, title: group.title, description: group.description, curves }] : [];
+  });
+}
+
+function TrainingCurveCard({ curve, groupKey }: { curve: TrainingCurve; groupKey: string }) {
+  const values = curve.series.map((item) => item.value);
   const minimum = Math.min(...values);
   const maximum = Math.max(...values);
   const span = maximum - minimum;
-  const chartWidth = 320;
-  const chartHeight = 84;
+  const chartWidth = 360;
+  const chartHeight = 108;
   const inset = 8;
-  const coordinates = series.map((item, index) => {
-    const x = series.length === 1
+  const coordinates = curve.series.map((item, index) => {
+    const x = curve.series.length === 1
       ? chartWidth / 2
-      : inset + (index / (series.length - 1)) * (chartWidth - inset * 2);
+      : inset + (index / (curve.series.length - 1)) * (chartWidth - inset * 2);
     const y = span === 0
       ? chartHeight / 2
       : chartHeight - inset - ((item.value - minimum) / span) * (chartHeight - inset * 2);
     return { x, y };
   });
+  const latest = curve.series.at(-1) ?? curve.series[0];
+  const bestIndex = groupKey === "loss"
+    ? values.indexOf(minimum)
+    : values.indexOf(maximum);
+  const best = curve.series[bestIndex] ?? latest;
   const points = coordinates.map(({ x, y }) => `${x},${y}`).join(" ");
   const lastPoint = coordinates.at(-1) ?? coordinates[0];
-  const first = series[0];
-  const latest = series.at(-1) ?? first;
 
   return (
-    <article className="panel training-detail-section training-report-section">
-      <div className="training-detail-section-heading training-report-heading">
-        <div><SlidersHorizontal size={16} /><h3>训练曲线</h3></div>
-        <span>{series.length} 轮记录</span>
+    <figure className="training-curve-card">
+      <div className="training-curve-card-heading">
+        <strong>{curve.label}</strong>
+        <span>{curve.series.length} 轮</span>
       </div>
-      <div className="training-report-summary">
-        <div><span>指标</span><strong>{formatMetricName(metric)}</strong></div>
-        <div><span>开始</span><strong>{formatScore(first.value)}</strong></div>
-        <div><span>最新</span><strong>{formatScore(latest.value)}</strong></div>
-      </div>
-      <div className="training-report-chart" role="img" aria-label={`${formatMetricName(metric)}训练曲线`}>
+      <div className="training-report-chart" role="img" aria-label={`${curve.label}训练曲线`}>
         <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} preserveAspectRatio="none" aria-hidden="true">
           <line x1={inset} x2={chartWidth - inset} y1={chartHeight / 2} y2={chartHeight / 2} />
           <polyline points={points} />
           <circle cx={lastPoint.x} cy={lastPoint.y} r="3" />
         </svg>
       </div>
-      <p className="training-report-note">第 {latest.epoch + 1} 轮 · 由训练产物 results.csv 生成</p>
+      <figcaption className="training-curve-card-summary">
+        <div><span>最新</span><strong>{formatScore(latest.value)}</strong><small>第 {latest.epoch + 1} 轮</small></div>
+        <div><span>{groupKey === "loss" ? "最低" : "最佳"}</span><strong>{formatScore(best.value)}</strong><small>第 {best.epoch + 1} 轮</small></div>
+      </figcaption>
+    </figure>
+  );
+}
+
+function TrainingReportPanel({ report }: { report: TrainingReport }) {
+  const groups = getTrainingCurveGroups(report);
+  if (groups.length === 0) return null;
+  const lastEpoch = report.rows.at(-1)?.epoch;
+
+  return (
+    <article className="panel training-detail-section training-report-section">
+      <div className="training-detail-section-heading training-report-heading">
+        <div><SlidersHorizontal size={16} /><h3>训练曲线</h3></div>
+        <span>{report.rows.length} 轮记录</span>
+      </div>
+      {groups.map((group) => (
+        <section className="training-curve-group" key={group.key}>
+          <div className="training-curve-group-heading"><strong>{group.title}</strong><span>{group.description}</span></div>
+          <div className="training-curve-grid">
+            {group.curves.map((curve) => <TrainingCurveCard curve={curve} groupKey={group.key} key={curve.key} />)}
+          </div>
+        </section>
+      ))}
+      <p className="training-report-note">第 {lastEpoch === undefined ? "—" : lastEpoch + 1} 轮 · 由训练产物 results.csv 生成</p>
+    </article>
+  );
+}
+
+function TrainingConfigPanel({ recipe }: { recipe: Record<string, string | number | boolean | null> }) {
+  const entries = Object.entries(recipe);
+  if (entries.length === 0) return null;
+  return (
+    <article className="panel training-detail-section training-config-section">
+      <div className="training-detail-section-heading"><SlidersHorizontal size={16} /><h3>训练配置</h3></div>
+      <div className="training-config-table" role="table" aria-label="训练配置">
+        <div className="training-config-row is-heading" role="row"><span role="columnheader">参数</span><span role="columnheader">值</span></div>
+        {entries.map(([key, value]) => (
+          <div className="training-config-row" role="row" key={key}>
+            <span role="cell">{formatRecipeKey(key)}</span>
+            <code role="cell">{formatRecipeValue(value)}</code>
+          </div>
+        ))}
+      </div>
+      <p className="training-report-note">来自不可变模型版本的训练配方。</p>
+    </article>
+  );
+}
+
+function ModelRunInformationPanel({ model, run }: { model: ModelVersion; run: TrainingRun | null }) {
+  const [copied, setCopied] = useState(false);
+  const command = model.command;
+  async function copyCommand() {
+    if (!command || !navigator.clipboard) return;
+    await navigator.clipboard.writeText(command);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1800);
+  }
+
+  return (
+    <article className="panel training-detail-section model-run-info-section">
+      <div className="training-detail-section-heading"><Clock3 size={16} /><h3>运行信息</h3></div>
+      <dl className="training-detail-spec-list model-run-info-list">
+        <div><dt>训练状态</dt><dd>{run ? runStatusLabels[run.status] ?? run.status : "—"}</dd></div>
+        <div><dt>完成时间</dt><dd>{run?.finished_at ? formatTime(run.finished_at) : "—"}</dd></div>
+        <div><dt>执行时长</dt><dd>{typeof run?.resource_usage?.duration_seconds === "number" ? `${Math.round(run.resource_usage.duration_seconds / 60)} 分钟` : "—"}</dd></div>
+        <div><dt>运行环境</dt><dd>{run?.resource_usage?.runtime_image ?? "—"}</dd></div>
+        <div><dt>父模型</dt><dd>{model.parent_model ?? "—"}</dd></div>
+        <div><dt>框架版本</dt><dd>{model.framework_version ? `${model.framework} ${model.framework_version}` : model.framework}</dd></div>
+      </dl>
+      {command ? (
+        <div className="model-command-block">
+          <div><span>复现命令</span><button type="button" onClick={() => void copyCommand()} aria-label="复制训练命令"><Copy size={13} />{copied ? "已复制" : "复制"}</button></div>
+          <code>{command}</code>
+        </div>
+      ) : <p className="training-report-note">当前训练没有登记可复现命令。</p>}
     </article>
   );
 }
@@ -594,14 +703,18 @@ export function TrainingArtifactDetail({ artifactId, kind }: ArtifactDetailProps
       </article>
 
       {modelTab === "train" ? (
-        <article className="panel model-detail-tab-panel">
-          <div className="training-detail-section-heading"><FlaskConical size={16} /><h3>训练配置</h3></div>
-          <p>这是一份由训练任务生成的不可变模型版本。需要复现时，请从原训练任务复制配置。</p>
-          <div className="model-detail-action-row">
-            {relatedRun ? <Link className="secondary-button" href={`/studio/training/runs/${relatedRun.id}${projectQuery}`}>查看训练任务<ArrowUpRight size={13} /></Link> : null}
-            <Link className="primary-button" href={`${trainingHref}#new-training`}>复制配置重新训练<FlaskConical size={13} /></Link>
-          </div>
-        </article>
+        <>
+          <article className="panel model-detail-tab-panel">
+            <div className="training-detail-section-heading"><FlaskConical size={16} /><h3>训练任务</h3></div>
+            <p>这是一份由训练任务生成的不可变模型版本。曲线和参数均来自该次训练的真实产物。</p>
+            <div className="model-detail-action-row">
+              {relatedRun ? <Link className="secondary-button" href={`/studio/training/runs/${relatedRun.id}${projectQuery}`}>查看训练任务<ArrowUpRight size={13} /></Link> : null}
+              <Link className="primary-button" href={`${trainingHref}#new-training`}>复制配置重新训练<FlaskConical size={13} /></Link>
+            </div>
+          </article>
+          {trainingReport ? <TrainingReportPanel report={trainingReport} /> : null}
+          <TrainingConfigPanel recipe={modelRecipe} />
+        </>
       ) : null}
 
       {modelTab === "predict" ? (
@@ -672,8 +785,11 @@ export function TrainingArtifactDetail({ artifactId, kind }: ArtifactDetailProps
           <div className="training-detail-section-actions">
             <Link className="primary-button" href={`/services${projectQuery}${projectQuery ? "&" : "?"}view=publish&model=${model.id}`}><Rocket size={13} />测试与发布</Link>
           </div>
-        </article>
+          </article>
       </div>
+
+      <ModelRunInformationPanel model={model} run={relatedRun} />
+      <TrainingConfigPanel recipe={modelRecipe} />
 
       {trainingReport ? <TrainingReportPanel report={trainingReport} /> : null}
       {trainingClassMetrics ? <TrainingClassMetricsPanel metrics={trainingClassMetrics} /> : null}
