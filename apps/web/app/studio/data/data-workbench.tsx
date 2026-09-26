@@ -71,22 +71,22 @@ const taskTypeLabels: Record<string, string> = {
 };
 
 const datasetTaskTypes = [
-  { id: "object-detection", label: "目标检测", description: "用矩形框定位对象", support: "内置标注" },
-  { id: "instance-segmentation", label: "实例分割", description: "逐个对象绘制掩码", support: "可导入" },
-  { id: "semantic-segmentation", label: "语义分割", description: "按类别标记每个像素", support: "可导入" },
-  { id: "classification", label: "图像分类", description: "为整张图像分配类别", support: "可导入" },
-  { id: "pose", label: "姿态估计", description: "标注对象关键点", support: "可导入" },
-  { id: "oriented-bounding-box", label: "旋转框检测", description: "用带方向的框定位对象", support: "可导入" },
-  { id: "depth-estimation", label: "深度估计", description: "逐像素估计距离", support: "可导入" },
-  { id: "ocr", label: "文字识别", description: "定位并转写图像文字", support: "可导入" },
+  { id: "object-detection", label: "目标检测", description: "用矩形框定位对象", support: "首发可用", available: true },
+  { id: "instance-segmentation", label: "实例分割", description: "逐个对象绘制掩码", support: "待接入", available: false },
+  { id: "semantic-segmentation", label: "语义分割", description: "按类别标记每个像素", support: "待接入", available: false },
+  { id: "classification", label: "图像分类", description: "为整张图像分配类别", support: "待接入", available: false },
+  { id: "pose", label: "姿态估计", description: "标注对象关键点", support: "待接入", available: false },
+  { id: "oriented-bounding-box", label: "旋转框检测", description: "用带方向的框定位对象", support: "待接入", available: false },
+  { id: "depth-estimation", label: "深度估计", description: "逐像素估计距离", support: "待接入", available: false },
+  { id: "ocr", label: "文字识别", description: "定位并转写图像文字", support: "待接入", available: false },
 ] as const;
 
 const projectTaskTypes = [
-  { id: "object-detection", label: "目标检测" },
-  { id: "classification", label: "图像分类" },
-  { id: "segmentation", label: "实例分割" },
-  { id: "pose", label: "姿态估计" },
-  { id: "ocr", label: "文字识别" },
+  { id: "object-detection", label: "目标检测", available: true },
+  { id: "classification", label: "图像分类", available: false },
+  { id: "segmentation", label: "实例分割", available: false },
+  { id: "pose", label: "姿态估计", available: false },
+  { id: "ocr", label: "文字识别", available: false },
 ] as const;
 
 function taskUsesClasses(taskType: string): boolean {
@@ -124,7 +124,8 @@ function TaskTypePicker({
           key={taskType.id}
           className={value === taskType.id ? "is-active" : ""}
           aria-pressed={value === taskType.id}
-          disabled={disabled}
+          disabled={disabled || !taskType.available}
+          title={taskType.available ? undefined : `${taskType.label}将在对应标注、训练、评测和推理适配器完成后开放`}
           onClick={() => onChange(taskType.id)}
         >
           <span className="dataset-task-type-icon"><TaskTypeIcon taskType={taskType.id} /></span>
@@ -1680,7 +1681,7 @@ function DatasetSetupForm({
 
         <fieldset className="dataset-setup-task-types">
           <legend>任务类型与标注结构</legend>
-          <p className="dataset-create-section-hint">创建后仍可调整；一旦开始标注或生成版本，任务类型将被锁定。</p>
+          <p className="dataset-create-section-hint">首期只开放已打通标注、训练、评测和推理闭环的目标检测；其他类型将在对应适配器完成后开放。</p>
           <TaskTypePicker value={taskType} onChange={onTaskTypeChange} disabled={busy} />
         </fieldset>
 
@@ -1784,17 +1785,19 @@ function ProjectSetupForm({
                 className={taskType === item.id ? "is-active" : ""}
                 aria-pressed={taskType === item.id}
                 onClick={() => onTaskTypeChange(item.id)}
-                disabled={busy}
+                disabled={busy || !item.available}
+                title={item.available ? undefined : `${item.label}将在完整生产链路接入后开放`}
               >
                 <TaskTypeIcon taskType={item.id} size={15} />
                 <span>{item.label}</span>
+                {!item.available ? <small>待接入</small> : null}
               </button>
             ))}
           </div>
         </fieldset>
 
         <div className="project-create-footer">
-          <span>项目创建后可继续添加数据集和协作者。</span>
+          <span>首期项目只承诺目标检测闭环；项目创建后可继续添加数据集和协作者。</span>
           <button className="primary-button" type="submit" disabled={busy}>
             {busy ? <LoaderCircle size={14} className="spinner" /> : <Plus size={14} />}
             {busy ? "正在创建" : "创建项目"}
