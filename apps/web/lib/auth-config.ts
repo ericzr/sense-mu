@@ -34,7 +34,7 @@ function readLoginUrl(value: string | undefined): string | null {
   return readUrl(value);
 }
 
-function safeReturnTo(value: string): string {
+export function safeReturnTo(value: string): string {
   if (!value.startsWith("/") || value.startsWith("//")) return "/";
   try {
     const url = new URL(value, "https://sensemu.local");
