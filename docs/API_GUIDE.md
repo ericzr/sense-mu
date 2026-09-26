@@ -114,7 +114,7 @@ Core API 当前遵循 FastAPI 默认格式：
 | 方法 | 路径 | 作用 |
 |---|---|---|
 | GET | `/health/live` | 进程存活，不代表依赖可用 |
-| GET | `/health/ready` | 实查数据库和对象存储 |
+| GET | `/health/ready` | 实查数据库、对象存储和 Redis 队列依赖 |
 | GET | `/health/operational` | 训练、Webhook、额度预留等运行告警摘要 |
 | GET | `/api/v1/identity/me` | 当前身份与工作区成员关系 |
 | GET | `/api/v1/overview` | 工作台资源统计和最近活动 |

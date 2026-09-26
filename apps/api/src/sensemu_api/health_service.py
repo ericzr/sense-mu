@@ -1,6 +1,8 @@
 from datetime import UTC, datetime, timedelta
 
 from botocore.exceptions import ClientError
+from redis import Redis
+from redis.exceptions import RedisError
 from sqlalchemy import and_, func, or_, select, text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
@@ -48,12 +50,33 @@ def _storage_dependency(storage: Storage) -> ReadinessDependency:
     )
 
 
+def _redis_dependency(redis_client: Redis) -> ReadinessDependency:
+    try:
+        redis_client.ping()
+    except (RedisError, OSError, ValueError):
+        return ReadinessDependency(
+            name="redis",
+            status="unavailable",
+            detail="Redis 队列依赖不可用",
+        )
+    return ReadinessDependency(
+        name="redis",
+        status="ready",
+        detail="Redis 队列依赖正常",
+    )
+
+
 def readiness(
     session: Session,
     storage: Storage,
+    redis_client: Redis,
     settings: Settings,
 ) -> ReadinessResponse:
-    dependencies = [_database_dependency(session), _storage_dependency(storage)]
+    dependencies = [
+        _database_dependency(session),
+        _storage_dependency(storage),
+        _redis_dependency(redis_client),
+    ]
     is_ready = all(item.status == "ready" for item in dependencies)
     return ReadinessResponse(
         status="ready" if is_ready else "not_ready",

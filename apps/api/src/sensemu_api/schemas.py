@@ -12,7 +12,7 @@ class HealthResponse(BaseModel):
 
 
 class ReadinessDependency(BaseModel):
-    name: Literal["database", "object_storage"]
+    name: Literal["database", "object_storage", "redis"]
     status: Literal["ready", "unavailable"]
     detail: str
 

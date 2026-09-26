@@ -11,6 +11,7 @@ from sensemu_api.db import Base
 from sensemu_api.db.models import Run, UsageReservation, WebhookDelivery
 from sensemu_api.db.session import get_session
 from sensemu_api.main import app, create_app
+from sensemu_api.routes.health import get_redis_client
 from sensemu_api.storage import get_storage
 
 client = TestClient(app)
@@ -32,7 +33,17 @@ class UnavailableStorage:
         raise OSError("storage unavailable")
 
 
-def _readiness_client(storage: object) -> TestClient:
+class ReadyRedis:
+    def ping(self) -> bool:
+        return True
+
+
+class UnavailableRedis:
+    def ping(self) -> bool:
+        raise OSError("redis unavailable")
+
+
+def _readiness_client(storage: object, redis_client: object | None = None) -> TestClient:
     engine = create_engine(
         "sqlite+pysqlite:///:memory:",
         connect_args={"check_same_thread": False},
@@ -48,10 +59,11 @@ def _readiness_client(storage: object) -> TestClient:
     application = create_app()
     application.dependency_overrides[get_session] = override_session
     application.dependency_overrides[get_storage] = lambda: storage
+    application.dependency_overrides[get_redis_client] = lambda: redis_client or ReadyRedis()
     return TestClient(application)
 
 
-def test_readiness_reports_database_and_object_storage() -> None:
+def test_readiness_reports_database_object_storage_and_redis() -> None:
     response = _readiness_client(ReadyStorage()).get("/health/ready")
 
     assert response.status_code == 200
@@ -59,6 +71,7 @@ def test_readiness_reports_database_and_object_storage() -> None:
     assert response.json()["dependencies"] == [
         {"name": "database", "status": "ready", "detail": "数据库查询正常"},
         {"name": "object_storage", "status": "ready", "detail": "对象存储访问正常"},
+        {"name": "redis", "status": "ready", "detail": "Redis 队列依赖正常"},
     ]
 
 
@@ -71,6 +84,18 @@ def test_readiness_fails_closed_when_object_storage_is_unavailable() -> None:
         "name": "object_storage",
         "status": "unavailable",
         "detail": "对象存储不可用",
+    }
+
+
+def test_readiness_fails_closed_when_redis_is_unavailable() -> None:
+    response = _readiness_client(ReadyStorage(), UnavailableRedis()).get("/health/ready")
+
+    assert response.status_code == 503
+    assert response.json()["status"] == "not_ready"
+    assert response.json()["dependencies"][2] == {
+        "name": "redis",
+        "status": "unavailable",
+        "detail": "Redis 队列依赖不可用",
     }
 
 

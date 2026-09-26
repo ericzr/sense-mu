@@ -3564,7 +3564,7 @@ export interface components {
              * Name
              * @enum {string}
              */
-            name: "database" | "object_storage";
+            name: "database" | "object_storage" | "redis";
             /**
              * Status
              * @enum {string}

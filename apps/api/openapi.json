@@ -5080,7 +5080,8 @@
           "name": {
             "enum": [
               "database",
-              "object_storage"
+              "object_storage",
+              "redis"
             ],
             "title": "Name",
             "type": "string"
