@@ -70,6 +70,44 @@ test("health endpoint identifies the exact build release", async () => {
   assert.notEqual(health.release, "aa0136f");
 });
 
+test("BFF login fails closed and rejects open redirects", async () => {
+  const openRedirect = await render("/auth/login?return_to=https%3A%2F%2Fevil.example%2Faccount");
+  assert.equal(openRedirect.status, 400);
+  assert.doesNotMatch(await openRedirect.text(), /evil\.example/);
+
+  const authLoop = await render("/auth/login?return_to=%2Fauth%2Flogin");
+  assert.equal(authLoop.status, 400);
+
+  const unavailable = await render("/auth/login?return_to=%2Fstudio%2Fdata");
+  assert.equal(unavailable.status, 503);
+  const payload = await unavailable.json();
+  assert.equal(payload.error, "auth_unavailable");
+  assert.match(payload.detail, /BFF/);
+});
+
+test("BFF session does not expose sensitive fields while unconfigured", async () => {
+  const response = await render("/auth/session");
+  assert.equal(response.status, 503);
+  const body = await response.text();
+  assert.match(body, /auth_unavailable/);
+  assert.doesNotMatch(body, /access_token|refresh_token|client_secret|cookie/i);
+});
+
+test("BFF logout is idempotent and clears the local session cookie", async () => {
+  const workerUrl = new URL("../dist/server/index.js", import.meta.url);
+  workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}-logout`);
+  const { default: worker } = await import(workerUrl.href);
+  const response = await worker.fetch(
+    new Request("http://localhost/auth/logout", { method: "POST" }),
+    { ASSETS: { fetch: async () => new Response("Not found", { status: 404 }) } },
+    { waitUntil() {}, passThroughOnException() {} },
+  );
+  assert.equal(response.status, 204);
+  assert.match(response.headers.get("set-cookie") ?? "", /__Host-sensemu_session=;/);
+  assert.match(response.headers.get("set-cookie") ?? "", /Max-Age=0/);
+  assert.equal(response.headers.get("cache-control"), "no-store");
+});
+
 test("server-renders the Studio project route", async () => {
   const response = await render("/studio");
   assert.equal(response.status, 200);
