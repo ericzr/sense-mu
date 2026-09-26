@@ -37,6 +37,23 @@ test.describe("托管演示站", () => {
     await expect(page.getByRole("button", { name: /实时视频流/ })).toBeDisabled();
   });
 
+  test("首发任务类型和模型发布事实保持一致", async ({ page }) => {
+    await page.goto("/studio/data?createProject=1");
+    await expect(page.getByRole("button", { name: "目标检测" })).toBeEnabled();
+    await expect(page.getByRole("button", { name: /图像分类/ })).toBeDisabled();
+    await expect(page.getByRole("button", { name: /实例分割/ })).toBeDisabled();
+
+    await page.goto(`/studio/training/models/demo-model-ppe-v2?project=${ppeProject}&tab=predict`);
+    await expect(page.getByRole("heading", { name: "预测工作区" })).toBeVisible();
+    await expect(page.getByLabel("模型预测状态")).toContainText("工地安全穿戴服务");
+    await expect(page.getByLabel("模型预测状态")).toContainText("运行时未接入");
+
+    await page.goto(`/studio/training/models/demo-model-ppe-v2?project=${ppeProject}&tab=deploy`);
+    await expect(page.getByLabel("模型发布状态")).toContainText("已通过");
+    await expect(page.getByText("调用示例", { exact: true })).toBeVisible();
+    await expect(page.getByText("$SENSEMU_API_KEY", { exact: false })).toBeVisible();
+  });
+
   test("展开侧栏时实时分析会在窄内容区收敛", async ({ page }) => {
     await page.setViewportSize({ width: 702, height: 900 });
     await page.goto(`/services?project=${ppeProject}&view=live&deployment=demo-deployment-ppe`);

@@ -480,6 +480,7 @@ export type Evaluation = {
 export type Deployment = {
   id: string;
   workspace_id: string;
+  workspace_slug: string;
   project_id: string;
   model_version_id: string;
   model_name: string;

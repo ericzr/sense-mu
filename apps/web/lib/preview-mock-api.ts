@@ -433,6 +433,7 @@ export const previewDeployments: Deployment[] = [
   {
     id: "demo-deployment-ppe",
     workspace_id: previewWorkspaceId,
+    workspace_slug: previewWorkspace.slug,
     project_id: "demo-project-ppe",
     model_version_id: "demo-model-ppe-v2",
     model_name: "PPE 安全穿戴模型",
@@ -484,7 +485,7 @@ const previewEvaluations: Evaluation[] = [
     policy_version: 1,
     source: "acceptance",
     status: "completed",
-    verdict: "passed",
+    verdict: "approved",
     metrics: { precision: 0.91, recall: 0.87, map50: 0.923, map50_95: 0.681 },
     rule_results: [
       { metric: "map50", operator: ">=", threshold: 0.85, label: "mAP50", actual: 0.923, passed: true, reason: null },

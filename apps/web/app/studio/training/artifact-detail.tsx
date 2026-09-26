@@ -26,6 +26,7 @@ import {
   type DatasetVersion,
   type Deployment,
   type Evaluation,
+  type InferenceHealth,
   type ModelVersion,
   type Project,
   type RunEvent,
@@ -86,6 +87,12 @@ const modelStatusLabels: Record<string, string> = {
   rejected: "未通过",
   archived: "已归档",
   ready: "可用",
+};
+
+const deploymentStatusLabels: Record<string, string> = {
+  published: "运行中",
+  disabled: "已停用",
+  failed: "发布失败",
 };
 
 const modelTaskTypeLabels: Record<string, string> = {
@@ -322,6 +329,26 @@ function ModelRunInformationPanel({ model, run }: { model: ModelVersion; run: Tr
   );
 }
 
+function ModelApiExample({ endpointUrl }: { endpointUrl: string }) {
+  const [copied, setCopied] = useState(false);
+  const example = `curl -X POST '${endpointUrl}' \\\n  -H 'Content-Type: application/json' \\\n  -H 'X-API-Key: $SENSEMU_API_KEY' \\\n  -H 'X-Request-ID: request-0001' \\\n  -d '{"inputs":["data:image/jpeg;base64,..."],"parameters":{"confidence":0.25}}'`;
+
+  async function copyExample() {
+    if (!navigator.clipboard) return;
+    await navigator.clipboard.writeText(example);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1800);
+  }
+
+  return (
+    <div className="model-api-example">
+      <div><span>调用示例</span><button type="button" onClick={() => void copyExample()}><Copy size={13} />{copied ? "已复制" : "复制"}</button></div>
+      <pre><code>{example}</code></pre>
+      <small>密钥只在创建或轮换时显示一次；示例不会包含真实密钥。</small>
+    </div>
+  );
+}
+
 function TrainingVisualizationsPanel({ visualizations }: { visualizations: TrainingVisualizationUrls }) {
   const entries = trainingVisualizationOptions.flatMap((option) => {
     const src = visualizations[option.name];
@@ -398,6 +425,9 @@ export function TrainingArtifactDetail({ artifactId, kind }: ArtifactDetailProps
   const [versions, setVersions] = useState<VersionOption[]>([]);
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const [deployments, setDeployments] = useState<Deployment[]>([]);
+  const [deploymentHealth, setDeploymentHealth] = useState<InferenceHealth | null>(null);
+  const [deploymentHealthLoading, setDeploymentHealthLoading] = useState(false);
+  const [deploymentHealthError, setDeploymentHealthError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -515,6 +545,30 @@ export function TrainingArtifactDetail({ artifactId, kind }: ArtifactDetailProps
     ? requestedTab
     : "overview";
   const modelTabHref = (tab: string) => `/studio/training/models/${artifactId}?project=${project?.id ?? requestedProjectId ?? ""}&tab=${tab}`;
+  const liveServiceHref = `/services?project=${encodeURIComponent(project?.id ?? requestedProjectId ?? "")}&view=live&model=${encodeURIComponent(model?.id ?? artifactId)}${deployment ? `&deployment=${encodeURIComponent(deployment.id)}` : ""}`;
+  const publishServiceHref = `/services?project=${encodeURIComponent(project?.id ?? requestedProjectId ?? "")}&view=publish&model=${encodeURIComponent(model?.id ?? artifactId)}`;
+
+  useEffect(() => {
+    let cancelled = false;
+    setDeploymentHealth(null);
+    setDeploymentHealthError(null);
+    if (!deployment || deployment.status !== "published") {
+      setDeploymentHealthLoading(false);
+      return () => { cancelled = true; };
+    }
+    setDeploymentHealthLoading(true);
+    void catalogApi.getInferenceHealth(deployment)
+      .then((health) => {
+        if (!cancelled) setDeploymentHealth(health);
+      })
+      .catch((reason) => {
+        if (!cancelled) setDeploymentHealthError(reason instanceof Error ? reason.message : "无法确认运行状态");
+      })
+      .finally(() => {
+        if (!cancelled) setDeploymentHealthLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [deployment]);
 
   if (loading) {
     return (
@@ -720,9 +774,15 @@ export function TrainingArtifactDetail({ artifactId, kind }: ArtifactDetailProps
       {modelTab === "predict" ? (
         <article className="panel model-detail-tab-panel">
           <div className="training-detail-section-heading"><Cpu size={16} /><h3>预测工作区</h3></div>
-          <p>使用已发布端点测试图像或视频流。当前模型还没有独立的本地预测会话。</p>
+          <p>{deployment ? "预测固定使用当前模型版本绑定的在线服务，不会静默切换到其他权重。" : "该模型尚未绑定在线服务，发布后才能执行真实预测。"}</p>
+          <div className="model-deployment-facts" aria-label="模型预测状态">
+            <div><span>在线服务</span><strong>{deployment?.name ?? "尚未发布"}</strong><small>{deployment ? `${deploymentStatusLabels[deployment.status] ?? deployment.status} · ${deployment.environment === "production" ? "生产" : "预发布"}` : "先通过独立检查并创建服务"}</small></div>
+            <div><span>运行状态</span><strong>{deploymentHealthLoading ? "检查中" : deploymentHealth?.status === "ready" ? "可以预测" : deploymentHealth?.runtime.status === "not_configured" ? "运行时未接入" : deploymentHealthError ? "无法确认" : deployment?.status === "published" ? "等待服务就绪" : "不可用"}</strong><small>{deploymentHealthError ?? (deploymentHealth?.runtime.configured ? `容量 ${deploymentHealth.runtime.capacity?.available_slots ?? "—"}/${deploymentHealth.runtime.capacity?.max_concurrent_requests ?? "—"}` : "未连接真实推理运行时")}</small></div>
+            <div><span>端点</span><strong>{deployment ? `/${deployment.endpoint_slug}` : "—"}</strong><small>{deployment?.endpoint_url ?? "发布后生成稳定端点"}</small></div>
+            <div><span>成功用量</span><strong>{deployment ? deployment.request_count.toLocaleString("zh-CN") : "—"}</strong><small>{deployment ? `${deployment.billable_units.toLocaleString("zh-CN")} 张图像` : "只统计成功调用"}</small></div>
+          </div>
           <div className="model-detail-action-row">
-            <Link className="primary-button" href={`/services${projectQuery}&view=live&model=${model.id}`}>打开在线预测<ExternalLink size={13} /></Link>
+            {deployment?.status === "published" ? <Link className="primary-button" href={liveServiceHref}>打开真实预测<ExternalLink size={13} /></Link> : <Link className="primary-button" href={publishServiceHref}>前往发布<Rocket size={13} /></Link>}
           </div>
         </article>
       ) : null}
@@ -753,9 +813,16 @@ export function TrainingArtifactDetail({ artifactId, kind }: ArtifactDetailProps
       {modelTab === "deploy" ? (
         <article className="panel model-detail-tab-panel">
           <div className="training-detail-section-heading"><Rocket size={16} /><h3>发布模型</h3></div>
-          <p>{evaluation?.verdict === "approved" ? "模型已通过当前发布检查，可以创建在线服务。" : "发布前需要先用独立数据完成检查并通过门禁。"}</p>
+          <p>{deployment ? "在线服务固定绑定这个不可变模型版本；升级模型必须显式创建或更新绑定并保留审计。" : evaluation?.verdict === "approved" ? "模型已通过当前发布检查，可以创建在线服务。" : "发布前需要先用独立数据完成检查并通过门禁。"}</p>
+          <div className="model-deployment-facts" aria-label="模型发布状态">
+            <div><span>发布检查</span><strong>{evaluation?.verdict === "approved" ? "已通过" : evaluation ? "未通过" : "尚未检查"}</strong><small>{evaluation ? `${evaluation.policy_name} · v${evaluation.policy_version}` : "需要独立验收数据"}</small></div>
+            <div><span>服务状态</span><strong>{deployment ? deploymentStatusLabels[deployment.status] ?? deployment.status : "尚未创建"}</strong><small>{deployment ? `${deployment.hosting_mode === "sensemu_managed" ? "SenseMu 托管" : deployment.hosting_mode} · ${deployment.environment}` : "不会自动发布"}</small></div>
+            <div><span>绑定版本</span><strong>{model.model_name} · v{model.version_number}</strong><small>{deployment?.evaluation_policy_version ? `检查策略 v${deployment.evaluation_policy_version}` : "不可变模型产物"}</small></div>
+            <div><span>API 端点</span><strong>{deployment ? `/${deployment.endpoint_slug}` : "—"}</strong><small>{deployment?.endpoint_url ?? "创建服务后生成"}</small></div>
+          </div>
+          {deployment?.status === "published" ? <ModelApiExample endpointUrl={deployment.endpoint_url} /> : null}
           <div className="model-detail-action-row">
-            <Link className="primary-button" href={`/services${projectQuery}&view=publish&model=${model.id}`}>前往发布<ArrowUpRight size={13} /></Link>
+            <Link className="primary-button" href={publishServiceHref}>{deployment ? "管理在线服务" : "前往发布"}<ArrowUpRight size={13} /></Link>
           </div>
         </article>
       ) : null}
