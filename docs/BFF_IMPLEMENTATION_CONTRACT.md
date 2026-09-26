@@ -1,6 +1,6 @@
 # SenseMu 同源身份 BFF 实现契约
 
-这份文档是 Web 与后端协同实现正式登录前的边界合同。当前 Web 已提供 `/auth/*` 的 fail-closed 占位路由：身份供应商和服务端会话未配置时，登录、回调和会话查询返回 `503`，不会伪造登录成功；退出始终幂等清理本地会话 Cookie。
+这份文档是 Web 与后端协同实现正式登录前的边界合同。当前 Web 已提供 `/auth/*` 的 fail-closed 占位路由：身份供应商、服务端会话或实现就绪标记未配置时，登录、回调和会话查询返回 `503`，不会伪造登录成功；退出始终幂等清理本地会话 Cookie。
 
 ## 业务边界
 
@@ -20,14 +20,28 @@
 | 变量 | 用途 |
 | --- | --- |
 | `SENSEMU_BFF_ENABLED=true` | 显式打开 BFF，缺失时必须 fail closed |
+| `SENSEMU_BFF_IMPLEMENTATION_READY=true` | 只有 provider-specific callback、会话存储和 staging E2E 完成后才能打开；仅填写 OIDC 地址不会解除 fail closed |
 | `SENSEMU_OIDC_ISSUER` | 供应商 issuer，用于发现和 JWT 校验 |
 | `SENSEMU_OIDC_CLIENT_ID` | OIDC client id |
 | `SENSEMU_OIDC_AUTHORIZATION_ENDPOINT` | 授权端点 |
 | `SENSEMU_OIDC_TOKEN_ENDPOINT` | 授权码交换端点 |
 | `SENSEMU_OIDC_REDIRECT_URI` | 同源 `/auth/callback` 地址 |
+| `SENSEMU_SESSION_STORE` | 服务端会话存储类型：`redis`、`kv`、`d1` 或托管会话；禁止使用进程内存 |
 | `SENSEMU_SESSION_SECRET` | 服务端会话签名/加密密钥 |
 
 首期可使用 Redis、D1 或供应商托管会话存储，但必须满足同样的会话不变量。不要把 refresh token 放入 D1 明文、浏览器 Cookie、`localStorage` 或 `sessionStorage`。
+
+### 配置预检状态
+
+Web BFF 在运行时对服务端配置执行预检，错误只返回不敏感的状态和字段名称：
+
+- `disabled`：`SENSEMU_BFF_ENABLED` 未显式打开。
+- `incomplete`：已打开但缺少身份端点、会话存储或密钥。
+- `unsafe`：端点不是 HTTPS（本地 localhost 除外）、回调路径不是 `/auth/callback`、会话存储类型不支持，或密钥短于 32 字节/仍是本地占位值。
+- `blocked`：配置基本完整，但 `SENSEMU_BFF_IMPLEMENTATION_READY` 仍为 `false`，表示供应商专属实现或 staging 验收尚未完成。
+- `ready`：所有配置预检通过；这只表示可以进入真实实现联调，不替代登录、成员权限和退出 E2E。
+
+`SENSEMU_BFF_IMPLEMENTATION_READY` 是独立的上线保险丝。没有它，即使误把 OIDC 地址和密钥注入部署环境，路由仍然返回 `503`，不会半启用一个没有 state/nonce/PKCE 和会话存储的登录流程。
 
 ## 安全不变量
 
