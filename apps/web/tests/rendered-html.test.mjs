@@ -78,6 +78,9 @@ test("BFF login fails closed and rejects open redirects", async () => {
   const authLoop = await render("/auth/login?return_to=%2Fauth%2Flogin");
   assert.equal(authLoop.status, 400);
 
+  const authLoopWithQuery = await render("/auth/login?return_to=%2Fauth%2Flogin%3Fnext%3D%252Fstudio");
+  assert.equal(authLoopWithQuery.status, 400);
+
   const unavailable = await render("/auth/login?return_to=%2Fstudio%2Fdata");
   assert.equal(unavailable.status, 503);
   const payload = await unavailable.json();

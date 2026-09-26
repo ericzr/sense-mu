@@ -53,7 +53,13 @@ export function getBffConfig(): BffConfig {
 
 export function safeBffReturnTo(value: string): string {
   const safePath = safeReturnTo(value);
-  return RESERVED_AUTH_PATHS.has(safePath) ? "/" : safePath;
+  let pathname: string;
+  try {
+    pathname = new URL(safePath, "https://sensemu.local").pathname;
+  } catch {
+    return "/";
+  }
+  return RESERVED_AUTH_PATHS.has(pathname) ? "/" : safePath;
 }
 
 function noStoreHeaders(): Headers {
