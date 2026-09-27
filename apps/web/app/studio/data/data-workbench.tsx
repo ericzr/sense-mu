@@ -377,8 +377,11 @@ export function DataWorkbench() {
         setDatasets(result);
         setModelVersions(nextModels);
         setDataset((current) =>
+          // The list request can resolve after the create form has already
+          // completed. Preserve that newly created object until the URL state
+          // is cleared instead of replacing it with a stale list snapshot.
           requestedDatasetCreation
-            ? null
+            ? current
             : result.find((item) => item.id === requestedDatasetId)
               ?? result.find((item) => item.id === current?.id)
               ?? result[0]
