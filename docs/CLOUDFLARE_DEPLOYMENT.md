@@ -34,15 +34,17 @@ settings, trigger a new commit build rather than retrying an older build: a
 retry can retain the original build's configuration snapshot.
 
 For pull-request and non-production branch builds, also set the optional
-`Version command` explicitly to the same generated entry point:
+`Version command` as a self-contained command. Those builds may execute from
+the repository root without first running the configured Build command:
 
 ```text
-Version command: npx wrangler versions upload dist/server/index.js --config dist/server/wrangler.json
+Version command: cd apps/web && npm ci && npm run build && npx wrangler versions upload dist/server/index.js --config dist/server/wrangler.json
 ```
 
 Leaving a historical `npx wrangler versions upload` value in this field makes
 Cloudflare run it from the repository root before it can see the Vinext
-output, even when the production Deploy command is correct.
+output, even when the production Deploy command and root directory are
+correct.
 
 ## 验证线上代码版本
 
