@@ -33,6 +33,17 @@ entry-point to Worker script or to assets directory”. After changing Build
 settings, trigger a new commit build rather than retrying an older build: a
 retry can retain the original build's configuration snapshot.
 
+For pull-request and non-production branch builds, also set the optional
+`Version command` explicitly to the same generated entry point:
+
+```text
+Version command: npx wrangler versions upload dist/server/index.js --config dist/server/wrangler.json
+```
+
+Leaving a historical `npx wrangler versions upload` value in this field makes
+Cloudflare run it from the repository root before it can see the Vinext
+output, even when the production Deploy command is correct.
+
 ## 验证线上代码版本
 
 每次生产构建都会写入对应的 Git 提交号。部署后同时检查以下两个信号：
