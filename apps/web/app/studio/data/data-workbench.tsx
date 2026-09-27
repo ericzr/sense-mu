@@ -37,7 +37,7 @@ import {
   UploadCloud,
   X,
 } from "lucide-react";
-import { type ChangeEvent, type DragEvent, type FormEvent, useEffect, useState } from "react";
+import { type ChangeEvent, type DragEvent, type FormEvent, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { DynamicAssetImage } from "../../components/dynamic-asset-image";
@@ -271,6 +271,7 @@ export function DataWorkbench() {
   const [project, setProject] = useState<Project | null>(null);
   const [datasets, setDatasets] = useState<Dataset[]>([]);
   const [dataset, setDataset] = useState<Dataset | null>(null);
+  const createdDatasetRef = useRef<Dataset | null>(null);
   const [assets, setAssets] = useState<Asset[]>([]);
   const [versions, setVersions] = useState<DatasetVersion[]>([]);
   const [modelVersions, setModelVersions] = useState<ModelVersion[]>([]);
@@ -376,17 +377,19 @@ export function DataWorkbench() {
       .then(([result, nextModels]) => {
         setDatasets(result);
         setModelVersions(nextModels);
-        setDataset((current) =>
-          // The list request can resolve after the create form has already
-          // completed. Preserve that newly created object until the URL state
-          // is cleared instead of replacing it with a stale list snapshot.
-          requestedDatasetCreation
-            ? current
-            : result.find((item) => item.id === requestedDatasetId)
-              ?? result.find((item) => item.id === current?.id)
-              ?? result[0]
-              ?? null,
-        );
+        setDataset((current) => {
+          // The list request can resolve after the create form has completed.
+          // Preserve the object returned by createDataset until the list catches
+          // up, otherwise the form remains visible with a success notice.
+          if (createdDatasetRef.current && !result.some((item) => item.id === createdDatasetRef.current?.id)) {
+            return createdDatasetRef.current;
+          }
+          if (requestedDatasetCreation) return current;
+          return result.find((item) => item.id === requestedDatasetId)
+            ?? result.find((item) => item.id === current?.id)
+            ?? result[0]
+            ?? null;
+        });
       })
       .catch((reason) => setError(reason instanceof Error ? reason.message : "数据集加载失败"));
   }, [workspace, project, requestedDatasetCreation, requestedDatasetId]);
@@ -562,6 +565,7 @@ export function DataWorkbench() {
         task_type: newDatasetTaskType,
         description: datasetDescription.trim() || undefined,
       });
+      createdDatasetRef.current = created;
       setDatasets([created, ...datasets]);
       setDataset(created);
       setDatasetCreationOpen(false);
