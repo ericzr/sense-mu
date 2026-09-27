@@ -9,6 +9,7 @@
 只有以下条件全部满足，才允许把公网流量切到新版本：
 
 - [ ] 已选定 OIDC 供应商和同源 BFF 部署位置，并登记回调、退出和允许来源。
+- [ ] Web BFF 预检为 `ready`，并且 `SENSEMU_BFF_IMPLEMENTATION_READY=true` 只在 provider-specific 实现和 staging E2E 完成后设置。
 - [ ] 生产环境变量由密钥管理系统注入；仓库、镜像和日志中没有 client secret、refresh token、API key 或 Cookie。
 - [ ] PostgreSQL、S3 兼容对象存储、Redis 的连接信息和备份策略已登记。
 - [ ] 训练镜像使用不可变 `@sha256:<digest>`，并记录 CUDA、驱动和 GPU 型号。

@@ -96,6 +96,47 @@ test("BFF session does not expose sensitive fields while unconfigured", async ()
   assert.doesNotMatch(body, /access_token|refresh_token|client_secret|cookie/i);
 });
 
+test("BFF preflight blocks unsafe configuration without echoing secrets", async () => {
+  const names = [
+    "SENSEMU_BFF_ENABLED",
+    "SENSEMU_BFF_IMPLEMENTATION_READY",
+    "SENSEMU_OIDC_ISSUER",
+    "SENSEMU_OIDC_CLIENT_ID",
+    "SENSEMU_OIDC_AUTHORIZATION_ENDPOINT",
+    "SENSEMU_OIDC_TOKEN_ENDPOINT",
+    "SENSEMU_OIDC_REDIRECT_URI",
+    "SENSEMU_SESSION_STORE",
+    "SENSEMU_SESSION_SECRET",
+  ];
+  const previous = new Map(names.map((name) => [name, process.env[name]]));
+  Object.assign(process.env, {
+    SENSEMU_BFF_ENABLED: "true",
+    SENSEMU_BFF_IMPLEMENTATION_READY: "true",
+    SENSEMU_OIDC_ISSUER: "http://id.example.test/issuer",
+    SENSEMU_OIDC_CLIENT_ID: "sensemu-test",
+    SENSEMU_OIDC_AUTHORIZATION_ENDPOINT: "http://id.example.test/authorize",
+    SENSEMU_OIDC_TOKEN_ENDPOINT: "http://id.example.test/token",
+    SENSEMU_OIDC_REDIRECT_URI: "https://cs.sensemu.com/not-callback",
+    SENSEMU_SESSION_STORE: "memory",
+    SENSEMU_SESSION_SECRET: "test-secret",
+  });
+
+  try {
+    const response = await render("/auth/login?return_to=%2Fstudio");
+    assert.equal(response.status, 503);
+    const payload = await response.json();
+    assert.equal(payload.configuration_state, "unsafe");
+    assert.ok(payload.invalid.includes("session store"));
+    assert.ok(payload.invalid.includes("session secret"));
+    assert.doesNotMatch(JSON.stringify(payload), /test-secret|id\.example\.test/);
+  } finally {
+    for (const [name, value] of previous) {
+      if (value === undefined) delete process.env[name];
+      else process.env[name] = value;
+    }
+  }
+});
+
 test("BFF logout is idempotent and clears the local session cookie", async () => {
   const workerUrl = new URL("../dist/server/index.js", import.meta.url);
   workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}-logout`);

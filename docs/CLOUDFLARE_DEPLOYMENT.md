@@ -21,9 +21,30 @@ Cloudflare 控制台中的服务名可以与仓库名一致，但服务名不是
 ```text
 Root directory: /apps/web
 Build command: npm ci && npm run build
-Deploy command: npx wrangler deploy --config wrangler.jsonc
+Deploy command: npx wrangler deploy dist/server/index.js --config dist/server/wrangler.json
 Production branch: main
 ```
+
+Cloudflare Workers Builds executes these commands from `/apps/web`. The build
+step must run first so that Vinext writes `dist/server/index.js` and the
+generated `dist/server/wrangler.json`; deploying from the repository root (or
+using `wrangler versions upload` without an entry point) fails with “Missing
+entry-point to Worker script or to assets directory”. After changing Build
+settings, trigger a new commit build rather than retrying an older build: a
+retry can retain the original build's configuration snapshot.
+
+For pull-request and non-production branch builds, also set the optional
+`Version command` as a self-contained command. Those builds may execute from
+the repository root without first running the configured Build command:
+
+```text
+Version command: cd apps/web && npm ci && npm run build && npx wrangler versions upload dist/server/index.js --config dist/server/wrangler.json
+```
+
+Leaving a historical `npx wrangler versions upload` value in this field makes
+Cloudflare run it from the repository root before it can see the Vinext
+output, even when the production Deploy command and root directory are
+correct.
 
 ## 验证线上代码版本
 
