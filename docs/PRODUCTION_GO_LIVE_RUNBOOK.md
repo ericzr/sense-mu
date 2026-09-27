@@ -64,6 +64,25 @@ curl -fsS https://<api-host>/health/ready
 
 `/health/ready` 必须同时通过 PostgreSQL、对象存储和 Redis。任一依赖失败必须返回 `503`，部署平台不得导入流量。切流前保存响应中的版本、依赖状态和时间戳。
 
+Web 发布完成后，使用仓库内的无浏览器预检脚本确认公开入口确实指向当前 Worker。生产环境要求 `preview=false`；尚未接入真实后端时，可以显式允许演示站预检，但不能把结果当成上线验收：
+
+```bash
+cd apps/web
+SENSEMU_PRODUCTION_URL=https://cs.sensemu.com \
+SENSEMU_EXPECTED_RELEASE=<main commit SHA> \
+npm run ops:preflight
+```
+
+临时检查当前演示站时必须明确写出例外：
+
+```bash
+SENSEMU_PRODUCTION_URL=https://cs.sensemu.com \
+SENSEMU_ALLOW_PREVIEW=true \
+npm run ops:preflight
+```
+
+脚本会检查 `/__sensemu/health` 的 Worker、assets、images 和 release，并验证工作台、数据、训练、服务、市场和个人页的深层路由及 `x-sensemu-worker` 响应头。它不检查登录、数据库、对象存储或算力，这些仍必须由 staging 业务闭环单独验收。
+
 ## 5. 业务闭环验收
 
 使用专用 staging 工作区和最小权限账号，按顺序记录每一步的 request ID、run ID 和 deployment ID：
